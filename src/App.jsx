@@ -9,6 +9,11 @@ const App = () => {
         { url: 'https://derpibooru.org', key: 'USER_API_KEY_HERE' } 
     ]);
 
+    const loadImagesFromDb = async () => {
+        const dbImages = await dbConnection.select({ from: 'Images' });
+        setImages(dbImages);
+    };
+
     useEffect(() => {
         const setupAndSync = async () => {
             await initDatabase();
@@ -25,11 +30,6 @@ const App = () => {
 
         setupAndSync();
     }, [accounts]);
-
-    const loadImagesFromDb = async () => {
-        const dbImages = await dbConnection.select({ from: 'Images' });
-        setImages(dbImages);
-    };
 
     return (
         <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
