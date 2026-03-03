@@ -18,11 +18,28 @@ export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) =
         
         if (data && data.images) {
             const formattedImages = data.images.map(img => ({
-                id: img.id,
-                booruUrl: booruUrl,
-                tags: img.tags,
-                representations: img.representations,
-                sourceUrl: `${booruUrl}/images/${img.id}`
+            id: img.id,
+            booruUrl: booruUrl,
+            name: img.name,
+            tags: img.tags,
+            sourceUrls: img.source_urls,
+            faves: img.faves,
+            size: img.size,
+            uploaderId: img.uploader_id,
+            description	: img.description,
+            mimeType: img.mime_type	,
+            downvotes: img.downvotes,
+            upvotes: img.upvotes,
+            origSize: img.orig_size,
+            representations: img.representations,
+            updatedAt: new Date(img.updated_at).valueOf(),
+            createdAt: new Date(img.created_at).valueOf(),
+            firstSeenAt: new Date(img.first_seen_at).valueOf(),
+            sha512Hash: img.sha512_hash,
+            thumbnailsGenerated: img.thumbnails_generated,
+            height: img.height,
+            width: img.width,
+            sourceUrl: img.source_url
             }));
 
             // Upsert data into JsStore
