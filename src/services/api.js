@@ -81,3 +81,89 @@ export const searchImagesByTag = async (tagName) => {
         }
     });
 };
+
+/**
+ * @param {string[]} includeTags
+ * @param {string[]} excludeTags
+ * @param {string[]} anyTags
+ * @returns {Promise<any[]>}
+ */
+export const searchImagesAdvanced = async (includeTags = [], excludeTags = [], anyTags = []) => {
+  /** @type {any[]} */
+  let results = [];
+
+  /** @type {boolean} */
+  const hasIncludes = includeTags.length > 0;
+
+  /** @type {boolean} */
+  const hasAny = anyTags.length > 0;
+
+  if (!hasIncludes && !hasAny) {
+    return await dbConnection.select({ from: 'Images' });
+  }
+
+  /** @type {string} */
+  const primarySearchTag = hasIncludes ? includeTags[0] : anyTags[0];
+
+  // Step 1: Query the database for the primary tag to minimize memory load
+  results = await dbConnection.select({
+    from: 'Images',
+    where: {
+      tags: { in: [primarySearchTag] },
+    },
+  });
+
+  // Step 2: Apply advanced logical filtering (AND, OR, NOT) in-memory for the filtered batch
+  if (includeTags.length > 1 || excludeTags.length > 0 || (hasIncludes && hasAny)) {
+    /** @type {string[]} */
+    const remainingIncludes = includeTags.slice(1);
+
+    results = results.filter((img) => {
+      /** @type {boolean} */
+      const matchIncludes = remainingIncludes.every((tag) => img.tags.includes(tag));
+
+      /** @type {boolean} */
+      const matchExcludes = excludeTags.every((tag) => !img.tags.includes(tag));
+
+      /** @type {boolean} */
+      const matchAny = !hasAny || anyTags.some((tag) => img.tags.includes(tag));
+
+      return matchIncludes && matchExcludes && matchAny;
+    });
+  }
+
+  return results;
+};
+
+/**
+ * @param {string} rawSearchString
+ * @returns {Promise<any[]>}
+ */
+export const parseAndSearch = async (rawSearchString) => {
+  /** @type {string[]} */
+  const terms = rawSearchString
+    .split(',')
+    .map((term) => term.trim())
+    .filter((term) => term !== '');
+
+  /** @type {string[]} */
+  const includeTags = [];
+
+  /** @type {string[]} */
+  const excludeTags = [];
+
+  /** @type {string[]} */
+  const anyTags = [];
+
+  terms.forEach((term) => {
+    if (term.startsWith('-')) {
+      excludeTags.push(term.substring(1));
+    } else if (term.startsWith('~')) {
+      anyTags.push(term.substring(1));
+    } else {
+      includeTags.push(term);
+    }
+  });
+
+  return await searchImagesAdvanced(includeTags, excludeTags, anyTags);
+};
