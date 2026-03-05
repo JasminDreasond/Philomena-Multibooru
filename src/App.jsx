@@ -4,6 +4,7 @@ import { parseAndSearch, syncUserGalleryPages } from './services/api';
 
 import { SearchBar } from './components/SearchBar';
 import { ImageGallery } from './components/ImageGallery';
+import { SettingsPanel } from './components/SettingsPanel';
 
 /** @typedef {import('./services/api').ImageObj} ImageObj */
 /** @typedef {import('./services/api').Account} Account */
@@ -17,6 +18,9 @@ const App = () => {
 
   /** @type {[Account[], import('react').Dispatch<import('react').SetStateAction<Account[]>>]} */
   const [connectedAccounts, setConnectedAccounts] = useState([]);
+
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [showSettings, setShowSettings] = useState(false);
 
   /**
    * @returns {Promise<void>}
@@ -34,6 +38,7 @@ const App = () => {
     const setupEnvironment = async () => {
       if (isDbReady) return;
       await initDatabase();
+      /** @type {Account[]} */
       const accounts = await syncUserGalleryPages();
       setConnectedAccounts(accounts);
       setIsDbReady(true);
@@ -41,7 +46,7 @@ const App = () => {
     };
 
     setupEnvironment();
-  });
+  }, [isDbReady, showSettings]); // Re-run when settings are closed to update accounts
 
   /**
    * @param {string} rawQuery
@@ -65,30 +70,45 @@ const App = () => {
       <nav className="navbar navbar-dark bg-dark shadow">
         <div className="container d-flex justify-content-between">
           <span className="navbar-brand mb-0 h1 fs-3">Philomena Multi-Booru</span>
-          <span className="text-light">
-            Active APIs: <span className="badge bg-success">{connectedAccounts.length}</span>
-          </span>
+          <div>
+            <span className="text-light me-3">
+              Active APIs: <span className="badge bg-success">{connectedAccounts.length}</span>
+            </span>
+            <button
+              className="btn btn-outline-light btn-sm"
+              onClick={() => setShowSettings(!showSettings)}
+            >
+              {showSettings ? 'Back to Gallery' : 'Settings'}
+            </button>
+          </div>
         </div>
       </nav>
 
-      <SearchBar onSearchSubmit={handleSearch} />
-
-      {!isDbReady ? (
-        <div className="container text-center mt-5">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading database...</span>
-          </div>
-        </div>
+      {showSettings ? (
+        <SettingsPanel onClose={() => setShowSettings(false)} />
       ) : (
         <>
-          {connectedAccounts.length === 0 && (
-            <div className="container mt-3">
-              <div className="alert alert-warning" role="alert">
-                You need to add at least one Philomena API account to start syncing data!
+          <SearchBar onSearchSubmit={handleSearch} />
+
+          {!isDbReady ? (
+            <div className="container text-center mt-5">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Loading database...</span>
               </div>
             </div>
+          ) : (
+            <>
+              {connectedAccounts.length === 0 && (
+                <div className="container mt-3">
+                  <div className="alert alert-warning" role="alert">
+                    You need to add at least one Philomena API account to start syncing data! Click
+                    on "Settings".
+                  </div>
+                </div>
+              )}
+              <ImageGallery imagesList={currentImages} />
+            </>
           )}
-          <ImageGallery imagesList={currentImages} />
         </>
       )}
     </div>

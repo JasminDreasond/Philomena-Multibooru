@@ -280,3 +280,39 @@ export const syncUserGalleryPages = async (query = '*', page = 1) => {
   await Promise.all(syncs);
   return accounts;
 };
+
+/**
+ * @returns {Promise<Account[]>}
+ */
+export const getAllAccounts = async () => {
+  return await dbConnection.select({
+    from: 'Accounts',
+  });
+};
+
+/**
+ * @param {number} accountId
+ * @returns {Promise<void>}
+ */
+export const deleteAccount = async (accountId) => {
+  await dbConnection.remove({
+    from: 'Accounts',
+    where: {
+      id: accountId,
+    },
+  });
+};
+
+/**
+ * @returns {Promise<void>}
+ */
+export const deleteAllAccounts = async () => {
+  await dbConnection.clear('Accounts');
+};
+
+/**
+ * @returns {Promise<void>}
+ */
+export const factoryResetDatabase = async () => {
+  await dbConnection.dropDb();
+};
