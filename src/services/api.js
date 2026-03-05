@@ -6,17 +6,42 @@ import { dbConnection } from '../db/connection';
  * @param {string} endpoint
  * @param {string} apiKey
  * @param {Record<string, any>} params
- * 
  */
 export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) => {
-    const queryParams = new URLSearchParams({ ...params, key: apiKey }).toString();
-    const url = `${booruUrl}/api/v1/json/${endpoint}?${queryParams}`;
-    
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Error fetching from ${booruUrl}: ${response.statusText}`);
-    
-    return response.json();
+  const queryParams = new URLSearchParams({ ...params, key: apiKey }).toString();
+  const url = `${booruUrl}/api/v1/json/${endpoint}?${queryParams}`;
+
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Error fetching from ${booruUrl}: ${response.statusText}`);
+
+  return response.json();
 };
+
+/**
+ * @typedef {Object} ImageObj
+ * @property {string} id
+ * @property {string} booruUrl
+ * @property {string} name
+ * @property {string[]} tags
+ * @property {string[]} sourceUrls
+ * @property {number} faves
+ * @property {number} size
+ * @property {number} uploaderId
+ * @property {string} description
+ * @property {string} mimeType
+ * @property {number} downvotes
+ * @property {number} upvotes
+ * @property {number} origSize
+ * @property {string[]} representations
+ * @property {number} updatedAt
+ * @property {number} createdAt
+ * @property {number} firstSeenAt
+ * @property {string} sha512Hash
+ * @property {boolean} thumbnailsGenerated
+ * @property {number} height
+ * @property {number} width
+ * @property {string} sourceUrl
+ */
 
 /**
  * Background task to sync pages into JsStore
@@ -26,47 +51,48 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
  * @param {number} [page=1]
  */
 export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) => {
-    try {
-        const data = await fetchPhilomena(booruUrl, 'search/images', apiKey, { q: query, page });
-        
-        if (data && data.images) {
-            const formattedImages = data.images.map(img => ({
-            id: img.id,
-            booruUrl: booruUrl,
-            name: img.name,
-            tags: img.tags,
-            sourceUrls: img.source_urls,
-            faves: img.faves,
-            size: img.size,
-            uploaderId: img.uploader_id,
-            description	: img.description,
-            mimeType: img.mime_type	,
-            downvotes: img.downvotes,
-            upvotes: img.upvotes,
-            origSize: img.orig_size,
-            representations: img.representations,
-            updatedAt: new Date(img.updated_at).valueOf(),
-            createdAt: new Date(img.created_at).valueOf(),
-            firstSeenAt: new Date(img.first_seen_at).valueOf(),
-            sha512Hash: img.sha512_hash,
-            thumbnailsGenerated: img.thumbnails_generated,
-            height: img.height,
-            width: img.width,
-            sourceUrl: img.source_url
-            }));
+  try {
+    const data = await fetchPhilomena(booruUrl, 'search/images', apiKey, { q: query, page });
 
-            // Upsert data into JsStore
-            await dbConnection.insert({
-                into: 'Images',
-                values: formattedImages,
-                upsert: true
-            });
-            
-            console.log(`Synced page ${page} from ${booruUrl}`);
-        }
-    } catch (error) {
-        console.error('Failed to sync gallery page:', error);
+    if (data && data.images) {
+      /** @type {ImageObj} */
+      const formattedImages = data.images.map((img) => ({
+        id: img.id,
+        booruUrl: booruUrl,
+        name: img.name,
+        tags: img.tags,
+        sourceUrls: img.source_urls,
+        faves: img.faves,
+        size: img.size,
+        uploaderId: img.uploader_id,
+        description: img.description,
+        mimeType: img.mime_type,
+        downvotes: img.downvotes,
+        upvotes: img.upvotes,
+        origSize: img.orig_size,
+        representations: img.representations,
+        updatedAt: new Date(img.updated_at).valueOf(),
+        createdAt: new Date(img.created_at).valueOf(),
+        firstSeenAt: new Date(img.first_seen_at).valueOf(),
+        sha512Hash: img.sha512_hash,
+        thumbnailsGenerated: img.thumbnails_generated,
+        height: img.height,
+        width: img.width,
+        sourceUrl: img.source_url,
+      }));
+
+      // Upsert data into JsStore
+      await dbConnection.insert({
+        into: 'Images',
+        values: formattedImages,
+        upsert: true,
+      });
+
+      console.log(`Synced page ${page} from ${booruUrl}`);
     }
+  } catch (error) {
+    console.error('Failed to sync gallery page:', error);
+  }
 };
 
 /**
@@ -74,12 +100,12 @@ export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) =
  * @param {string} tagName
  */
 export const searchImagesByTag = async (tagName) => {
-    return await dbConnection.select({
-        from: 'Images',
-        where: {
-            tags: { in: [tagName] }
-        }
-    });
+  return await dbConnection.select({
+    from: 'Images',
+    where: {
+      tags: { in: [tagName] },
+    },
+  });
 };
 
 /**
