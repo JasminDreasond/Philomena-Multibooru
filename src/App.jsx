@@ -1,57 +1,77 @@
 import { useEffect, useState } from 'react';
 import { initDatabase, dbConnection } from './db/connection';
-import { syncGalleryPage } from './services/api';
+import { parseAndSearch } from './services/api';
+
+import { SearchBar } from './components/SearchBar';
+import { ImageGallery } from './components/ImageGallery';
+
+/** @typedef {import('./services/api').ImageObj} ImageObj */
 
 const App = () => {
-  const [images, setImages] = useState([]);
-  const [accounts, setAccounts] = useState([
-    // Example configuration. In a real app, this comes from user settings.
-    { url: 'https://derpibooru.org', key: 'USER_API_KEY_HERE' },
-  ]);
+  /** @type {[ImageObj[], import('react').Dispatch<import('react').SetStateAction<ImageObj[]>>]} */
+  const [currentImages, setCurrentImages] = useState([]);
 
-  const loadImagesFromDb = async () => {
-    const dbImages = await dbConnection.select({ from: 'Images' });
-    setImages(dbImages);
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isDbReady, setIsDbReady] = useState(false);
+
+  /**
+   * @returns {Promise<void>}
+   */
+  const loadInitialData = async () => {
+    /** @type {ImageObj[]} */
+    const allImages = await dbConnection.select({ from: 'Images' });
+    setCurrentImages(allImages);
   };
 
   useEffect(() => {
-    const setupAndSync = async () => {
+    /**
+     * @returns {Promise<void>}
+     */
+    const setupEnvironment = async () => {
       await initDatabase();
-
-      // Trigger background sync for the first page of each connected account
-      accounts.forEach((account) => {
-        if (account.key !== 'USER_API_KEY_HERE') {
-          syncGalleryPage(account.url, account.key, '*', 1);
-        }
-      });
-
-      loadImagesFromDb();
+      setIsDbReady(true);
+      await loadInitialData();
     };
 
-    setupAndSync();
-  }, [accounts]);
+    setupEnvironment();
+  }, []);
+
+  /**
+   * @param {string} rawQuery
+   * @returns {Promise<void>}
+   */
+  const handleSearch = async (rawQuery) => {
+    if (!isDbReady) return;
+
+    if (rawQuery.trim() === '') {
+      await loadInitialData();
+      return;
+    }
+
+    /** @type {any[]} */
+    const searchResults = await parseAndSearch(rawQuery);
+    setCurrentImages(searchResults);
+  };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
-      <h1>Philomena Multi-Booru Client</h1>
-      <button onClick={loadImagesFromDb}>Refresh View from DB</button>
+    <div className="bg-light min-vh-100 pb-5">
+      <nav className="navbar navbar-dark bg-dark shadow">
+        <div className="container">
+          <span className="navbar-brand mb-0 h1 fs-3">Philomena Multi-Booru</span>
+        </div>
+      </nav>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', marginTop: '20px' }}>
-        {images.map((img) => (
-          <a
-            key={`${img.booruUrl}-${img.id}`}
-            href={img.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img
-              src={img.representations.thumb}
-              alt={img.tags.join(', ')}
-              style={{ borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-            />
-          </a>
-        ))}
-      </div>
+      <SearchBar onSearchSubmit={handleSearch} />
+
+      {!isDbReady ? (
+        <div className="container text-center mt-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading database...</span>
+          </div>
+        </div>
+      ) : (
+        <ImageGallery imagesList={currentImages} />
+      )}
     </div>
   );
 };
