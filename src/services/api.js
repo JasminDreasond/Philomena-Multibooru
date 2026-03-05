@@ -109,25 +109,24 @@ export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) =
 };
 
 /**
- * SQL-like query to find images by tag across all connected boorus
- * @param {string} tagName
+ * @param {Object} settings
+ * @param {number} [settings.page=1]
+ * @param {number} [settings.limit=50]
+ * @param {string[]} [settings.includeTags]
+ * @param {string[]} [settings.excludeTags]
+ * @param {string[]} [settings.anyTags]
+ * @returns {Promise<ImageObj[]>}
  */
-export const searchImagesByTag = async (tagName) => {
-  return await dbConnection.select({
-    from: 'Images',
-    where: {
-      tags: { in: [tagName] },
-    },
-  });
-};
+export const searchImages = async ({
+  includeTags = [],
+  excludeTags = [],
+  anyTags = [],
+  page = 1,
+  limit = 50,
+}) => {
+  /** @type {number} */
+  const skipCount = (page - 1) * limit;
 
-/**
- * @param {string[]} includeTags
- * @param {string[]} excludeTags
- * @param {string[]} anyTags
- * @returns {Promise<any[]>}
- */
-export const searchImagesAdvanced = async (includeTags = [], excludeTags = [], anyTags = []) => {
   /** @type {any[]} */
   let results = [];
 
@@ -137,8 +136,18 @@ export const searchImagesAdvanced = async (includeTags = [], excludeTags = [], a
   /** @type {boolean} */
   const hasAny = anyTags.length > 0;
 
+  const searchSettings = {
+    from: 'Images',
+    limit: limit,
+    skip: skipCount,
+    order: {
+      by: 'createdAt',
+      type: 'desc',
+    },
+  };
+
   if (!hasIncludes && !hasAny) {
-    return await dbConnection.select({ from: 'Images' });
+    return await dbConnection.select(searchSettings);
   }
 
   /** @type {string} */
@@ -146,7 +155,7 @@ export const searchImagesAdvanced = async (includeTags = [], excludeTags = [], a
 
   // Step 1: Query the database for the primary tag to minimize memory load
   results = await dbConnection.select({
-    from: 'Images',
+    ...searchSettings,
     where: {
       tags: { in: [primarySearchTag] },
     },
@@ -176,7 +185,7 @@ export const searchImagesAdvanced = async (includeTags = [], excludeTags = [], a
 
 /**
  * @param {string} rawSearchString
- * @returns {Promise<any[]>}
+ * @returns {Promise<ImageObj[]>}
  */
 export const parseAndSearch = async (rawSearchString) => {
   /** @type {string[]} */
@@ -204,7 +213,7 @@ export const parseAndSearch = async (rawSearchString) => {
     }
   });
 
-  return await searchImagesAdvanced(includeTags, excludeTags, anyTags);
+  return await searchImages({ includeTags, excludeTags, anyTags });
 };
 
 /**
@@ -317,26 +326,3 @@ export const deleteAllAccounts = async () => {
 export const factoryResetDatabase = async () => {
   await dbConnection.dropDb();
 };
-
-////////////////////////////////////////////////////////
-
-/**
- * @param {number} page
- * @param {number} limit
- * @returns {Promise<ImageObj[]>}
- */
-export const getPaginatedImages = async (page = 1, limit = 50) => {
-  /** @type {number} */
-  const skipCount = (page - 1) * limit;
-
-  return await dbConnection.select({
-    from: 'Images',
-    limit: limit,
-    skip: skipCount,
-    order: {
-      by: 'createdAt',
-      type: 'desc',
-    },
-  });
-};
-
