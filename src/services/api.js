@@ -18,8 +18,20 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
 };
 
 /**
+ * @typedef {Object} ImageRepresentations
+ * @property {string} full
+ * @property {string} small
+ * @property {string} thumb_tiny
+ * @property {string} thumb_small
+ * @property {string} thumb
+ * @property {string} medium
+ * @property {string} large
+ * @property {string} tall
+ */
+
+/**
  * @typedef {Object} ImageObj
- * @property {string} id
+ * @property {number} id
  * @property {string} booruUrl
  * @property {string} name
  * @property {string[]} tags
@@ -32,7 +44,7 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
  * @property {number} downvotes
  * @property {number} upvotes
  * @property {number} origSize
- * @property {string[]} representations
+ * @property {ImageRepresentations} representations
  * @property {number} updatedAt
  * @property {number} createdAt
  * @property {number} firstSeenAt
