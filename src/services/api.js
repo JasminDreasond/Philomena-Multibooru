@@ -205,3 +205,78 @@ export const parseAndSearch = async (rawSearchString) => {
 
   return await searchImagesAdvanced(includeTags, excludeTags, anyTags);
 };
+
+/**
+ * @typedef {Object} Account
+ * @property {number} id
+ * @property {string} booruUrl
+ * @property {string} apiKey
+ * @property {boolean} isActive
+ */
+
+/**
+ * @returns {Promise<Account[]>}
+ */
+export const getActiveAccounts = async () => {
+  return await dbConnection.select({
+    from: 'Accounts',
+    where: {
+      isActive: 1,
+    },
+  });
+};
+
+/**
+ * @param {string} booruUrl
+ * @param {string} apiKey
+ * @returns {Promise<void>}
+ */
+export const addAccount = async (booruUrl, apiKey) => {
+  /** @type {Partial<Account>[]} */
+  const accountData = [
+    {
+      booruUrl: booruUrl,
+      apiKey: apiKey,
+      isActive: true,
+    },
+  ];
+
+  await dbConnection.insert({
+    into: 'Accounts',
+    values: accountData,
+  });
+};
+
+/**
+ * @param {number} accountId
+ * @param {boolean} isActive
+ * @returns {Promise<void>}
+ */
+export const toggleAccountStatus = async (accountId, isActive) => {
+  await dbConnection.update({
+    in: 'Accounts',
+    set: {
+      isActive: isActive,
+    },
+    where: {
+      id: accountId,
+    },
+  });
+};
+
+/**
+ * Background task to sync pages into JsStore and get user accounts
+ * @param {string} [query='*']
+ * @param {number} [page=1]
+ */
+export const syncUserGalleryPages = async (query = '*', page = 1) => {
+  const accounts = await getActiveAccounts();
+
+  // Sync background data for active accounts
+  const syncs = [];
+  accounts.forEach((account) =>
+    syncs.push(syncGalleryPage(account.booruUrl, account.apiKey, query, page)),
+  );
+  await Promise.all(syncs);
+  return accounts;
+};
