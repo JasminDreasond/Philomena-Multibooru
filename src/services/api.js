@@ -1,7 +1,14 @@
 import { dbConnection } from '../db/connection';
 
-// Reusable fetch function for Philomena endpoints
-const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) => {
+/**
+ * Reusable fetch function for Philomena endpoints
+ * @param {string} booruUrl
+ * @param {string} endpoint
+ * @param {string} apiKey
+ * @param {Record<string, any>} params
+ * 
+ */
+export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) => {
     const queryParams = new URLSearchParams({ ...params, key: apiKey }).toString();
     const url = `${booruUrl}/api/v1/json/${endpoint}?${queryParams}`;
     
@@ -11,7 +18,13 @@ const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) => {
     return response.json();
 };
 
-// Background task to sync pages into JsStore
+/**
+ * Background task to sync pages into JsStore
+ * @param {string} booruUrl
+ * @param {string} apiKey
+ * @param {string} [query='*']
+ * @param {number} [page=1]
+ */
 export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) => {
     try {
         const data = await fetchPhilomena(booruUrl, 'search/images', apiKey, { q: query, page });
@@ -56,7 +69,10 @@ export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) =
     }
 };
 
-// SQL-like query to find images by tag across all connected boorus
+/**
+ * SQL-like query to find images by tag across all connected boorus
+ * @param {string} tagName
+ */
 export const searchImagesByTag = async (tagName) => {
     return await dbConnection.select({
         from: 'Images',
