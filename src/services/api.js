@@ -82,6 +82,7 @@ export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) =
         downvotes: img.downvotes,
         upvotes: img.upvotes,
         origSize: img.orig_size,
+        commentCount: img.comment_count,
         representations: img.representations,
         updatedAt: new Date(img.updated_at).valueOf(),
         createdAt: new Date(img.created_at).valueOf(),
@@ -211,7 +212,7 @@ export const parseAndSearch = async (rawSearchString) => {
  * @property {number} id
  * @property {string} booruUrl
  * @property {string} apiKey
- * @property {boolean} isActive
+ * @property {number} isActive
  */
 
 /**
@@ -237,7 +238,7 @@ export const addAccount = async (booruUrl, apiKey) => {
     {
       booruUrl: booruUrl,
       apiKey: apiKey,
-      isActive: true,
+      isActive: 1,
     },
   ];
 
@@ -249,14 +250,14 @@ export const addAccount = async (booruUrl, apiKey) => {
 
 /**
  * @param {number} accountId
- * @param {boolean} isActive
+ * @param {number|boolean} isActive
  * @returns {Promise<void>}
  */
 export const toggleAccountStatus = async (accountId, isActive) => {
   await dbConnection.update({
     in: 'Accounts',
     set: {
-      isActive: isActive,
+      isActive: isActive ? 1 : 0,
     },
     where: {
       id: accountId,
@@ -316,3 +317,26 @@ export const deleteAllAccounts = async () => {
 export const factoryResetDatabase = async () => {
   await dbConnection.dropDb();
 };
+
+////////////////////////////////////////////////////////
+
+/**
+ * @param {number} page
+ * @param {number} limit
+ * @returns {Promise<ImageObj[]>}
+ */
+export const getPaginatedImages = async (page = 1, limit = 50) => {
+  /** @type {number} */
+  const skipCount = (page - 1) * limit;
+
+  return await dbConnection.select({
+    from: 'Images',
+    limit: limit,
+    skip: skipCount,
+    order: {
+      by: 'createdAt',
+      type: 'desc',
+    },
+  });
+};
+

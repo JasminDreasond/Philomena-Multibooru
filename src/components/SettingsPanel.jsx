@@ -24,13 +24,27 @@ export const SettingsPanel = ({ onClose }) => {
   /** @type {[Account[], import('react').Dispatch<import('react').SetStateAction<Account[]>>]} */
   const [accountsList, setAccountsList] = useState([]);
 
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [acceptRisk, setAcceptRisk] = useState(false);
+
+  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  const [errorMessage, setErrorMessage] = useState('');
+
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isLoading, setIsLoading] = useState(true);
+
   /**
    * @returns {Promise<void>}
    */
   const loadAccounts = async () => {
-    /** @type {Account[]} */
-    const data = await getAllAccounts();
-    setAccountsList(data);
+    setIsLoading(true);
+    try {
+      /** @type {Account[]} */
+      const data = await getAllAccounts();
+      setAccountsList(data);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -43,10 +57,32 @@ export const SettingsPanel = ({ onClose }) => {
    */
   const handleAddAccount = async (event) => {
     event.preventDefault();
+    setErrorMessage('');
+
     if (urlInput && keyInput) {
-      await addAccount(urlInput, keyInput);
+      /** @type {string} */
+      const normalizedUrl = urlInput.trim().replace(/\/$/, '');
+
+      /** @type {boolean} */
+      const urlExists = accountsList.some(
+        (acc) => acc.booruUrl.replace(/\/$/, '') === normalizedUrl,
+      );
+
+      if (urlExists && !acceptRisk) {
+        setErrorMessage(
+          'This URL is already registered. Adding multiple accounts for the same website can result in an IP ban. Check the box below if you accept the risk.',
+        );
+        return;
+      }
+
+      setIsLoading(true);
+      await addAccount(normalizedUrl, keyInput);
+
       setUrlInput('');
       setKeyInput('');
+      setAcceptRisk(false);
+      setErrorMessage('');
+
       await loadAccounts();
     }
   };
@@ -56,6 +92,7 @@ export const SettingsPanel = ({ onClose }) => {
    * @returns {Promise<void>}
    */
   const handleRemoveAccount = async (id) => {
+    setIsLoading(true);
     await deleteAccount(id);
     await loadAccounts();
   };
@@ -67,6 +104,7 @@ export const SettingsPanel = ({ onClose }) => {
     /** @type {boolean} */
     const isConfirmed = window.confirm('Are you sure you want to delete all configured accounts?');
     if (isConfirmed) {
+      setIsLoading(true);
       await deleteAllAccounts();
       await loadAccounts();
     }
@@ -96,10 +134,25 @@ export const SettingsPanel = ({ onClose }) => {
     <div className="container mt-4 mb-4 p-4 bg-white rounded shadow-sm border">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>System Settings</h2>
-        <button className="btn btn-close" onClick={onClose} aria-label="Close"></button>
+        <button
+          className="btn btn-close"
+          onClick={onClose}
+          aria-label="Close"
+          disabled={isLoading}
+        ></button>
       </div>
 
-      <div className="row">
+      {isLoading && (
+        <div className="alert alert-info text-center">
+          <div className="spinner-border spinner-border-sm me-2" role="status"></div>
+          Processing database...
+        </div>
+      )}
+
+      <div
+        className="row"
+        style={{ opacity: isLoading ? 0.6 : 1, pointerEvents: isLoading ? 'none' : 'auto' }}
+      >
         <div className="col-md-6 mb-4">
           <div className="card h-100 border-primary">
             <div className="card-header bg-primary text-white">Add New API Account</div>
@@ -114,6 +167,7 @@ export const SettingsPanel = ({ onClose }) => {
                     value={urlInput}
                     onChange={(e) => setUrlInput(e.target.value)}
                     required
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="mb-3">
@@ -125,9 +179,34 @@ export const SettingsPanel = ({ onClose }) => {
                     value={keyInput}
                     onChange={(e) => setKeyInput(e.target.value)}
                     required
+                    disabled={isLoading}
                   />
                 </div>
-                <button type="submit" className="btn btn-primary w-100">
+
+                {errorMessage && (
+                  <div className="alert alert-danger py-2 px-3 text-sm" role="alert">
+                    {errorMessage}
+                  </div>
+                )}
+
+                <div className="form-check mb-3">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="acceptRiskCheckbox"
+                    checked={acceptRisk}
+                    onChange={(e) => setAcceptRisk(e.target.checked)}
+                    disabled={isLoading}
+                  />
+                  <label
+                    className="form-check-label text-danger fw-semibold"
+                    htmlFor="acceptRiskCheckbox"
+                  >
+                    I accept the risk of IP ban for multiple accounts on the same URL.
+                  </label>
+                </div>
+
+                <button type="submit" className="btn btn-primary w-100" disabled={isLoading}>
                   Save Account
                 </button>
               </form>
@@ -158,6 +237,7 @@ export const SettingsPanel = ({ onClose }) => {
                     <button
                       className="btn btn-sm btn-outline-danger"
                       onClick={() => handleRemoveAccount(acc.id)}
+                      disabled={isLoading}
                     >
                       Remove
                     </button>
@@ -167,7 +247,11 @@ export const SettingsPanel = ({ onClose }) => {
             </ul>
             {accountsList.length > 0 && (
               <div className="card-footer bg-white text-end">
-                <button className="btn btn-sm btn-danger" onClick={handleClearAllAccounts}>
+                <button
+                  className="btn btn-sm btn-danger"
+                  onClick={handleClearAllAccounts}
+                  disabled={isLoading}
+                >
                   Delete All
                 </button>
               </div>
@@ -182,7 +266,11 @@ export const SettingsPanel = ({ onClose }) => {
         <div>
           <strong>Danger Zone:</strong> Factory reset will wipe the entire JsStore database.
         </div>
-        <button className="btn btn-danger fw-bold" onClick={handleFactoryReset}>
+        <button
+          className="btn btn-danger fw-bold"
+          onClick={handleFactoryReset}
+          disabled={isLoading}
+        >
           FACTORY RESET
         </button>
       </div>

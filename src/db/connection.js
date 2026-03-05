@@ -24,6 +24,7 @@ export const initDatabase = async () => {
       mimeType: { dataType: 'string' },
       downvotes: { dataType: 'number' },
       upvotes: { dataType: 'number' },
+      commentCount: { dataType: 'number' },
       origSize: { dataType: 'number' },
       representations: { dataType: 'object' },
       updatedAt: { dataType: 'number' },
@@ -70,7 +71,7 @@ export const initDatabase = async () => {
       id: { primaryKey: true, autoIncrement: true, dataType: 'number' },
       booruUrl: { dataType: 'string' },
       apiKey: { dataType: 'string' },
-      isActive: { dataType: 'boolean' },
+      isActive: { dataType: 'number' },
     },
   };
 

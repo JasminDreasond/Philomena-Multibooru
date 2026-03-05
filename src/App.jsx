@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { initDatabase, dbConnection } from './db/connection';
 import { parseAndSearch, syncUserGalleryPages } from './services/api';
 
@@ -22,13 +22,20 @@ const App = () => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [showSettings, setShowSettings] = useState(false);
 
+  /** @type {import('react').MutableRefObject<boolean>} */
+  const hasInitialized = useRef(false);
+
+  /** @type {import('react').MutableRefObject<boolean>} */
+  const hasSyncedOnHome = useRef(false);
+
   /**
-   * @returns {Promise<void>}
+   * @returns {Promise<ImageObj[]>}
    */
   const loadInitialData = async () => {
     /** @type {ImageObj[]} */
     const allImages = await dbConnection.select({ from: 'Images' });
     setCurrentImages(allImages);
+    return allImages;
   };
 
   useEffect(() => {
@@ -36,17 +43,35 @@ const App = () => {
      * @returns {Promise<void>}
      */
     const setupEnvironment = async () => {
-      if (isDbReady) return;
-      await initDatabase();
-      /** @type {Account[]} */
-      const accounts = await syncUserGalleryPages();
-      setConnectedAccounts(accounts);
-      setIsDbReady(true);
-      await loadInitialData();
+      if (!hasInitialized.current) {
+        hasInitialized.current = true;
+        await initDatabase();
+        setIsDbReady(true);
+        await loadInitialData();
+      }
+
+      // Just synchronize if you're not in the settings and you haven't synced yet
+      if (!showSettings && isDbReady && !hasSyncedOnHome.current) {
+        hasSyncedOnHome.current = true;
+        /** @type {Account[]} */
+        const accounts = await syncUserGalleryPages();
+        setConnectedAccounts(accounts);
+        await loadInitialData();
+        console.log(`Homepage accounts loaded: ${accounts.length}`);
+      }
     };
 
     setupEnvironment();
-  }, [isDbReady, showSettings]); // Re-run when settings are closed to update accounts
+  }, [isDbReady, showSettings]);
+
+  /**
+   * @returns {void}
+   */
+  const handleCloseSettings = () => {
+    setShowSettings(false);
+    // Reseta o ref de sync para forçar a busca na home após fechar as configs
+    hasSyncedOnHome.current = false;
+  };
 
   /**
    * @param {string} rawQuery
@@ -76,7 +101,10 @@ const App = () => {
             </span>
             <button
               className="btn btn-outline-light btn-sm"
-              onClick={() => setShowSettings(!showSettings)}
+              onClick={() => {
+                if (!showSettings) hasSyncedOnHome.current = false;
+                setShowSettings(!showSettings);
+              }}
             >
               {showSettings ? 'Back to Gallery' : 'Settings'}
             </button>
@@ -85,7 +113,7 @@ const App = () => {
       </nav>
 
       {showSettings ? (
-        <SettingsPanel onClose={() => setShowSettings(false)} />
+        <SettingsPanel onClose={handleCloseSettings} />
       ) : (
         <>
           <SearchBar onSearchSubmit={handleSearch} />
