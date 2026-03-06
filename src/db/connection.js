@@ -21,14 +21,16 @@ export const initDatabase = async () => {
       sourceUrls: { dataType: 'array', notNull: true },
       faves: { dataType: 'number', notNull: true },
       size: { dataType: 'number', notNull: true },
-      uploaderId: { dataType: 'number', notNull: true },
+      uploaderId: { dataType: 'number', notNull: false },
       description: { dataType: 'string', notNull: true },
       mimeType: { dataType: 'string', notNull: true },
       downvotes: { dataType: 'number', notNull: true },
       upvotes: { dataType: 'number', notNull: true },
       commentCount: { dataType: 'number', notNull: true },
       origSize: { dataType: 'number', notNull: true },
+      intensities: { dataType: 'object', notNull: true },
       representations: { dataType: 'object', notNull: true },
+      hiddenFromUsers: { dataType: 'number', notNull: true },
       updatedAt: { dataType: 'number', notNull: true },
       createdAt: { dataType: 'number', notNull: true },
       firstSeenAt: { dataType: 'number', notNull: true },
@@ -45,33 +47,6 @@ export const initDatabase = async () => {
     },
   };
 
-  const tblProfiles = {
-    name: 'Profiles',
-    columns: {
-      id: { primaryKey: true, dataType: 'number', notNull: true },
-      booruUrl: { dataType: 'string', notNull: true },
-      name: { dataType: 'string' },
-      slug: { dataType: 'string' },
-      role: { dataType: 'string' },
-      avatarUrl: { dataType: 'string' },
-      description: { dataType: 'string' },
-      createdAt: { dataType: 'number', notNull: true },
-    },
-  };
-
-  const tblForums = {
-    name: 'Forums',
-    columns: {
-      id: { primaryKey: true, dataType: 'number', notNull: true },
-      booruUrl: { dataType: 'string', notNull: true },
-      name: { dataType: 'string', notNull: true },
-      shortName: { dataType: 'string' },
-      description: { dataType: 'string' },
-      topicCount: { dataType: 'number', notNull: true },
-      postCount: { dataType: 'number', notNull: true },
-    },
-  };
-
   const tblAccounts = {
     name: 'Accounts',
     columns: {
@@ -82,9 +57,28 @@ export const initDatabase = async () => {
     },
   };
 
+  const tblQueries = {
+    name: 'Queries',
+    columns: {
+      id: { primaryKey: true, dataType: 'string', notNull: true },
+      imageId: { dataType: 'number', notNull: true },
+      query: { dataType: 'string', notNull: true },
+      createdAt: { dataType: 'number', notNull: true },
+    },
+  };
+
+  const tblSettings = {
+    name: 'Settings',
+    columns: {
+      id: { primaryKey: true, dataType: 'number', notNull: true },
+      maxItems: { dataType: 'number', notNull: true },
+      persistentStorage: { dataType: 'number', notNull: true },
+    },
+  };
+
   const database = {
     name: 'PhilomenaMultiBooru',
-    tables: [tblImages, tblProfiles, tblForums, tblAccounts],
+    tables: [tblImages, tblAccounts, tblQueries, tblSettings],
   };
 
   await dbConnection.initDb(database);

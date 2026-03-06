@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { initDatabase } from './db/connection';
-import { parseAndSearch, syncUserGalleryPages, searchImages } from './services/api';
+import { syncUserGalleryPages, searchImages } from './services/api';
 
 import { SearchBar } from './components/SearchBar';
 import { ImageGallery } from './components/ImageGallery';
@@ -40,7 +40,7 @@ const App = () => {
    */
   const loadInitialData = async (limitToUse) => {
     /** @type {ImageObj[]} */
-    const allImages = await searchImages({ limit: limitToUse });
+    const allImages = await searchImages('*', limitToUse);
     setCurrentImages(allImages);
     return allImages;
   };
@@ -106,7 +106,7 @@ const App = () => {
 
       // Then query the local database
       /** @type {ImageObj[]} */
-      const searchResults = await parseAndSearch(rawQuery, syncLimit);
+      const searchResults = await searchImages(rawQuery, syncLimit);
       setCurrentImages(searchResults);
     } catch (error) {
       console.error('Error during search sync:', error);

@@ -38,7 +38,7 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
  * @property {string[]} sourceUrls
  * @property {number} faves
  * @property {number} size
- * @property {number} uploaderId
+ * @property {number|null} uploaderId
  * @property {string} description
  * @property {string} mimeType
  * @property {number} downvotes
@@ -49,7 +49,7 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
  * @property {number} createdAt
  * @property {number} firstSeenAt
  * @property {string|null} sha512Hash
- * @property {string} uploader
+ * @property {string|null} uploader
  * @property {string|null} origSha512Hash
  * @property {number} hiddenFromUsers
  * @property {number} spoilered
@@ -62,6 +62,7 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
  * @property {number} height
  * @property {number} width
  * @property {string} sourceUrl
+ * @property {{ ne: number; nw: number; se: number; sw: number; }} intensities
  */
 
 /**
@@ -84,6 +85,99 @@ const searchImagesApi = async (booruUrl, apiKey, query, page) => {
 };
 
 /**
+ * @param {string} rawQuery
+ * @returns {string}
+ */
+const normalizeQueryString = (rawQuery) => {
+  if (rawQuery === '*' || rawQuery.trim() === '') return '*';
+  return rawQuery
+    .split(',')
+    .map((term) => term.trim().toLowerCase())
+    .filter((term) => term !== '')
+    .sort()
+    .join(', ');
+};
+
+/**
+ * @typedef {Object} SystemSettings
+ * @property {number} id
+ * @property {number} maxItems
+ * @property {number} persistentStorage
+ */
+
+/**
+ * @returns {Promise<SystemSettings>}
+ */
+export const getSystemSettings = async () => {
+  /** @type {SystemSettings[]} */
+  const settings = await dbConnection.select({ from: 'Settings', where: { id: 1 } });
+  if (settings.length > 0) return settings[0];
+
+  /** @type {SystemSettings} */
+  const defaultSettings = { id: 1, maxItems: 10000, persistentStorage: 0 };
+  await dbConnection.insert({ into: 'Settings', values: [defaultSettings] });
+  return defaultSettings;
+};
+
+/**
+ * @param {number} maxItems
+ * @param {number} persistentStorage
+ * @returns {Promise<void>}
+ */
+export const updateSystemSettings = async (maxItems, persistentStorage) => {
+  await dbConnection.update({
+    in: 'Settings',
+    set: { maxItems, persistentStorage },
+    where: { id: 1 },
+  });
+};
+
+/**
+ * @returns {Promise<void>}
+ */
+const enforceStorageLimit = async () => {
+  /** @type {SystemSettings} */
+  const settings = await getSystemSettings();
+  if (settings.persistentStorage === 1) return;
+
+  /** @type {number} */
+  const totalImages = await dbConnection.count({ from: 'Images' });
+
+  if (totalImages > settings.maxItems) {
+    /** @type {number} */
+    const excess = totalImages - settings.maxItems;
+
+    /** @type {any[]} */
+    const oldestImages = await dbConnection.select({
+      from: 'Images',
+      order: { by: 'createdAt', type: 'asc' },
+      limit: excess,
+    });
+
+    /** @type {number[]} */
+    const idsToDelete = oldestImages.map((img) => img.id);
+
+    await dbConnection.remove({
+      from: 'Queries',
+      where: { imageId: { in: idsToDelete } },
+    });
+
+    await dbConnection.remove({
+      from: 'Images',
+      where: { id: { in: idsToDelete } },
+    });
+  }
+};
+
+/**
+ * @typedef {Object} QueryItem
+ * @property {string} id
+ * @property {number} imageId
+ * @property {number} createdAt
+ * @property {string} query
+ */
+
+/**
  * Background task to sync pages into JsStore
  * @param {string} booruUrl
  * @param {string} apiKey
@@ -93,6 +187,8 @@ const searchImagesApi = async (booruUrl, apiKey, query, page) => {
 export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) => {
   try {
     const data = await searchImagesApi(booruUrl, apiKey, query, page);
+    /** @type {string} */
+    const normalizedQuery = normalizeQueryString(query);
 
     /**
      * @param {any[]} item
@@ -143,11 +239,17 @@ export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) =
         large: checkItem(img.representations.large, 'string'),
         tall: checkItem(img.representations.tall, 'string'),
       },
+      intensities: {
+        ne: checkItem(img.intensities.ne, 'number'),
+        nw: checkItem(img.intensities.nw, 'number'),
+        se: checkItem(img.intensities.se, 'number'),
+        sw: checkItem(img.intensities.sw, 'number'),
+      },
       updatedAt: new Date(img.updated_at).valueOf(),
       createdAt: new Date(img.created_at).valueOf(),
       firstSeenAt: new Date(img.first_seen_at).valueOf(),
       sha512Hash: img.sha512_hash,
-      hiddenFromUsers: img.hidden_from_users,
+      hiddenFromUsers: img.hidden_from_users ? 1 : 0,
       origSha512Hash: img.orig_sha512_hash,
       wilsonScore: img.wilson_score,
       thumbnailsGenerated: img.thumbnails_generated ? 1 : 0,
@@ -162,14 +264,24 @@ export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) =
       sourceUrl: img.source_url,
     }));
 
-    // Upsert data into JsStore
-    await dbConnection.insert({
-      into: 'Images',
-      values: formattedImages,
-      upsert: true,
-    });
+    console.log(`Sending page ${page} from ${booruUrl}`, data);
 
-    console.log(`Synced page ${page} from ${booruUrl}`, data);
+    await dbConnection.insert({ into: 'Images', values: formattedImages, upsert: true });
+
+    if (normalizedQuery !== '*') {
+      /** @type {QueryItem[]} */
+      const queryEntries = formattedImages.map((img) => ({
+        id: `${booruUrl}_${img.id}_${normalizedQuery}`,
+        imageId: img.id,
+        createdAt: img.createdAt,
+        query: normalizedQuery,
+      }));
+      await dbConnection.insert({ into: 'Queries', values: queryEntries, upsert: true });
+    }
+
+    await enforceStorageLimit();
+
+    console.log(`Synced page ${page} from ${booruUrl}`);
     return data;
   } catch (error) {
     console.error('Failed to sync gallery page:', error);
@@ -177,92 +289,58 @@ export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) =
 };
 
 /**
- * @param {Object} settings
- * @param {number} [settings.page=1]
- * @param {number} [settings.limit=50]
- * @param {string[]} [settings.includeTags]
- * @param {string[]} [settings.excludeTags]
+ * @param {string} rawSearchString
+ * @param {number} [limit=50]
+ * @param {number} [page=1]
  * @returns {Promise<ImageObj[]>}
  */
-export const searchImages = async ({
-  includeTags = [],
-  excludeTags = [],
-  page = 1,
-  limit = 50,
-}) => {
+export const searchImages = async (rawSearchString = '*', limit = 50, page = 1) => {
   /** @type {number} */
   const skipCount = (page - 1) * limit;
 
-  /** @type {boolean} */
-  const hasIncludes = includeTags.length > 0;
+  /** @type {string} */
+  const normalizedQuery = normalizeQueryString(rawSearchString);
 
-  const searchSettings = {
-    from: 'Images',
-    limit: limit > 1000 ? 1000 : limit,
-    skip: skipCount,
-    order: {
-      by: 'createdAt',
-      type: 'desc',
-    },
-  };
-
-  if (!hasIncludes) {
-    /** @type {ImageObj[]} */
-    let allResults = await dbConnection.select(searchSettings);
-
-    if (excludeTags.length > 0) {
-      allResults = allResults.filter((img) => excludeTags.every((tag) => !img.tags.includes(tag)));
-    }
-    return allResults;
-  }
-
-  // Step 1: Query the database ONCE for the primary tag to maximize IndexedDB performance
-  /** @type {ImageObj[]} */
-  let results = await dbConnection.select({
-    ...searchSettings,
-    where: {
-      tags: { in: includeTags },
-    },
-  });
-  console.log(results, includeTags);
-
-  // Step 2: Apply the remaining AND / NOT logical filtering in-memory
-  if (includeTags.length > 1 || excludeTags.length > 0) {
-    results = results.filter((img) => {
-      return excludeTags.every((tag) => !img.tags.includes(tag));
+  if (normalizedQuery === '*') {
+    return await dbConnection.select({
+      from: 'Images',
+      limit: limit > 1000 ? 1000 : limit,
+      skip: skipCount,
+      order: { by: 'createdAt', type: 'desc' },
     });
   }
 
-  return results;
-};
-
-/**
- * @param {string} rawSearchString
- * @param {number} [limit=50]
- * @returns {Promise<ImageObj[]>}
- */
-export const parseAndSearch = async (rawSearchString, limit = 50) => {
-  /** @type {string[]} */
-  const terms = rawSearchString
-    .split(',')
-    .map((term) => term.trim())
-    .filter((term) => term !== '');
-
-  /** @type {string[]} */
-  const includeTags = [];
-
-  /** @type {string[]} */
-  const excludeTags = [];
-
-  terms.forEach((term) => {
-    if (term.startsWith('-')) {
-      excludeTags.push(term.substring(1));
-    } else {
-      includeTags.push(term);
-    }
+  // O Join no JsStore para unificar Queries e Images!
+  const results = await dbConnection.select({
+    from: 'Queries',
+    where: { query: normalizedQuery },
+    join: {
+      with: 'Images',
+      on: 'Queries.imageId = Images.id',
+      as: { id: 'imageId', createdAt: 'imgCreatedAt' },
+      type: 'inner',
+    },
+    limit: limit > 1000 ? 1000 : limit,
+    skip: skipCount,
+    order: { by: 'Images.createdAt', type: 'desc' },
   });
 
-  return await searchImages({ includeTags, excludeTags, limit });
+  // Fix the results
+  return results.map(item => {
+    item.id = item.imageId;
+
+    delete item.imageId;
+    delete item.imgCreatedAt;
+    delete item.query;
+
+    item.animated = item.animated ? true : false;
+    item.hiddenFromUsers = item.hiddenFromUsers ? true : false;
+    item.processed = item.processed ? true : false;
+    item.spoilered = item.spoilered ? true : false;
+    item.thumbnailsGenerated = item.thumbnailsGenerated ? true : false;
+
+    return item;
+  });
 };
 
 /**

@@ -5,6 +5,8 @@ import {
   deleteAccount,
   deleteAllAccounts,
   factoryResetDatabase,
+  getSystemSettings,
+  updateSystemSettings,
 } from '../services/api';
 
 /**
@@ -36,22 +38,29 @@ export const SettingsPanel = ({ onClose }) => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [warnRisk, setWarnRisk] = useState(false);
 
-  /**
-   * @returns {Promise<void>}
-   */
-  const loadAccounts = async () => {
+  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  const [maxItemsLimit, setMaxItemsLimit] = useState(10000);
+
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isPersistent, setIsPersistent] = useState(false);
+
+  const loadData = async () => {
     setIsLoading(true);
     try {
       /** @type {Account[]} */
-      const data = await getAllAccounts();
-      setAccountsList(data);
+      const accData = await getAllAccounts();
+      setAccountsList(accData);
+
+      const sysData = await getSystemSettings();
+      setMaxItemsLimit(sysData.maxItems);
+      setIsPersistent(sysData.persistentStorage === 1);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadAccounts();
+    loadData();
   }, []);
 
   /**
@@ -87,7 +96,7 @@ export const SettingsPanel = ({ onClose }) => {
       setAcceptRisk(false);
       setErrorMessage('');
 
-      await loadAccounts();
+      await loadData();
     }
   };
 
@@ -98,7 +107,7 @@ export const SettingsPanel = ({ onClose }) => {
   const handleRemoveAccount = async (id) => {
     setIsLoading(true);
     await deleteAccount(id);
-    await loadAccounts();
+    await loadData();
   };
 
   /**
@@ -110,7 +119,7 @@ export const SettingsPanel = ({ onClose }) => {
     if (isConfirmed) {
       setIsLoading(true);
       await deleteAllAccounts();
-      await loadAccounts();
+      await loadData();
     }
   };
 
@@ -132,6 +141,38 @@ export const SettingsPanel = ({ onClose }) => {
       await factoryResetDatabase();
       window.location.reload();
     }
+  };
+
+  /**
+   * @param {import('react').ChangeEvent<HTMLInputElement>} event
+   */
+  const handleSettingsChange = async (event) => {
+    /** @type {boolean} */
+    const isChecked = event.target.checked;
+    setIsPersistent(isChecked);
+
+    if (isChecked && navigator.storage && navigator.storage.persist) {
+      /** @type {boolean} */
+      const granted = await navigator.storage.persist();
+      if (!granted) {
+        alert('The browser denied persistent storage permission.');
+        setIsPersistent(false);
+        await updateSystemSettings(maxItemsLimit, 0);
+        return;
+      }
+    }
+
+    await updateSystemSettings(maxItemsLimit, isChecked ? 1 : 0);
+  };
+
+  /**
+   * @param {import('react').ChangeEvent<HTMLInputElement>} event
+   */
+  const handleLimitChange = async (event) => {
+    /** @type {number} */
+    const val = parseInt(event.target.value, 10);
+    setMaxItemsLimit(val);
+    await updateSystemSettings(val, isPersistent ? 1 : 0);
   };
 
   return (
@@ -267,6 +308,45 @@ export const SettingsPanel = ({ onClose }) => {
       </div>
 
       <hr className="my-4" />
+
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="card border-secondary">
+            <div className="card-header bg-secondary text-white">Storage Settings</div>
+            <div className="card-body">
+              <div className="mb-3">
+                <label className="form-label">Maximum Cached Items</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  value={maxItemsLimit}
+                  onChange={handleLimitChange}
+                  disabled={isLoading || isPersistent}
+                  step="1000"
+                />
+                <small className="text-muted">
+                  Will be ignored if Persistent Storage is enabled.
+                </small>
+              </div>
+
+              <div className="form-check form-switch">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  role="switch"
+                  id="persistSwitch"
+                  checked={isPersistent}
+                  onChange={handleSettingsChange}
+                  disabled={isLoading}
+                />
+                <label className="form-check-label" htmlFor="persistSwitch">
+                  Enable Persistent Storage (Requires Browser Permission)
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="alert alert-danger d-flex justify-content-between align-items-center mb-0">
         <div>
