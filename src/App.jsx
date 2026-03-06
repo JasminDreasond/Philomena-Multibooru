@@ -134,7 +134,7 @@ const App = () => {
                 setShowSettings(!showSettings);
               }}
             >
-              {showSettings ? 'Back to Gallery' : 'Settings'}
+              {showSettings ? 'Back to Homepage' : 'Settings'}
             </button>
           </div>
         </div>

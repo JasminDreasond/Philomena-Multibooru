@@ -100,7 +100,8 @@ export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) =
      */
     const checkArray = (item, itemType) => {
       if (!Array.isArray(item)) throw new Error('Invalid array item in the sync gallery page!');
-      if (!item.every(i => typeof i === itemType)) throw new Error('Invalid array item in the sync gallery page!');
+      if (!item.every((i) => typeof i === itemType))
+        throw new Error('Invalid array item in the sync gallery page!');
       return item;
     };
 
@@ -133,14 +134,14 @@ export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) =
       origSize: img.orig_size,
       commentCount: img.comment_count,
       representations: {
-         full: checkItem(img.representations.full, 'string'),
-         small: checkItem(img.representations.small, 'string'),
-         thumb_tiny: checkItem(img.representations.thumb_tiny, 'string'),
-         thumb_small: checkItem(img.representations.thumb_small, 'string'),
-         thumb: checkItem(img.representations.thumb, 'string'),
-         medium: checkItem(img.representations.medium, 'string'),
-         large: checkItem(img.representations.large, 'string'),
-         tall: checkItem(img.representations.tall, 'string'),
+        full: checkItem(img.representations.full, 'string'),
+        small: checkItem(img.representations.small, 'string'),
+        thumb_tiny: checkItem(img.representations.thumb_tiny, 'string'),
+        thumb_small: checkItem(img.representations.thumb_small, 'string'),
+        thumb: checkItem(img.representations.thumb, 'string'),
+        medium: checkItem(img.representations.medium, 'string'),
+        large: checkItem(img.representations.large, 'string'),
+        tall: checkItem(img.representations.tall, 'string'),
       },
       updatedAt: new Date(img.updated_at).valueOf(),
       createdAt: new Date(img.created_at).valueOf(),
@@ -223,7 +224,7 @@ export const searchImages = async ({
       tags: { in: includeTags },
     },
   });
-  console.log(results, includeTags)
+  console.log(results, includeTags);
 
   // Step 2: Apply the remaining AND / NOT logical filtering in-memory
   if (includeTags.length > 1 || excludeTags.length > 0) {

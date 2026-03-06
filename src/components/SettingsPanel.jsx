@@ -33,6 +33,9 @@ export const SettingsPanel = ({ onClose }) => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isLoading, setIsLoading] = useState(true);
 
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [warnRisk, setWarnRisk] = useState(false);
+
   /**
    * @returns {Promise<void>}
    */
@@ -72,6 +75,7 @@ export const SettingsPanel = ({ onClose }) => {
         setErrorMessage(
           'This URL is already registered. Adding multiple accounts for the same website can result in an IP ban. Check the box below if you accept the risk.',
         );
+        setWarnRisk(true);
         return;
       }
 
@@ -189,22 +193,24 @@ export const SettingsPanel = ({ onClose }) => {
                   </div>
                 )}
 
-                <div className="form-check mb-3">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="acceptRiskCheckbox"
-                    checked={acceptRisk}
-                    onChange={(e) => setAcceptRisk(e.target.checked)}
-                    disabled={isLoading}
-                  />
-                  <label
-                    className="form-check-label text-danger fw-semibold"
-                    htmlFor="acceptRiskCheckbox"
-                  >
-                    I accept the risk of IP ban for multiple accounts on the same URL.
-                  </label>
-                </div>
+                {warnRisk && (
+                  <div className="form-check mb-3">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="acceptRiskCheckbox"
+                      checked={acceptRisk}
+                      onChange={(e) => setAcceptRisk(e.target.checked)}
+                      disabled={isLoading}
+                    />
+                    <label
+                      className="form-check-label text-danger fw-semibold"
+                      htmlFor="acceptRiskCheckbox"
+                    >
+                      I accept the risk of IP ban for multiple accounts on the same URL.
+                    </label>
+                  </div>
+                )}
 
                 <button type="submit" className="btn btn-primary w-100" disabled={isLoading}>
                   Save Account
