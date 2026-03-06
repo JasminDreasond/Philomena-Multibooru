@@ -30,6 +30,14 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
  */
 
 /**
+ * @typedef {Object} ImageIntensities
+ * @property {number} ne
+ * @property {number} nw
+ * @property {number} se
+ * @property {number} sw
+ */
+
+/**
  * @typedef {Object} ImageObj
  * @property {number} id
  * @property {string} booruUrl
@@ -62,7 +70,7 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
  * @property {number} height
  * @property {number} width
  * @property {string} sourceUrl
- * @property {{ ne: number; nw: number; se: number; sw: number; }} intensities
+ * @property {ImageIntensities} intensities
  */
 
 /**
@@ -326,7 +334,7 @@ export const searchImages = async (rawSearchString = '*', limit = 50, page = 1) 
   });
 
   // Fix the results
-  return results.map(item => {
+  return results.map((item) => {
     item.id = item.imageId;
 
     delete item.imageId;
