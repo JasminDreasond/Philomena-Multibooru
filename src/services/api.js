@@ -198,7 +198,7 @@ export const searchImages = async ({
 
   const searchSettings = {
     from: 'Images',
-    limit: limit,
+    limit: limit > 1000 ? 1000 : limit,
     skip: skipCount,
     order: {
       by: 'createdAt',
