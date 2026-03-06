@@ -13,6 +13,7 @@
   "dependencies": {
     "bootstrap": "^5.3.8",
     "jsstore": "^4.9.0",
+    "puddysql": "^1.0.0-beta-4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

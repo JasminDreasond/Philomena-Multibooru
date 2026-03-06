@@ -48,12 +48,40 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
  * @property {number} updatedAt
  * @property {number} createdAt
  * @property {number} firstSeenAt
- * @property {string} sha512Hash
- * @property {boolean} thumbnailsGenerated
+ * @property {string|null} sha512Hash
+ * @property {string} uploader
+ * @property {string|null} origSha512Hash
+ * @property {number} hiddenFromUsers
+ * @property {number} spoilered
+ * @property {number} processed
+ * @property {number} thumbnailsGenerated
+ * @property {number} animated
+ * @property {number} aspectRatio
+ * @property {number|null} duplicateOf
+ * @property {string|null} deletionReason
  * @property {number} height
  * @property {number} width
  * @property {string} sourceUrl
  */
+
+/**
+ * @param {string} booruUrl
+ * @param {string} apiKey
+ * @param {string} query
+ * @param {number} page
+ *
+ * @returns {Promise<{ total: number; interactions: any[]; images: any[] }>}
+ */
+const searchImagesApi = async (booruUrl, apiKey, query, page) => {
+  const result = await fetchPhilomena(booruUrl, 'search/images', apiKey, { q: query, page });
+  if (typeof result.total !== 'number')
+    throw new Error('Invalid philomena api result in "result.total".');
+  if (!Array.isArray(result.interactions))
+    throw new Error('Invalid philomena api result in "result.interactions".');
+  if (!Array.isArray(result.images))
+    throw new Error('Invalid philomena api result in "result.images".');
+  return result;
+};
 
 /**
  * Background task to sync pages into JsStore
@@ -64,45 +92,84 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
  */
 export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) => {
   try {
-    const data = await fetchPhilomena(booruUrl, 'search/images', apiKey, { q: query, page });
+    const data = await searchImagesApi(booruUrl, apiKey, query, page);
 
-    if (data && data.images) {
-      /** @type {ImageObj} */
-      const formattedImages = data.images.map((img) => ({
-        id: img.id,
-        booruUrl: booruUrl,
-        name: img.name,
-        tags: img.tags,
-        sourceUrls: img.source_urls,
-        faves: img.faves,
-        size: img.size,
-        uploaderId: img.uploader_id,
-        description: img.description,
-        mimeType: img.mime_type,
-        downvotes: img.downvotes,
-        upvotes: img.upvotes,
-        origSize: img.orig_size,
-        commentCount: img.comment_count,
-        representations: img.representations,
-        updatedAt: new Date(img.updated_at).valueOf(),
-        createdAt: new Date(img.created_at).valueOf(),
-        firstSeenAt: new Date(img.first_seen_at).valueOf(),
-        sha512Hash: img.sha512_hash,
-        thumbnailsGenerated: img.thumbnails_generated,
-        height: img.height,
-        width: img.width,
-        sourceUrl: img.source_url,
-      }));
+    /**
+     * @param {any[]} item
+     * @param {string} itemType
+     */
+    const checkArray = (item, itemType) => {
+      if (!Array.isArray(item)) throw new Error('Invalid array item in the sync gallery page!');
+      if (!item.every(i => typeof i === itemType)) throw new Error('Invalid array item in the sync gallery page!');
+      return item;
+    };
 
-      // Upsert data into JsStore
-      await dbConnection.insert({
-        into: 'Images',
-        values: formattedImages,
-        upsert: true,
-      });
+    /**
+     * @param {any} item
+     * @param {string} itemType
+     */
+    const checkItem = (item, itemType) => {
+      if (typeof item !== itemType) throw new Error('Invalid item in the sync gallery page!');
+      return item;
+    };
 
-      console.log(`Synced page ${page} from ${booruUrl}`);
-    }
+    /** @type {ImageObj} */
+    const formattedImages = data.images.map((img) => ({
+      id: img.id,
+      booruUrl: booruUrl,
+      name: img.name,
+      tags: checkArray(img.tags, 'string'),
+      tagIds: checkArray(img.tag_ids, 'number'),
+      viewUrl: img.view_url,
+      sourceUrls: checkArray(img.source_urls, 'string'),
+      faves: img.faves,
+      size: img.size,
+      uploaderId: img.uploader_id,
+      uploader: img.uploader,
+      description: img.description,
+      mimeType: img.mime_type,
+      downvotes: img.downvotes,
+      upvotes: img.upvotes,
+      origSize: img.orig_size,
+      commentCount: img.comment_count,
+      representations: {
+         full: checkItem(img.representations.full, 'string'),
+         small: checkItem(img.representations.small, 'string'),
+         thumb_tiny: checkItem(img.representations.thumb_tiny, 'string'),
+         thumb_small: checkItem(img.representations.thumb_small, 'string'),
+         thumb: checkItem(img.representations.thumb, 'string'),
+         medium: checkItem(img.representations.medium, 'string'),
+         large: checkItem(img.representations.large, 'string'),
+         tall: checkItem(img.representations.tall, 'string'),
+      },
+      updatedAt: new Date(img.updated_at).valueOf(),
+      createdAt: new Date(img.created_at).valueOf(),
+      firstSeenAt: new Date(img.first_seen_at).valueOf(),
+      sha512Hash: img.sha512_hash,
+      hiddenFromUsers: img.hidden_from_users,
+      origSha512Hash: img.orig_sha512_hash,
+      wilsonScore: img.wilson_score,
+      thumbnailsGenerated: img.thumbnails_generated ? 1 : 0,
+      aspectRatio: img.aspect_ratio,
+      deletionReason: img.deletion_reason,
+      duplicateOf: img.duplicate_of,
+      animated: img.animated ? 1 : 0,
+      spoilered: img.spoilered ? 1 : 0,
+      processed: img.processed ? 1 : 0,
+      height: img.height,
+      width: img.width,
+      sourceUrl: img.source_url,
+    }));
+
+    // Upsert data into JsStore
+    await dbConnection.insert({
+      into: 'Images',
+      values: formattedImages,
+      upsert: true,
+    });
+
+    console.log(`Synced page ${page} from ${booruUrl}`, data);
+    return data;
   } catch (error) {
     console.error('Failed to sync gallery page:', error);
   }
@@ -114,27 +181,19 @@ export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) =
  * @param {number} [settings.limit=50]
  * @param {string[]} [settings.includeTags]
  * @param {string[]} [settings.excludeTags]
- * @param {string[]} [settings.anyTags]
  * @returns {Promise<ImageObj[]>}
  */
 export const searchImages = async ({
   includeTags = [],
   excludeTags = [],
-  anyTags = [],
   page = 1,
   limit = 50,
 }) => {
   /** @type {number} */
   const skipCount = (page - 1) * limit;
 
-  /** @type {any[]} */
-  let results = [];
-
   /** @type {boolean} */
   const hasIncludes = includeTags.length > 0;
-
-  /** @type {boolean} */
-  const hasAny = anyTags.length > 0;
 
   const searchSettings = {
     from: 'Images',
@@ -146,37 +205,30 @@ export const searchImages = async ({
     },
   };
 
-  if (!hasIncludes && !hasAny) {
-    return await dbConnection.select(searchSettings);
+  if (!hasIncludes) {
+    /** @type {ImageObj[]} */
+    let allResults = await dbConnection.select(searchSettings);
+
+    if (excludeTags.length > 0) {
+      allResults = allResults.filter((img) => excludeTags.every((tag) => !img.tags.includes(tag)));
+    }
+    return allResults;
   }
 
-  /** @type {string} */
-  const primarySearchTag = hasIncludes ? includeTags[0] : anyTags[0];
-
-  // Step 1: Query the database for the primary tag to minimize memory load
-  results = await dbConnection.select({
+  // Step 1: Query the database ONCE for the primary tag to maximize IndexedDB performance
+  /** @type {ImageObj[]} */
+  let results = await dbConnection.select({
     ...searchSettings,
     where: {
-      tags: { in: [primarySearchTag] },
+      tags: { in: includeTags },
     },
   });
+  console.log(results, includeTags)
 
-  // Step 2: Apply advanced logical filtering (AND, OR, NOT) in-memory for the filtered batch
-  if (includeTags.length > 1 || excludeTags.length > 0 || (hasIncludes && hasAny)) {
-    /** @type {string[]} */
-    const remainingIncludes = includeTags.slice(1);
-
+  // Step 2: Apply the remaining AND / NOT logical filtering in-memory
+  if (includeTags.length > 1 || excludeTags.length > 0) {
     results = results.filter((img) => {
-      /** @type {boolean} */
-      const matchIncludes = remainingIncludes.every((tag) => img.tags.includes(tag));
-
-      /** @type {boolean} */
-      const matchExcludes = excludeTags.every((tag) => !img.tags.includes(tag));
-
-      /** @type {boolean} */
-      const matchAny = !hasAny || anyTags.some((tag) => img.tags.includes(tag));
-
-      return matchIncludes && matchExcludes && matchAny;
+      return excludeTags.every((tag) => !img.tags.includes(tag));
     });
   }
 
@@ -185,9 +237,10 @@ export const searchImages = async ({
 
 /**
  * @param {string} rawSearchString
+ * @param {number} [limit=50]
  * @returns {Promise<ImageObj[]>}
  */
-export const parseAndSearch = async (rawSearchString) => {
+export const parseAndSearch = async (rawSearchString, limit = 50) => {
   /** @type {string[]} */
   const terms = rawSearchString
     .split(',')
@@ -200,20 +253,15 @@ export const parseAndSearch = async (rawSearchString) => {
   /** @type {string[]} */
   const excludeTags = [];
 
-  /** @type {string[]} */
-  const anyTags = [];
-
   terms.forEach((term) => {
     if (term.startsWith('-')) {
       excludeTags.push(term.substring(1));
-    } else if (term.startsWith('~')) {
-      anyTags.push(term.substring(1));
     } else {
       includeTags.push(term);
     }
   });
 
-  return await searchImages({ includeTags, excludeTags, anyTags });
+  return await searchImages({ includeTags, excludeTags, limit });
 };
 
 /**
@@ -287,8 +335,21 @@ export const syncUserGalleryPages = async (query = '*', page = 1) => {
   accounts.forEach((account) =>
     syncs.push(syncGalleryPage(account.booruUrl, account.apiKey, query, page)),
   );
-  await Promise.all(syncs);
-  return accounts;
+
+  const results = await Promise.all(syncs);
+  let combinedLimit = 0;
+
+  results.forEach((data) => {
+    if (data && Array.isArray(data.images)) {
+      if (data.images.length > combinedLimit) combinedLimit = data.images.length;
+    }
+  });
+
+  // Fallback to 50 if the sync returned 0 images (e.g., dead end page)
+  /** @type {number} */
+  const finalLimit = combinedLimit > 0 ? combinedLimit : 50;
+
+  return { accounts, syncLimit: finalLimit };
 };
 
 /**
