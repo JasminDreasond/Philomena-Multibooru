@@ -124,6 +124,8 @@ const applyThemeFromStorage = () => {
   applyColor('app_fave', '--fave-color');
   applyColor('app_upvote', '--upvote-color');
   applyColor('app_downvote', '--downvote-color');
+
+  return { isDark, mode };
 };
 
 /**
@@ -166,7 +168,7 @@ const PaginationBar = ({ currentPage, isHomepage, totalPages, onPageChange }) =>
 
   return (
     <div className="d-flex flex-column flex-md-row justify-content-center align-items-center my-4">
-      <ul className="pagination mb-0 me-md-3 shadow-sm">
+      <ul className="pagination mb-0 me-md-3">
         <li className={`page-item ${isHomepage ? 'disabled' : ''}`}>
           <button
             className="page-link"
@@ -204,7 +206,7 @@ const PaginationBar = ({ currentPage, isHomepage, totalPages, onPageChange }) =>
       </ul>
 
       <div
-        className="d-flex align-items-center mt-3 mt-md-0 p-1 rounded shadow-sm border"
+        className="d-flex align-items-center mt-3 mt-md-0 p-1 rounded border"
         style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
       >
         <span className="text-muted mx-2 small fw-semibold">Page:</span>
@@ -266,6 +268,9 @@ const App = () => {
 
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isSearching, setIsSearching] = useState(false);
+
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isDark, setIsDark] = useState(false);
 
   /** @type {import('react').MutableRefObject<boolean>} */
   const hasInitialized = useRef(false);
@@ -392,15 +397,19 @@ const App = () => {
   }, [isDbReady, showSettings, currentPage, searchQuery]);
 
   useEffect(() => {
-    applyThemeFromStorage();
+    const applyThemeScript = () => {
+      const { isDark } = applyThemeFromStorage();
+      setIsDark(isDark);
+    };
+    applyThemeScript();
 
-    const handleThemeEvent = () => applyThemeFromStorage();
+    const handleThemeEvent = () => applyThemeScript();
     window.addEventListener('themeChanged', handleThemeEvent);
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleSystemThemeChange = () => {
       if ((localStorage.getItem('app_themeMode') || 'system') === 'system') {
-        applyThemeFromStorage();
+        applyThemeScript();
       }
     };
     mediaQuery.addEventListener('change', handleSystemThemeChange);
@@ -536,7 +545,7 @@ const App = () => {
       </nav>
 
       {showSettings ? (
-        <SettingsPanel onClose={handleCloseSettings} />
+        <SettingsPanel isDark={isDark} onClose={handleCloseSettings} />
       ) : (
         <div className="container-fluid px-4 mt-4">
           {!isDbReady ? (

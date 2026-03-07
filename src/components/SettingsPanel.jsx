@@ -14,9 +14,9 @@ import {
  */
 
 /**
- * @param {{ onClose: () => void }} props
+ * @param {{ isDark: boolean; onClose: () => void; }} props
  */
-export const SettingsPanel = ({ onClose }) => {
+export const SettingsPanel = ({ isDark, onClose }) => {
   /** @type {import('react').MutableRefObject<HTMLInputElement | null>} */
   const fileInputRef = useRef(null);
 
@@ -620,12 +620,12 @@ export const SettingsPanel = ({ onClose }) => {
                   onChange={handleImportTheme}
                 />
                 <button
-                  className="btn btn-sm btn-outline-light me-2"
+                  className={`btn btn-sm btn-outline-${isDark ? 'light' : 'dark'} me-2`}
                   onClick={() => fileInputRef.current?.click()}
                 >
                   Import Theme
                 </button>
-                <button className="btn btn-sm btn-outline-light" onClick={handleExportTheme}>
+                <button className={`btn btn-sm btn-outline-${isDark ? 'light' : 'dark'}`} onClick={handleExportTheme}>
                   Export Theme
                 </button>
               </div>
