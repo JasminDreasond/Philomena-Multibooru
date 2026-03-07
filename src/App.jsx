@@ -614,7 +614,7 @@ const App = () => {
                     {featuredImagesList.map((feature, idx) => (
                       <div
                         key={`feat-${feature.account.id}-${idx}`}
-                        className="card shadow-sm border-0 mb-4"
+                        className="card shadow-sm border-0 mb-4 featured-images"
                       >
                         <div
                           className="card-header fw-bold d-flex justify-content-between"

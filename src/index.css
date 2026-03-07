@@ -301,9 +301,15 @@ body {
   }
 }
 
-@media (max-width: 992px) {
+@media (max-width: 1070px) {
   .badge-interaction {
-    font-size: 12pt;
+    font-size: 8pt;
+  }
+}
+
+@media (max-width: 992px) {
+  .featured-images .badge-interaction {
+    font-size: 15pt;
   }
 }
 
