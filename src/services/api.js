@@ -229,7 +229,7 @@ const checkItem = (item, itemType) => {
 /**
  * @param {Record<string, any>} img
  */
-const _parseImageData = (booruUrl, img) => ({
+export const parseImageData = (booruUrl, img) => ({
   id: img.id,
   booruUrl,
   name: img.name,
@@ -308,7 +308,7 @@ export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) =
     const normalizedQuery = normalizeQueryString(query);
 
     /** @type {ImageObj} */
-    const formattedImages = data.images.map((img) => _parseImageData(booruUrl, img));
+    const formattedImages = data.images.map((img) => parseImageData(booruUrl, img));
 
     /** @type {InteractionObj[]} */
     const formattedInteractions = [];
@@ -572,7 +572,7 @@ export const getFeaturedImage = async (booruUrl) => {
     const response = await fetch(`${booruUrl}/api/v1/json/images/featured`);
     if (!response.ok) return null;
     const data = await response.json();
-    return data.image ? _parseImageData(booruUrl, fixImageObj(data.image)) : null;
+    return data.image ? parseImageData(booruUrl, fixImageObj(data.image)) : null;
   } catch (error) {
     console.error('Failed to fetch featured image:', error);
     return null;
