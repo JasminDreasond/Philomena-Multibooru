@@ -207,6 +207,94 @@ const enforceStorageLimit = async () => {
  */
 
 /**
+ * @param {any[]} item
+ * @param {string} itemType
+ */
+const checkArray = (item, itemType) => {
+  if (!Array.isArray(item)) throw new Error('Invalid array item in the sync gallery page!');
+  if (!item.every((i) => typeof i === itemType))
+    throw new Error('Invalid array item in the sync gallery page!');
+  return item;
+};
+
+/**
+ * @param {any} item
+ * @param {string} itemType
+ */
+const checkItem = (item, itemType) => {
+  if (typeof item !== itemType) throw new Error('Invalid item in the sync gallery page!');
+  return item;
+};
+
+/**
+ * @param {Record<string, any>} img
+ */
+const _parseImageData = (booruUrl, img) => ({
+  id: img.id,
+  booruUrl,
+  name: img.name,
+  tags: checkArray(img.tags, 'string'),
+  tagIds: checkArray(img.tag_ids, 'number'),
+  viewUrl: img.view_url,
+  sourceUrls: checkArray(img.source_urls, 'string'),
+  faves: img.faves,
+  size: img.size,
+  uploaderId: img.uploader_id,
+  uploader: img.uploader,
+  description: img.description,
+  mimeType: img.mime_type,
+  downvotes: img.downvotes,
+  upvotes: img.upvotes,
+  origSize: img.orig_size,
+  commentCount: img.comment_count,
+  representations: {
+    full: checkItem(img.representations.full, 'string'),
+    small: checkItem(img.representations.small, 'string'),
+    thumb_tiny: checkItem(img.representations.thumb_tiny, 'string'),
+    thumb_small: checkItem(img.representations.thumb_small, 'string'),
+    thumb: checkItem(img.representations.thumb, 'string'),
+    medium: checkItem(img.representations.medium, 'string'),
+    large: checkItem(img.representations.large, 'string'),
+    tall: checkItem(img.representations.tall, 'string'),
+  },
+  intensities: {
+    ne: checkItem(img.intensities.ne, 'number'),
+    nw: checkItem(img.intensities.nw, 'number'),
+    se: checkItem(img.intensities.se, 'number'),
+    sw: checkItem(img.intensities.sw, 'number'),
+  },
+  updatedAt: new Date(img.updated_at).valueOf(),
+  createdAt: new Date(img.created_at).valueOf(),
+  firstSeenAt: new Date(img.first_seen_at).valueOf(),
+  sha512Hash: img.sha512_hash,
+  hiddenFromUsers: img.hidden_from_users ? 1 : 0,
+  origSha512Hash: img.orig_sha512_hash,
+  wilsonScore: img.wilson_score,
+  thumbnailsGenerated: img.thumbnails_generated ? 1 : 0,
+  aspectRatio: img.aspect_ratio,
+  deletionReason: img.deletion_reason,
+  duplicateOf: img.duplicate_of,
+  animated: img.animated ? 1 : 0,
+  spoilered: img.spoilered ? 1 : 0,
+  processed: img.processed ? 1 : 0,
+  height: img.height,
+  width: img.width,
+  sourceUrl: img.source_url,
+});
+
+/**
+ * @param {Record<string, any>} img
+ */
+export const fixImageObj = (img) => {
+  img.animated = img.animated ? true : false;
+  img.hiddenFromUsers = img.hiddenFromUsers ? true : false;
+  img.processed = img.processed ? true : false;
+  img.spoilered = img.spoilered ? true : false;
+  img.thumbnailsGenerated = img.thumbnailsGenerated ? true : false;
+  return img;
+};
+
+/**
  * Background task to sync pages into JsStore
  * @param {string} booruUrl
  * @param {string} apiKey
@@ -219,79 +307,8 @@ export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) =
     /** @type {string} */
     const normalizedQuery = normalizeQueryString(query);
 
-    /**
-     * @param {any[]} item
-     * @param {string} itemType
-     */
-    const checkArray = (item, itemType) => {
-      if (!Array.isArray(item)) throw new Error('Invalid array item in the sync gallery page!');
-      if (!item.every((i) => typeof i === itemType))
-        throw new Error('Invalid array item in the sync gallery page!');
-      return item;
-    };
-
-    /**
-     * @param {any} item
-     * @param {string} itemType
-     */
-    const checkItem = (item, itemType) => {
-      if (typeof item !== itemType) throw new Error('Invalid item in the sync gallery page!');
-      return item;
-    };
-
     /** @type {ImageObj} */
-    const formattedImages = data.images.map((img) => ({
-      id: img.id,
-      booruUrl,
-      name: img.name,
-      tags: checkArray(img.tags, 'string'),
-      tagIds: checkArray(img.tag_ids, 'number'),
-      viewUrl: img.view_url,
-      sourceUrls: checkArray(img.source_urls, 'string'),
-      faves: img.faves,
-      size: img.size,
-      uploaderId: img.uploader_id,
-      uploader: img.uploader,
-      description: img.description,
-      mimeType: img.mime_type,
-      downvotes: img.downvotes,
-      upvotes: img.upvotes,
-      origSize: img.orig_size,
-      commentCount: img.comment_count,
-      representations: {
-        full: checkItem(img.representations.full, 'string'),
-        small: checkItem(img.representations.small, 'string'),
-        thumb_tiny: checkItem(img.representations.thumb_tiny, 'string'),
-        thumb_small: checkItem(img.representations.thumb_small, 'string'),
-        thumb: checkItem(img.representations.thumb, 'string'),
-        medium: checkItem(img.representations.medium, 'string'),
-        large: checkItem(img.representations.large, 'string'),
-        tall: checkItem(img.representations.tall, 'string'),
-      },
-      intensities: {
-        ne: checkItem(img.intensities.ne, 'number'),
-        nw: checkItem(img.intensities.nw, 'number'),
-        se: checkItem(img.intensities.se, 'number'),
-        sw: checkItem(img.intensities.sw, 'number'),
-      },
-      updatedAt: new Date(img.updated_at).valueOf(),
-      createdAt: new Date(img.created_at).valueOf(),
-      firstSeenAt: new Date(img.first_seen_at).valueOf(),
-      sha512Hash: img.sha512_hash,
-      hiddenFromUsers: img.hidden_from_users ? 1 : 0,
-      origSha512Hash: img.orig_sha512_hash,
-      wilsonScore: img.wilson_score,
-      thumbnailsGenerated: img.thumbnails_generated ? 1 : 0,
-      aspectRatio: img.aspect_ratio,
-      deletionReason: img.deletion_reason,
-      duplicateOf: img.duplicate_of,
-      animated: img.animated ? 1 : 0,
-      spoilered: img.spoilered ? 1 : 0,
-      processed: img.processed ? 1 : 0,
-      height: img.height,
-      width: img.width,
-      sourceUrl: img.source_url,
-    }));
+    const formattedImages = data.images.map((img) => _parseImageData(booruUrl, img));
 
     /** @type {InteractionObj[]} */
     const formattedInteractions = [];
@@ -392,16 +409,10 @@ export const searchImages = async (rawSearchString = '*', limit = 50, page = 1) 
     // Fix the results
     results = results.map((item) => {
       item.id = item.imageId;
-
       delete item.imageId;
       delete item.imgCreatedAt;
       delete item.query;
-
-      item.animated = item.animated ? true : false;
-      item.hiddenFromUsers = item.hiddenFromUsers ? true : false;
-      item.processed = item.processed ? true : false;
-      item.spoilered = item.spoilered ? true : false;
-      item.thumbnailsGenerated = item.thumbnailsGenerated ? true : false;
+      fixImageObj(item);
       return item;
     });
   }
@@ -550,4 +561,20 @@ export const deleteAllAccounts = async () => {
  */
 export const factoryResetDatabase = async () => {
   await dbConnection.dropDb();
+};
+
+/**
+ * @param {string} booruUrl
+ * @returns {Promise<ImageObj | null>}
+ */
+export const getFeaturedImage = async (booruUrl) => {
+  try {
+    const response = await fetch(`${booruUrl}/api/v1/json/images/featured`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.image ? _parseImageData(booruUrl, fixImageObj(data.image)) : null;
+  } catch (error) {
+    console.error('Failed to fetch featured image:', error);
+    return null;
+  }
 };
