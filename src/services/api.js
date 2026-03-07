@@ -17,6 +17,33 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
   return response.json();
 };
 
+/** @type {Record<string, string[]>} */
+const filterCache = {};
+
+/**
+ * @param {Account[]} accounts
+ * @returns {Promise<void>}
+ */
+const loadFiltersForAccounts = async (accounts) => {
+  for (const acc of accounts) {
+    if (!filterCache[acc.booruUrl]) {
+      try {
+        const res = await fetchPhilomena(acc.booruUrl, 'filters/user', acc.apiKey);
+        if (res && res.filter && res.filter.spoilered_tags) {
+          filterCache[acc.booruUrl] = res.filter.spoilered_tags
+            .split(',')
+            .map((t) => t.trim().toLowerCase());
+        } else {
+          filterCache[acc.booruUrl] = [];
+        }
+      } catch (e) {
+        console.error('Failed to load filter for', acc.booruUrl, e);
+        filterCache[acc.booruUrl] = [];
+      }
+    }
+  }
+};
+
 /**
  * @typedef {'faved'|'upVote'|'downVote'|null} InteractionValue
  */
@@ -86,7 +113,7 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
  */
 
 /**
- * @typedef {ImageObj & { interaction: InteractionValue }} ImageResult
+ * @typedef {ImageObj & { interaction: InteractionValue, spoilerReasons: string[] }} ImageResult
  */
 
 /**
@@ -127,6 +154,7 @@ const normalizeQueryString = (rawQuery) => {
  * @property {number} id
  * @property {number} maxItems
  * @property {number} persistentStorage
+ * @property {number} mixAllBoorus
  */
 
 /**
@@ -138,7 +166,7 @@ export const getSystemSettings = async () => {
   if (settings.length > 0) return settings[0];
 
   /** @type {SystemSettings} */
-  const defaultSettings = { id: 1, maxItems: 10000, persistentStorage: 0 };
+  const defaultSettings = { id: 1, maxItems: 10000, persistentStorage: 0, mixAllBoorus: 0 };
   await dbConnection.insert({ into: 'Settings', values: [defaultSettings] });
   return defaultSettings;
 };
@@ -146,12 +174,13 @@ export const getSystemSettings = async () => {
 /**
  * @param {number} maxItems
  * @param {number} persistentStorage
+ * @param {number} mixAllBoorus
  * @returns {Promise<void>}
  */
-export const updateSystemSettings = async (maxItems, persistentStorage) => {
+export const updateSystemSettings = async (maxItems, persistentStorage, mixAllBoorus) => {
   await dbConnection.update({
     in: 'Settings',
-    set: { maxItems, persistentStorage },
+    set: { maxItems, persistentStorage, mixAllBoorus },
     where: { id: 1 },
   });
 };
@@ -432,11 +461,38 @@ export const searchImages = async (rawSearchString = '*', limit = 50, page = 1) 
         {
           ...interactions.find((int) => int.imageId === item.id && int.booruUrl === item.booruUrl),
         }.value ?? null;
+
+      /** @type {string[]} */
+      const accountFilter = filterCache[item.booruUrl] || [];
+
+      /** @type {string[]} */
+      item.spoilerReasons = item.tags.filter((tag) => accountFilter.includes(tag.toLowerCase()));
+
       return item;
     });
   }
 
   return results;
+};
+
+/**
+ * @param {string} rawSearchString
+ * @returns {Promise<number>}
+ */
+export const countImages = async (rawSearchString = '*') => {
+  /** @type {string} */
+  const normalizedQuery = normalizeQueryString(rawSearchString);
+
+  if (normalizedQuery === '*') {
+    return await dbConnection.count({
+      from: 'Images',
+    });
+  }
+
+  return await dbConnection.count({
+    from: 'Queries',
+    where: { query: normalizedQuery },
+  });
 };
 
 /**
@@ -504,6 +560,7 @@ export const toggleAccountStatus = async (accountId, isActive) => {
  */
 export const syncUserGalleryPages = async (query = '*', page = 1) => {
   const accounts = await getActiveAccounts();
+  await loadFiltersForAccounts(accounts);
 
   // Sync background data for active accounts
   const syncs = [];
@@ -512,11 +569,17 @@ export const syncUserGalleryPages = async (query = '*', page = 1) => {
   );
 
   const results = await Promise.all(syncs);
+
+  /** @type {number} */
   let combinedLimit = 0;
+
+  /** @type {number} */
+  let combinedTotal = 0;
 
   results.forEach((data) => {
     if (data && Array.isArray(data.images)) {
       if (data.images.length > combinedLimit) combinedLimit = data.images.length;
+      if (typeof data.total === 'number') combinedTotal += data.total;
     }
   });
 
@@ -524,7 +587,7 @@ export const syncUserGalleryPages = async (query = '*', page = 1) => {
   /** @type {number} */
   const finalLimit = combinedLimit > 0 ? combinedLimit : 50;
 
-  return { accounts, syncLimit: finalLimit };
+  return { accounts, syncLimit: finalLimit, totalCount: combinedTotal };
 };
 
 /**

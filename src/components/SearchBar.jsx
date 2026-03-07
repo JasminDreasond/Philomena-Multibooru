@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 /**
- * @param {{ onSearchSubmit: (query: string) => void }} props
+ * @param {{ onSearchSubmit: (query: string) => void, initialQuery: string, isLoading: boolean }} props
  */
-export const SearchBar = ({ onSearchSubmit }) => {
+export const SearchBar = ({ onSearchSubmit, initialQuery, isLoading }) => {
   /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState(initialQuery);
+
+  useEffect(() => {
+    setInputValue(initialQuery);
+  }, [initialQuery]);
 
   /**
    * @param {import('react').FormEvent<HTMLFormElement>} event
@@ -16,19 +20,18 @@ export const SearchBar = ({ onSearchSubmit }) => {
   };
 
   return (
-    <div className="container mt-4 mb-4">
-      <form onSubmit={handleFormSubmit} className="d-flex shadow-sm">
-        <input
-          type="text"
-          className="form-control form-control-lg me-2"
-          placeholder="Search tags (e.g., safe, pony, rainbow, -human)..."
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-        />
-        <button type="submit" className="btn btn-primary btn-lg px-4">
-          Search
-        </button>
-      </form>
-    </div>
+    <form onSubmit={handleFormSubmit} className="d-flex flex-grow-1 mx-lg-4 my-2 my-lg-0">
+      <input
+        type="search"
+        className="form-control form-control-sm me-2 bg-dark text-light border-secondary"
+        placeholder="Search tags (e.g., safe, pony)..."
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        disabled={isLoading}
+      />
+      <button type="submit" className="btn btn-primary btn-sm px-3" disabled={isLoading}>
+        Search
+      </button>
+    </form>
   );
 };

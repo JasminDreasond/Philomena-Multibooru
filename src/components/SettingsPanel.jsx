@@ -44,6 +44,9 @@ export const SettingsPanel = ({ onClose }) => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isPersistent, setIsPersistent] = useState(false);
 
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [mixBoorus, setMixBoorus] = useState(false);
+
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -54,9 +57,20 @@ export const SettingsPanel = ({ onClose }) => {
       const sysData = await getSystemSettings();
       setMaxItemsLimit(sysData.maxItems);
       setIsPersistent(sysData.persistentStorage === 1);
+      setMixBoorus(sysData.mixAllBoorus === 1);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  /**
+   * @param {import('react').ChangeEvent<HTMLInputElement>} event
+   */
+  const handleMixBoorusChange = async (event) => {
+    /** @type {boolean} */
+    const isChecked = event.target.checked;
+    setMixBoorus(isChecked);
+    await updateSystemSettings(maxItemsLimit, isPersistent ? 1 : 0, isChecked ? 1 : 0);
   };
 
   useEffect(() => {
@@ -341,6 +355,21 @@ export const SettingsPanel = ({ onClose }) => {
                 />
                 <label className="form-check-label" htmlFor="persistSwitch">
                   Enable Persistent Storage (Requires Browser Permission)
+                </label>
+              </div>
+
+              <div className="form-check form-switch mt-2">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  role="switch"
+                  id="mixBoorusSwitch"
+                  checked={mixBoorus}
+                  onChange={handleMixBoorusChange}
+                  disabled={isLoading}
+                />
+                <label className="form-check-label" htmlFor="mixBoorusSwitch">
+                  Mix all active Boorus on Homepage sidebar
                 </label>
               </div>
             </div>
