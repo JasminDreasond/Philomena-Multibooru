@@ -18,6 +18,18 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
 };
 
 /**
+ * @typedef {'faved'|'upVote'|'downVote'|null} InteractionValue
+ */
+
+/**
+ * @typedef {Object} InteractionObj
+ * @property {string} id
+ * @property {string} booruUrl
+ * @property {number} imageId
+ * @property {InteractionValue} value
+ */
+
+/**
  * @typedef {Object} ImageRepresentations
  * @property {string} full
  * @property {string} small
@@ -71,6 +83,10 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
  * @property {number} width
  * @property {string} sourceUrl
  * @property {ImageIntensities} intensities
+ */
+
+/**
+ * @typedef {ImageObj & { interaction: InteractionValue }} ImageResult
  */
 
 /**
@@ -171,6 +187,11 @@ const enforceStorageLimit = async () => {
     });
 
     await dbConnection.remove({
+      from: 'Interactions',
+      where: { imageId: { in: idsToDelete } },
+    });
+
+    await dbConnection.remove({
       from: 'Images',
       where: { id: { in: idsToDelete } },
     });
@@ -221,7 +242,7 @@ export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) =
     /** @type {ImageObj} */
     const formattedImages = data.images.map((img) => ({
       id: img.id,
-      booruUrl: booruUrl,
+      booruUrl,
       name: img.name,
       tags: checkArray(img.tags, 'string'),
       tagIds: checkArray(img.tag_ids, 'number'),
@@ -272,9 +293,43 @@ export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) =
       sourceUrl: img.source_url,
     }));
 
-    console.log(`Sending page ${page} from ${booruUrl}`, data);
+    /** @type {InteractionObj[]} */
+    const formattedInteractions = [];
+
+    /** @type {InteractionObj[]} */
+    data.interactions.forEach((int) => {
+      const value =
+        int.interaction_type === 'faved'
+          ? 'faved'
+          : int.interaction_type === 'voted'
+            ? int.value === 'up'
+              ? 'upVote'
+              : int.value === 'down'
+                ? 'downVote'
+                : null
+            : null;
+
+      const id = `${booruUrl}_${int.image_id}`;
+      const oldInteraction = formattedInteractions.find((int2) => int2.id === id);
+      if (oldInteraction) {
+        if (value === 'faved') oldInteraction.value = value;
+        return;
+      }
+
+      formattedInteractions.push({
+        id,
+        booruUrl,
+        imageId: int.image_id,
+        value,
+      });
+    });
 
     await dbConnection.insert({ into: 'Images', values: formattedImages, upsert: true });
+    await dbConnection.insert({
+      into: 'Interactions',
+      values: formattedInteractions,
+      upsert: true,
+    });
 
     if (normalizedQuery !== '*') {
       /** @type {QueryItem[]} */
@@ -300,7 +355,7 @@ export const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1) =
  * @param {string} rawSearchString
  * @param {number} [limit=50]
  * @param {number} [page=1]
- * @returns {Promise<ImageObj[]>}
+ * @returns {Promise<ImageResult[]>}
  */
 export const searchImages = async (rawSearchString = '*', limit = 50, page = 1) => {
   /** @type {number} */
@@ -309,46 +364,68 @@ export const searchImages = async (rawSearchString = '*', limit = 50, page = 1) 
   /** @type {string} */
   const normalizedQuery = normalizeQueryString(rawSearchString);
 
+  /** @type {ImageObj[]} */
+  let results = [];
+
   if (normalizedQuery === '*') {
-    return await dbConnection.select({
+    results = await dbConnection.select({
       from: 'Images',
       limit: limit > 1000 ? 1000 : limit,
       skip: skipCount,
       order: { by: 'createdAt', type: 'desc' },
     });
+  } else {
+    results = await dbConnection.select({
+      from: 'Queries',
+      where: { query: normalizedQuery },
+      join: {
+        with: 'Images',
+        on: 'Queries.imageId = Images.id',
+        as: { id: 'imageId', createdAt: 'imgCreatedAt' },
+        type: 'inner',
+      },
+      limit: limit > 1000 ? 1000 : limit,
+      skip: skipCount,
+      order: { by: 'Images.createdAt', type: 'desc' },
+    });
+
+    // Fix the results
+    results = results.map((item) => {
+      item.id = item.imageId;
+
+      delete item.imageId;
+      delete item.imgCreatedAt;
+      delete item.query;
+
+      item.animated = item.animated ? true : false;
+      item.hiddenFromUsers = item.hiddenFromUsers ? true : false;
+      item.processed = item.processed ? true : false;
+      item.spoilered = item.spoilered ? true : false;
+      item.thumbnailsGenerated = item.thumbnailsGenerated ? true : false;
+      return item;
+    });
   }
 
-  // O Join no JsStore para unificar Queries e Images!
-  const results = await dbConnection.select({
-    from: 'Queries',
-    where: { query: normalizedQuery },
-    join: {
-      with: 'Images',
-      on: 'Queries.imageId = Images.id',
-      as: { id: 'imageId', createdAt: 'imgCreatedAt' },
-      type: 'inner',
-    },
-    limit: limit > 1000 ? 1000 : limit,
-    skip: skipCount,
-    order: { by: 'Images.createdAt', type: 'desc' },
-  });
+  if (results.length > 0) {
+    /** @type {number[]} */
+    const imageIds = results.map((img) => img.id);
 
-  // Fix the results
-  return results.map((item) => {
-    item.id = item.imageId;
+    /** @type {InteractionObj[]} */
+    const interactions = await dbConnection.select({
+      from: 'Interactions',
+      where: { imageId: { in: imageIds } },
+    });
 
-    delete item.imageId;
-    delete item.imgCreatedAt;
-    delete item.query;
+    results = results.map((item) => {
+      item.interaction =
+        {
+          ...interactions.find((int) => int.imageId === item.id && int.booruUrl === item.booruUrl),
+        }.value ?? null;
+      return item;
+    });
+  }
 
-    item.animated = item.animated ? true : false;
-    item.hiddenFromUsers = item.hiddenFromUsers ? true : false;
-    item.processed = item.processed ? true : false;
-    item.spoilered = item.spoilered ? true : false;
-    item.thumbnailsGenerated = item.thumbnailsGenerated ? true : false;
-
-    return item;
-  });
+  return results;
 };
 
 /**

@@ -10,7 +10,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 /** @typedef {import('./services/api').Account} Account */
 
 const App = () => {
-  /** @type {[ImageObj[], import('react').Dispatch<import('react').SetStateAction<ImageObj[]>>]} */
+  /** @type {[ImageResult[], import('react').Dispatch<import('react').SetStateAction<ImageResult[]>>]} */
   const [currentImages, setCurrentImages] = useState([]);
 
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
@@ -39,7 +39,7 @@ const App = () => {
    * @returns {Promise<ImageObj[]>}
    */
   const loadInitialData = async (limitToUse) => {
-    /** @type {ImageObj[]} */
+    /** @type {ImageResult[]} */
     const allImages = await searchImages('*', limitToUse);
     setCurrentImages(allImages);
     return allImages;
@@ -105,7 +105,7 @@ const App = () => {
       setPageLimit(syncLimit);
 
       // Then query the local database
-      /** @type {ImageObj[]} */
+      /** @type {ImageResult[]} */
       const searchResults = await searchImages(rawQuery, syncLimit);
       setCurrentImages(searchResults);
     } catch (error) {

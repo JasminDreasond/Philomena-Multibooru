@@ -1,9 +1,9 @@
 /**
- * @typedef {import('../services/api').ImageObj} ImageObj
+ * @typedef {import('../services/api').ImageResult} ImageResult
  */
 
 /**
- * @param {{ imagesList: ImageObj[] }} props
+ * @param {{ imagesList: ImageResult[] }} props
  */
 export const ImageGallery = ({ imagesList }) => {
   /** @type {boolean} */
@@ -29,6 +29,10 @@ export const ImageGallery = ({ imagesList }) => {
 
           /** @type {number} */
           const score = img.upvotes - img.downvotes;
+
+          const isFav = img.interaction === 'faved';
+          const isUp = isFav || img.interaction === 'upVote';
+          const isDown = !isFav && img.interaction === 'downVote';
 
           return (
             <div className="col" key={`${img.booruUrl}-${img.id}`}>
@@ -66,8 +70,12 @@ export const ImageGallery = ({ imagesList }) => {
                       }}
                     >
                       <div className="d-flex justify-content-between align-items-center">
-                        <span className="badge bg-primary">♥ {img.faves}</span>
-                        <span className={`badge ${score >= 0 ? 'bg-success' : 'bg-danger'}`}>
+                        <span className={`badge ${isFav ? 'bg-warning' : 'bg-secondary'}`}>
+                          ♥ {img.faves}
+                        </span>
+                        <span
+                          className={`badge ${isUp ? 'bg-success' : isDown ? 'bg-danger' : 'bg-secondary'}`}
+                        >
                           {score >= 0 ? '▲' : '▼'} {score}
                         </span>
                         <span className="badge bg-secondary">💬 {img.commentCount || 0}</span>

@@ -76,9 +76,19 @@ export const initDatabase = async () => {
     },
   };
 
+  const tblInteractions = {
+    name: 'Interactions',
+    columns: {
+      id: { primaryKey: true, dataType: 'string', notNull: true },
+      booruUrl: { dataType: 'string', notNull: true },
+      imageId: { dataType: 'number', notNull: true },
+      value: { dataType: 'string', notNull: false },
+    },
+  };
+
   const database = {
     name: 'PhilomenaMultiBooru',
-    tables: [tblImages, tblAccounts, tblQueries, tblSettings],
+    tables: [tblImages, tblAccounts, tblQueries, tblSettings, tblInteractions],
   };
 
   await dbConnection.initDb(database);
