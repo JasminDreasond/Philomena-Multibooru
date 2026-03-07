@@ -72,9 +72,9 @@
   --alert-danger-text: #fecaca;
 
   /* Variáveis Exclusivas de Interação Dark */
-  --fave-color: #f87171;
+  --fave-color: #fbbf24;
   --upvote-color: #34d399;
-  --downvote-color: #fbbf24;
+  --downvote-color: #f87171;
   --interaction-inactive: #ffffff;
   --interaction-bg: rgba(0, 0, 0, 0.7);
 }
@@ -324,6 +324,9 @@ body {
   color: var(--app-text-muted) !important;
 }
 
+/* =========================================
+   Navbar e Logo (Animações de Hover)
+   ========================================= */
 .custom-navbar {
   background-color: var(--app-navbar-bg) !important;
   color: var(--app-navbar-text) !important;
@@ -332,8 +335,19 @@ body {
   padding-bottom: 0.25rem !important;
 }
 
-.custom-navbar .navbar-brand {
+.navbar-brand {
   font-size: 1.1rem !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+}
+
+.navbar-brand:hover {
+  transform: scale(1.02);
+  opacity: 0.9;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.navbar-brand:active {
+  transform: scale(0.98);
 }
 
 .app-logo {
@@ -341,4 +355,23 @@ body {
   width: auto;
   margin-right: 8px;
   border-radius: 4px;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.navbar-brand:hover .app-logo {
+  transform: rotate(-8deg) scale(1.1);
+}
+
+/* =========================================
+   Layout: Sidebar Responsiva
+   ========================================= */
+.sidebar-container {
+  width: 100%;
+}
+
+@media (min-width: 992px) {
+  .sidebar-container {
+    flex: 0 0 330px !important;
+    max-width: 330px !important;
+  }
 }

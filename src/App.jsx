@@ -5,10 +5,11 @@ import {
   searchImages,
   getFeaturedImage,
   getSystemSettings,
+  fixImageObj,
 } from './services/api';
 
 import { SearchBar } from './components/SearchBar';
-import { ImageGallery } from './components/ImageGallery';
+import { ImageGallery, Image } from './components/ImageGallery';
 import { SettingsPanel } from './components/SettingsPanel';
 
 /** @typedef {import('./services/api').ImageResult} ImageResult */
@@ -561,10 +562,10 @@ const App = () => {
             </div>
           ) : (
             <>
-              <div className="row">
+              <div className="row flex-nowrap flex-column flex-lg-row">
                 {/* Left Sidebar - Hidden during active searches or pagination */}
                 {showSpecialContent && (
-                  <div className="col-lg-3 col-md-4 mb-4">
+                  <div className="sidebar-container mb-4 mx-auto mx-lg-0 col-sm-4">
                     {/* Featured Images */}
                     {featuredImagesList.map((feature, idx) => (
                       <div
@@ -580,18 +581,7 @@ const App = () => {
                             Booru {idx + 1}
                           </small>
                         </div>
-                        <a
-                          href={`${feature.account.booruUrl}/${feature.image.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <img
-                            src={feature.image.representations.thumb || feature.image.source_url}
-                            className="card-img-bottom"
-                            alt="Featured"
-                            style={{ objectFit: 'cover', height: '250px', width: '100%' }}
-                          />
-                        </a>
+                        <Image img={fixImageObj(feature.image)} />
                       </div>
                     ))}
 
@@ -663,10 +653,7 @@ const App = () => {
                 )}
 
                 {/* Main Content Area */}
-                <div
-                  className={showSpecialContent ? 'col-lg-9 col-md-8' : 'col-12'}
-                  style={{ minHeight: '80vh' }}
-                >
+                <div className="col" style={{ minWidth: 0, minHeight: '80vh' }}>
                   {isSearching ? (
                     <div className="text-center mt-5">
                       <div className="spinner-border text-primary" role="status">

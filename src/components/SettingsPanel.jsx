@@ -625,7 +625,10 @@ export const SettingsPanel = ({ isDark, onClose }) => {
                 >
                   Import Theme
                 </button>
-                <button className={`btn btn-sm btn-outline-${isDark ? 'light' : 'dark'}`} onClick={handleExportTheme}>
+                <button
+                  className={`btn btn-sm btn-outline-${isDark ? 'light' : 'dark'}`}
+                  onClick={handleExportTheme}
+                >
                   Export Theme
                 </button>
               </div>
