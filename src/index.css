@@ -403,3 +403,128 @@ body {
     max-width: 400px !important;
   }
 }
+
+/* =========================================
+   Philomena Classic Viewer Styles
+   ========================================= */
+.viewer-toolbar {
+  background-color: var(--app-surface);
+  color: var(--app-text);
+  font-size: 0.85rem;
+}
+
+.viewer-toolbar .btn-tool {
+  color: var(--app-text);
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  transition: background-color 0.2s;
+}
+
+.viewer-toolbar .btn-tool:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--app-text);
+}
+
+[data-theme='light'] .viewer-toolbar .btn-tool:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.viewer-subinfo {
+  background-color: var(--app-surface);
+  color: var(--app-text);
+  font-size: 0.8rem;
+  padding: 4px;
+  text-align: center;
+  border-bottom: 2px solid var(--app-border);
+}
+
+[data-theme='light'] .viewer-subinfo {
+  background-color: #ecf0f1;
+  color: #34495e;
+}
+
+.philo-panel {
+  border: 1px solid var(--app-border);
+  background-color: var(--app-surface);
+  margin-bottom: 16px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.philo-panel-header {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--app-border);
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+[data-theme='dark'] .philo-panel-header {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.philo-panel-body {
+  padding: 10px 12px;
+  font-size: 0.9rem;
+}
+
+/* Classic Tags Styling */
+.philo-tag-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.philo-tag {
+  display: inline-flex;
+  font-size: 0.8rem;
+  border-radius: 3px;
+  overflow: hidden;
+  text-decoration: none;
+  font-weight: 600;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.philo-tag-name {
+  background-color: #2c3e50;
+  color: var(--app-text);
+  padding: 2px 6px;
+}
+
+.philo-tag-count {
+  background-color: rgba(0, 0, 0, 0.2);
+  color: var(--app-text);
+  padding: 2px 6px;
+  opacity: 0.8;
+}
+
+[data-theme='light'] .philo-tag-name {
+  background-color: #e2e8f0;
+  color: #334155;
+}
+
+[data-theme='light'] .philo-tag-count {
+  background-color: #cbd5e1;
+  color: #1e293b;
+}
+
+/* Mocking specific tag colors like the screenshot for flavor */
+.philo-tag-name.tag-safe {
+  background-color: #2980b9;
+  color: white;
+}
+.philo-tag-name.tag-artist,
+.philo-tag-name.tag-prompter,
+.philo-tag-name.tag-editor {
+  background-color: #8e44ad;
+  color: white;
+}

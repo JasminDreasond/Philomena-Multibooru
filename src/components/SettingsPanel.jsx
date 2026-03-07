@@ -7,6 +7,7 @@ import {
   factoryResetDatabase,
   getSystemSettings,
   updateSystemSettings,
+  fixBooruUrl,
 } from '../services/api';
 
 /**
@@ -52,6 +53,10 @@ export const SettingsPanel = ({ isDark, onClose }) => {
 
   /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
   const [themeMode, setThemeMode] = useState(localStorage.getItem('app_themeMode') || 'system');
+
+  const [inAppViewer, setInAppViewer] = useState(
+    localStorage.getItem('app_inAppViewer') === 'true',
+  );
 
   /* Global Colors */
   const [customPrimary, setCustomPrimary] = useState(localStorage.getItem('app_primary') || '');
@@ -137,7 +142,7 @@ export const SettingsPanel = ({ isDark, onClose }) => {
 
       /** @type {boolean} */
       const urlExists = accountsList.some(
-        (acc) => acc.booruUrl.replace(/\/$/, '') === normalizedUrl,
+        (acc) => fixBooruUrl(acc.booruUrl).replace(/\/$/, '') === normalizedUrl,
       );
 
       if (urlExists && !acceptRisk) {
@@ -519,7 +524,7 @@ export const SettingsPanel = ({ isDark, onClose }) => {
                     className="list-group-item d-flex justify-content-between align-items-center"
                   >
                     <div className="text-truncate" style={{ maxWidth: '70%' }}>
-                      <strong>{acc.booruUrl}</strong>
+                      <strong>{fixBooruUrl(acc.booruUrl)}</strong>
                     </div>
                     <button
                       className="btn btn-sm btn-outline-danger"
@@ -552,7 +557,7 @@ export const SettingsPanel = ({ isDark, onClose }) => {
       <div className="row mb-4">
         <div className="col-12">
           <div className="card">
-            <div className="card-header fw-bold">Storage Settings</div>
+            <div className="card-header fw-bold">App & Storage Settings</div>
             <div className="card-body">
               <div className="mb-3">
                 <label className="form-label">Maximum Cached Items</label>
@@ -568,7 +573,7 @@ export const SettingsPanel = ({ isDark, onClose }) => {
                   Will be ignored if Persistent Storage is enabled.
                 </small>
               </div>
-              <div className="form-check form-switch">
+              <div className="form-check form-switch mb-2">
                 <input
                   className="form-check-input"
                   type="checkbox"
@@ -582,7 +587,7 @@ export const SettingsPanel = ({ isDark, onClose }) => {
                   Enable Persistent Storage (Requires Browser Permission)
                 </label>
               </div>
-              <div className="form-check form-switch mt-2">
+              <div className="form-check form-switch mb-2">
                 <input
                   className="form-check-input"
                   type="checkbox"
@@ -594,6 +599,29 @@ export const SettingsPanel = ({ isDark, onClose }) => {
                 />
                 <label className="form-check-label" htmlFor="mixBoorusSwitch">
                   Mix all active Boorus on Homepage sidebar
+                </label>
+              </div>
+              <div
+                className="form-check form-switch mt-3 pt-3 border-top"
+                style={{ borderColor: 'var(--app-border)' }}
+              >
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  role="switch"
+                  id="inAppViewerSwitch"
+                  checked={inAppViewer}
+                  onChange={(e) => {
+                    setInAppViewer(e.target.checked);
+                    localStorage.setItem('app_inAppViewer', e.target.checked);
+                  }}
+                  disabled={isLoading}
+                />
+                <label
+                  className="form-check-label fw-semibold text-primary"
+                  htmlFor="inAppViewerSwitch"
+                >
+                  Enable In-App Image Viewer (Opens images within the app instead of new tabs)
                 </label>
               </div>
             </div>

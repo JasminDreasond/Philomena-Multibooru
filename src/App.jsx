@@ -6,11 +6,13 @@ import {
   getFeaturedImage,
   getSystemSettings,
   fixImageObj,
+  fixBooruUrl,
 } from './services/api';
 
 import { SearchBar } from './components/SearchBar';
 import { ImageGallery, Image } from './components/ImageGallery';
 import { SettingsPanel } from './components/SettingsPanel';
+import { ImageViewer } from './components/ImageViewer';
 
 /** @typedef {import('./services/api').ImageResult} ImageResult */
 /** @typedef {import('./services/api').ImageObj} ImageObj */
@@ -255,6 +257,9 @@ const App = () => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isHomepage, setIsHomepage] = useState(true);
 
+  /** @type {[ImageObj|null, import('react').Dispatch<import('react').SetStateAction<ImageObj|null>>]} */
+  const [viewingImage, setViewingImage] = useState(null); // <-- Novo estado para controlar a visualização da imagem
+
   /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
   const [pageLimit, setPageLimit] = useState(50);
 
@@ -457,6 +462,7 @@ const App = () => {
     setIsHomepage(false);
     setSearchQuery(newQuery);
     setCurrentPage(1);
+    setViewingImage(null);
     hasSynced.current = false;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -478,9 +484,18 @@ const App = () => {
     setIsHomepage(true);
     setSearchQuery('');
     setCurrentPage(1);
+    setViewingImage(null);
     hasSynced.current = false;
     window.scrollTo({ top: 0, behavior: 'smooth' });
     handleCloseSettings();
+  };
+
+  /**
+   * @param {ImageObj} img
+   */
+  const handleOpenImage = (img) => {
+    setViewingImage(img);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   /** @type {boolean} */
@@ -591,6 +606,8 @@ const App = () => {
 
       {showSettings ? (
         <SettingsPanel isDark={isDark} onClose={handleCloseSettings} />
+      ) : viewingImage ? (
+        <ImageViewer image={viewingImage} onClose={() => setViewingImage(null)} />
       ) : (
         <div className="container-fluid px-4 mt-4">
           {!isDbReady ? (
@@ -621,11 +638,18 @@ const App = () => {
                           style={{ borderColor: 'var(--app-border)' }}
                         >
                           <span>Featured Image</span>
-                          <small className="opacity-75" title={feature.account.booruUrl}>
+                          <small
+                            className="opacity-75"
+                            title={fixBooruUrl(feature.account.booruUrl)}
+                          >
                             Booru {idx + 1}
                           </small>
                         </div>
-                        <Image className="rounded-0" img={fixImageObj(feature.image)} />
+                        <Image
+                          className="rounded-0"
+                          img={fixImageObj(feature.image)}
+                          onOpenImage={handleOpenImage}
+                        />
                       </div>
                     ))}
 
@@ -650,7 +674,11 @@ const App = () => {
                         )}
                       </div>
                       <div className="card-body p-3">
-                        <ImageGallery imagesList={trendingImages} gridClass="row-cols-2 g-2" />
+                        <ImageGallery
+                          imagesList={trendingImages}
+                          gridClass="row-cols-2 g-2"
+                          onOpenImage={handleOpenImage}
+                        />
                       </div>
                     </div>
 
@@ -665,10 +693,10 @@ const App = () => {
                             borderBottomWidth: '2px',
                           }}
                         >
-                          Links: {acc.booruUrl}
+                          Links: {fixBooruUrl(acc.booruUrl)}
                         </div>
                         <a
-                          href={`${acc.booruUrl}/search?q=*&sf=score&sd=desc`}
+                          href={`${fixBooruUrl(acc.booruUrl)}/search?q=*&sf=score&sd=desc`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="list-group-item list-group-item-action fw-semibold"
@@ -676,7 +704,7 @@ const App = () => {
                           🌟 All Time Top Scoring
                         </a>
                         <a
-                          href={`${acc.booruUrl}/comments`}
+                          href={`${fixBooruUrl(acc.booruUrl)}/comments`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="list-group-item list-group-item-action fw-semibold"
@@ -684,7 +712,7 @@ const App = () => {
                           💬 Recent Comments
                         </a>
                         <a
-                          href={`${acc.booruUrl}/search?q=first_seen_at.gt:3%20days%20ago&sf=comment_count&sd=desc`}
+                          href={`${fixBooruUrl(acc.booruUrl)}/search?q=first_seen_at.gt:3%20days%20ago&sf=comment_count&sd=desc`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="list-group-item list-group-item-action fw-semibold"
@@ -716,7 +744,7 @@ const App = () => {
                         onPageChange={changePage}
                       />
 
-                      <ImageGallery imagesList={currentImages} />
+                      <ImageGallery imagesList={currentImages} onOpenImage={handleOpenImage} />
 
                       <PaginationBar
                         currentPage={currentPage}
@@ -752,7 +780,7 @@ const App = () => {
                       totalPages={Math.ceil(watchedImages.length / pageLimit) || 1}
                       onPageChange={() => handleSearchSubmit('my:watched')}
                     />
-                    <ImageGallery imagesList={watchedImages} />
+                    <ImageGallery imagesList={watchedImages} onOpenImage={handleOpenImage} />
                   </div>
                 </div>
               )}
