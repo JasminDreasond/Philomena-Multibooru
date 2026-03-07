@@ -393,7 +393,7 @@ body {
 
 @media (min-width: 992px) {
   .sidebar-container {
-    flex: 0 0 330px !important;
-    max-width: 330px !important;
+    flex: 0 0 400px !important;
+    max-width: 400px !important;
   }
 }
