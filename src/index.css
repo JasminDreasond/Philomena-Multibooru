@@ -32,7 +32,7 @@
   --upvote-color: #10b981;
   --downvote-color: #ef4444;
   --interaction-inactive: #ffffff;
-  --interaction-bg: rgba(0, 0, 0, 0.6);
+  --interaction-bg: rgba(0, 0, 0, 0.7);
 
   /* Overrides Nativos do Bootstrap 5 */
   --bs-body-bg: var(--app-bg);
@@ -76,7 +76,7 @@
   --upvote-color: #34d399;
   --downvote-color: #f87171;
   --interaction-inactive: #ffffff;
-  --interaction-bg: rgba(0, 0, 0, 0.7);
+  --interaction-bg: rgba(0, 0, 0, 0.8);
 }
 
 /* =========================================
@@ -284,17 +284,39 @@ body {
 .interaction-container {
   background: var(--interaction-bg);
   backdrop-filter: blur(4px);
-  border-radius: 8px;
-  padding: 4px 8px;
+  margin: 0;
 }
 
 .badge-interaction {
-  font-size: 0.85rem;
-  padding: 4px 8px;
-  border-radius: 6px;
+  font-size: 9pt;
+  padding: 2px 4px;
   transition: all 0.3s ease;
   font-weight: 700;
   background-color: transparent;
+}
+
+@media (max-width: 1500px) {
+  .badge-interaction {
+    font-size: 8pt;
+  }
+}
+
+@media (max-width: 992px) {
+  .badge-interaction {
+    font-size: 12pt;
+  }
+}
+
+@media (max-width: 600px) {
+  .badge-interaction {
+    font-size: 9pt;
+  }
+}
+
+@media (max-width: 400px) {
+  .badge-interaction {
+    font-size: 9pt;
+  }
 }
 
 .badge-interaction:hover {

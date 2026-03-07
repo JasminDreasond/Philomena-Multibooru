@@ -492,7 +492,7 @@ const App = () => {
 
   return (
     <div className="min-vh-100 pb-5" style={{ backgroundColor: 'var(--app-bg)' }}>
-      <nav className="navbar custom-navbar sticky-top shadow-sm">
+      <nav className="navbar navbar-expand-lg custom-navbar sticky-top shadow-sm">
         <div className="container-fluid px-4 d-flex align-items-center">
           <a
             href="#"
@@ -511,36 +511,80 @@ const App = () => {
             Philomena Multi-Booru
           </a>
 
-          {!showSettings && (
-            <div className="mx-3 flex-grow-1" style={{ maxWidth: '600px' }}>
-              <SearchBar
-                onSearchSubmit={handleSearchSubmit}
-                initialQuery={searchQuery}
-                isLoading={isSearching}
-              />
-            </div>
-          )}
+          <button
+            className="navbar-toggler border-0 ms-auto"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#mobileMenu"
+            aria-controls="mobileMenu"
+          >
+            <span className="navbar-toggler-icon"></span>
+          </button>
 
-          <div className="ms-auto d-flex align-items-center">
-            <span
-              className="me-3 d-none d-lg-inline small fw-semibold"
-              style={{ color: 'var(--app-navbar-text)' }}
+          <div
+            className="offcanvas offcanvas-end"
+            tabIndex="-1"
+            id="mobileMenu"
+            style={{ backgroundColor: 'var(--app-navbar-bg)' }}
+          >
+            <div
+              className="offcanvas-header border-bottom"
+              style={{ borderColor: 'var(--app-border)' }}
             >
-              Active APIs:{' '}
-              <span className="badge custom-badge ms-1">
-                {connectedAccounts ? connectedAccounts.length : 0}
-              </span>
-            </span>
-            <button
-              className="btn btn-sm btn-outline-light text-nowrap"
-              style={{ borderColor: 'var(--app-navbar-text)', color: 'var(--app-navbar-text)' }}
-              onClick={() => {
-                if (!showSettings) hasSynced.current = false;
-                setShowSettings(!showSettings);
-              }}
-            >
-              {showSettings ? 'Back to Gallery' : 'Settings'}
-            </button>
+              <h5 className="offcanvas-title fw-bold" style={{ color: 'var(--app-navbar-text)' }}>
+                Menu
+              </h5>
+              <button
+                type="button"
+                className="btn-close"
+                style={{ filter: 'invert(1)' }}
+                data-bs-dismiss="offcanvas"
+                aria-label="Close"
+              ></button>
+            </div>
+
+            <div className="offcanvas-body align-items-lg-center">
+              {!showSettings && (
+                <div className="mx-lg-3 my-3 my-lg-0 flex-grow-1" style={{ maxWidth: '600px' }}>
+                  <SearchBar
+                    onSearchSubmit={(q) => {
+                      handleSearchSubmit(q);
+                      // Trigger visual close for manual DOM if needed, but BS5 handles it cleanly with attributes
+                      const offcanvasElement = document.getElementById('mobileMenu');
+                      if (offcanvasElement && offcanvasElement.classList.contains('show')) {
+                        const closeBtn = offcanvasElement.querySelector('.btn-close');
+                        if (closeBtn) closeBtn.click();
+                      }
+                    }}
+                    initialQuery={searchQuery}
+                    isLoading={isSearching}
+                  />
+                </div>
+              )}
+
+              <div className="ms-lg-auto d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-3 gap-lg-0 mt-2 mt-lg-0">
+                <span
+                  className="me-lg-3 small d-lg-inline fw-semibold"
+                  style={{ color: 'var(--app-navbar-text)' }}
+                >
+                  Active APIs:{' '}
+                  <span className="badge custom-badge ms-1">
+                    {connectedAccounts ? connectedAccounts.length : 0}
+                  </span>
+                </span>
+                <button
+                  className="btn btn-sm btn-outline-light text-nowrap w-100 w-lg-auto"
+                  data-bs-dismiss="offcanvas"
+                  style={{ borderColor: 'var(--app-navbar-text)', color: 'var(--app-navbar-text)' }}
+                  onClick={() => {
+                    if (!showSettings) hasSynced.current = false;
+                    setShowSettings(!showSettings);
+                  }}
+                >
+                  {showSettings ? 'Back to Gallery' : 'Settings'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </nav>

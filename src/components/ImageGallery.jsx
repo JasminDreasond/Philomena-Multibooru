@@ -1,6 +1,13 @@
 import { useState } from 'react';
 
-/** @param {{ img: ImageResult }} */
+/**
+ * @typedef {import('../services/api').ImageResult} ImageResult
+ * @typedef {import('../services/api').ImageObj} ImageObj
+ */
+
+/**
+ * @param {{ img: ImageResult }} props
+ */
 export const Image = ({ img }) => {
   /** @type {[Set<number>, import('react').Dispatch<import('react').SetStateAction<Set<number>>>]} */
   const [unspoileredIds, setUnspoileredIds] = useState(new Set());
@@ -14,35 +21,19 @@ export const Image = ({ img }) => {
     if (isSpoilered && !unspoileredIds.has(imageId)) {
       event.preventDefault();
 
-      /** @type {Set<number>} */
       const newSet = new Set(unspoileredIds);
       newSet.add(imageId);
       setUnspoileredIds(newSet);
     }
   };
 
-  /** @type {string} */
   const targetUrl = `${img.booruUrl}${!img.booruUrl.endsWith('/') ? '/' : ''}${img.id}`;
-
-  /** @type {boolean} */
   const isVideo = img.mimeType && img.mimeType.startsWith('video/');
-
-  /** @type {number} */
   const score = img.upvotes - img.downvotes;
-
-  /** @type {boolean} */
   const isFav = img.interaction === 'faved';
-
-  /** @type {boolean} */
   const isUp = isFav || img.interaction === 'upVote';
-
-  /** @type {boolean} */
   const isDown = !isFav && img.interaction === 'downVote';
-
-  /** @type {boolean} */
   const isProcessing = !img.processed || !img.thumbnailsGenerated ? true : false;
-
-  /** @type {boolean} */
   const isBlurry = img.spoilered && !unspoileredIds.has(img.id) ? true : false;
 
   return (
@@ -117,24 +108,26 @@ export const Image = ({ img }) => {
               <img
                 src={img.representations.thumb || img.sourceUrl}
                 className="w-100 h-100"
-                alt={img.tags.join(', ')}
+                alt={img.tags?.join(', ') || ''}
                 style={{ objectFit: 'cover' }}
               />
             )}
           </div>
 
           <div
-            className="position-absolute bottom-0 w-100 p-2 text-white d-flex justify-content-between align-items-end"
+            className="position-absolute bottom-0 w-100 text-white d-flex justify-content-between align-items-end"
             style={{ zIndex: 6 }}
           >
             <div className="interaction-container d-flex gap-1 align-items-center w-100 justify-content-between shadow-sm px-2">
               <span className={`badge-interaction ${isFav ? 'active-fave' : 'badge-inactive'}`}>
                 ★ {img.faves}
               </span>
-              <span
-                className={`badge-interaction ${isUp ? 'active-up' : isDown ? 'active-down' : 'badge-inactive'}`}
-              >
-                {score >= 0 ? '▲' : '▼'} {score}
+              <span className={`badge-interaction ${isUp ? 'active-up' : 'badge-inactive'}`}>
+                ▲
+              </span>
+              <span className={`badge-interaction badge-inactive`}>{score}</span>
+              <span className={`badge-interaction ${isDown ? 'active-down' : 'badge-inactive'}`}>
+                ▼
               </span>
               <span className="badge-interaction badge-inactive">💬 {img.commentCount || 0}</span>
             </div>
@@ -145,7 +138,7 @@ export const Image = ({ img }) => {
             className="text-muted d-block text-truncate fw-semibold"
             style={{ fontSize: '0.75rem' }}
           >
-            {img.tags.join(', ')}
+            {img.tags?.join(', ') || ''}
           </small>
         </div>
       </a>
@@ -154,17 +147,12 @@ export const Image = ({ img }) => {
 };
 
 /**
- * @typedef {import('../services/api').ImageResult} ImageResult
- */
-
-/**
  * @param {{ imagesList: ImageResult[], gridClass?: string }} props
  */
 export const ImageGallery = ({
   imagesList,
   gridClass = 'row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-4 row-cols-xxl-6 g-3',
 }) => {
-  /** @type {boolean} */
   const hasImages = imagesList.length > 0;
 
   if (!hasImages) {
