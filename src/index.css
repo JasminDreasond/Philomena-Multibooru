@@ -1,0 +1,272 @@
+:root {
+  /* Paleta Light (Moderna e Vibrante) */
+  --app-bg: #f8fafc;
+  --app-surface: #ffffff;
+  --app-text: #334155;
+  --app-text-muted: #64748b;
+  --app-primary: #4f46e5; /* Indigo moderno e elegante */
+  --app-primary-hover: #4338ca;
+  --app-navbar-bg: #0f172a;
+  --app-navbar-text: #f8fafc;
+  --app-border: #e2e8f0;
+
+  /* Cores de Alertas (Soft) */
+  --alert-warning-bg: #fef3c7;
+  --alert-warning-text: #92400e;
+  --alert-info-bg: #e0f2fe;
+  --alert-info-text: #075985;
+  --alert-danger-bg: #fee2e2;
+  --alert-danger-text: #991b1b;
+
+  /* Variáveis Exclusivas de Interação */
+  --fave-color: #f59e0b; /* Laranja/Âmbar */
+  --upvote-color: #10b981; /* Verde esmeralda */
+  --downvote-color: #ef4444; /* Vermelho vibrante */
+  --interaction-inactive: #ffffff;
+  --interaction-bg: rgba(15, 23, 42, 0.6);
+}
+
+[data-theme='dark'] {
+  /* Paleta Dark (Elegante e Profunda) */
+  --app-bg: #0f172a;
+  --app-surface: #1e293b;
+  --app-text: #f1f5f9;
+  --app-text-muted: #94a3b8;
+  --app-primary: #6366f1;
+  --app-primary-hover: #4f46e5;
+  --app-navbar-bg: #020617;
+  --app-navbar-text: #f8fafc;
+  --app-border: #334155;
+
+  /* Cores de Alertas Dark */
+  --alert-warning-bg: #451a03;
+  --alert-warning-text: #fde68a;
+  --alert-info-bg: #082f49;
+  --alert-info-text: #bae6fd;
+  --alert-danger-bg: #450a0a;
+  --alert-danger-text: #fecaca;
+
+  /* Variáveis Exclusivas de Interação Dark */
+  --fave-color: #f87171;
+  --upvote-color: #34d399;
+  --downvote-color: #fbbf24;
+  --interaction-inactive: #ffffff;
+  --interaction-bg: rgba(0, 0, 0, 0.7);
+}
+
+/* =========================================
+   Reset Global & Animações Base
+   ========================================= */
+body {
+  background-color: var(--app-bg) !important;
+  color: var(--app-text) !important;
+  transition:
+    background-color 0.4s ease,
+    color 0.4s ease;
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+/* =========================================
+   Cards e Superfícies
+   ========================================= */
+.card,
+.list-group-item,
+.modal-content {
+  background-color: var(--app-surface) !important;
+  color: var(--app-text) !important;
+  border: 1px solid var(--app-border) !important;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-theme='dark'] .card:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+.card-header {
+  border-bottom: 1px solid var(--app-border) !important;
+  background-color: transparent !important;
+  color: var(--app-text) !important;
+}
+
+/* =========================================
+   Botões (Modernos e Animados)
+   ========================================= */
+.btn {
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: 0.3px;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-primary {
+  background-color: var(--app-primary) !important;
+  border-color: var(--app-primary) !important;
+  color: #ffffff !important;
+}
+
+.btn-primary:hover {
+  background-color: var(--app-primary-hover) !important;
+  border-color: var(--app-primary-hover) !important;
+}
+
+.btn-secondary {
+  background-color: var(--app-border) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+.btn-outline-light {
+  border-color: var(--app-navbar-text) !important;
+  color: var(--app-navbar-text) !important;
+}
+
+.btn-outline-light:hover {
+  background-color: var(--app-navbar-text) !important;
+  color: var(--app-navbar-bg) !important;
+}
+
+/* =========================================
+   Paginação e Inputs (Customizada)
+   ========================================= */
+.pagination {
+  gap: 4px;
+}
+
+.page-link {
+  background-color: var(--app-surface) !important;
+  color: var(--app-text) !important;
+  border: 1px solid var(--app-border) !important;
+  border-radius: 8px !important;
+  margin: 0 2px;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.page-link:hover:not(:disabled) {
+  background-color: var(--app-border) !important;
+  transform: translateY(-2px);
+}
+
+.page-item.active .page-link {
+  background-color: var(--app-primary) !important;
+  border-color: var(--app-primary) !important;
+  color: #ffffff !important;
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.page-item.disabled .page-link {
+  opacity: 0.5;
+  background-color: transparent !important;
+}
+
+.page-jump-input {
+  background-color: var(--app-surface) !important;
+  color: var(--app-text) !important;
+  border: 1px solid var(--app-border) !important;
+  transition: all 0.2s ease;
+}
+
+.page-jump-input:focus {
+  border-color: var(--app-primary) !important;
+  box-shadow: 0 0 0 3px var(--app-border) !important;
+  outline: none;
+}
+
+/* =========================================
+   Alertas (Bootstrap 5 Overrides)
+   ========================================= */
+.alert {
+  border: none !important;
+  border-radius: 12px;
+  font-weight: 500;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.alert-warning {
+  background-color: var(--alert-warning-bg) !important;
+  color: var(--alert-warning-text) !important;
+}
+
+.alert-info {
+  background-color: var(--alert-info-bg) !important;
+  color: var(--alert-info-text) !important;
+}
+
+.alert-danger {
+  background-color: var(--alert-danger-bg) !important;
+  color: var(--alert-danger-text) !important;
+}
+
+/* =========================================
+   Badges e Interações (Fav, Up, Down)
+   ========================================= */
+.interaction-container {
+  background: var(--interaction-bg);
+  backdrop-filter: blur(4px);
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
+.badge-interaction {
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  font-weight: 700;
+  background-color: transparent;
+}
+
+.badge-interaction:hover {
+  transform: scale(1.1);
+}
+
+/* Cores Inativas */
+.badge-inactive {
+  color: var(--interaction-inactive);
+}
+
+/* Cores Ativas (Mapeamento Corrigido) */
+.active-fave {
+  color: var(--fave-color);
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+.active-up {
+  color: var(--upvote-color);
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.active-down {
+  color: var(--downvote-color);
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.text-muted {
+  color: var(--app-text-muted) !important;
+}
+
+.custom-navbar {
+  background-color: var(--app-navbar-bg) !important;
+  color: var(--app-navbar-text) !important;
+  transition: background-color 0.4s ease;
+}

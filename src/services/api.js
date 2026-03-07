@@ -17,33 +17,6 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
   return response.json();
 };
 
-/** @type {Record<string, string[]>} */
-const filterCache = {};
-
-/**
- * @param {Account[]} accounts
- * @returns {Promise<void>}
- */
-const loadFiltersForAccounts = async (accounts) => {
-  for (const acc of accounts) {
-    if (!filterCache[acc.booruUrl]) {
-      try {
-        const res = await fetchPhilomena(acc.booruUrl, 'filters/user', acc.apiKey);
-        if (res && res.filter && res.filter.spoilered_tags) {
-          filterCache[acc.booruUrl] = res.filter.spoilered_tags
-            .split(',')
-            .map((t) => t.trim().toLowerCase());
-        } else {
-          filterCache[acc.booruUrl] = [];
-        }
-      } catch (e) {
-        console.error('Failed to load filter for', acc.booruUrl, e);
-        filterCache[acc.booruUrl] = [];
-      }
-    }
-  }
-};
-
 /**
  * @typedef {'faved'|'upVote'|'downVote'|null} InteractionValue
  */
@@ -113,7 +86,7 @@ const loadFiltersForAccounts = async (accounts) => {
  */
 
 /**
- * @typedef {ImageObj & { interaction: InteractionValue, spoilerReasons: string[] }} ImageResult
+ * @typedef {ImageObj & { interaction: InteractionValue }} ImageResult
  */
 
 /**
@@ -461,13 +434,6 @@ export const searchImages = async (rawSearchString = '*', limit = 50, page = 1) 
         {
           ...interactions.find((int) => int.imageId === item.id && int.booruUrl === item.booruUrl),
         }.value ?? null;
-
-      /** @type {string[]} */
-      const accountFilter = filterCache[item.booruUrl] || [];
-
-      /** @type {string[]} */
-      item.spoilerReasons = item.tags.filter((tag) => accountFilter.includes(tag.toLowerCase()));
-
       return item;
     });
   }
@@ -560,7 +526,6 @@ export const toggleAccountStatus = async (accountId, isActive) => {
  */
 export const syncUserGalleryPages = async (query = '*', page = 1) => {
   const accounts = await getActiveAccounts();
-  await loadFiltersForAccounts(accounts);
 
   // Sync background data for active accounts
   const syncs = [];

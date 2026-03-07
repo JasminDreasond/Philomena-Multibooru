@@ -61,14 +61,17 @@ export const ImageGallery = ({ imagesList }) => {
           const isDown = !isFav && img.interaction === 'downVote';
 
           /** @type {boolean} */
-          const isProcessing = !img.processed || !img.thumbnailsGenerated;
+          const isProcessing = !img.processed || !img.thumbnailsGenerated ? true : false;
 
           /** @type {boolean} */
-          const isBlurry = img.spoilered && !unspoileredIds.has(img.id);
+          const isBlurry = img.spoilered && !unspoileredIds.has(img.id) ? true : false;
 
           return (
             <div className="col" key={`${img.booruUrl}-${img.id}`}>
-              <div className="card h-100 shadow-sm border-0 bg-dark text-white">
+              <div
+                className="card h-100 shadow-sm border-0"
+                style={{ backgroundColor: 'var(--app-surface)', color: 'var(--app-text)' }}
+              >
                 <a
                   href={targetUrl}
                   target="_blank"
@@ -106,16 +109,6 @@ export const ImageGallery = ({ imagesList }) => {
                           <br />
                           <small>(Click to reveal)</small>
                         </div>
-
-                        {img.spoilerReasons && img.spoilerReasons.length > 0 && (
-                          <div
-                            className="badge bg-dark text-light opacity-75 shadow-sm text-truncate w-100 px-2 py-1"
-                            style={{ maxWidth: '90%' }}
-                            title={img.spoilerReasons.join(', ')}
-                          >
-                            {img.spoilerReasons.join(', ')}
-                          </div>
-                        )}
                       </div>
                     )}
 
@@ -148,30 +141,28 @@ export const ImageGallery = ({ imagesList }) => {
                     </div>
 
                     <div
-                      className="position-absolute bottom-0 w-100 p-2 text-white"
-                      style={{
-                        background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
-                        zIndex: 6,
-                      }}
+                      className="position-absolute bottom-0 w-100 p-2 text-white d-flex justify-content-between align-items-end"
+                      style={{ zIndex: 6 }}
                     >
-                      <div className="d-flex justify-content-between align-items-center">
-                        <span className={`badge ${isFav ? 'bg-warning' : 'bg-secondary'}`}>
-                          ♥ {img.faves}
+                      <div className="interaction-container d-flex gap-2 align-items-center w-100 justify-content-between shadow-sm">
+                        <span
+                          className={`badge-interaction ${isFav ? 'active-fave' : 'badge-inactive'}`}
+                        >
+                          ★ {img.faves}
                         </span>
                         <span
-                          className={`badge ${isUp ? 'bg-success' : isDown ? 'bg-danger' : 'bg-secondary'}`}
+                          className={`badge-interaction ${isUp ? 'active-up' : isDown ? 'active-down' : 'badge-inactive'}`}
                         >
                           {score >= 0 ? '▲' : '▼'} {score}
                         </span>
-                        <span className="badge bg-secondary">💬 {img.commentCount || 0}</span>
+                        <span className="badge-interaction badge-inactive">
+                          💬 {img.commentCount || 0}
+                        </span>
                       </div>
                     </div>
                   </div>
-                  <div
-                    className="card-body py-2 bg-light text-dark"
-                    style={{ zIndex: 6, position: 'relative' }}
-                  >
-                    <small className="text-muted d-block text-truncate">
+                  <div className="card-body py-3" style={{ zIndex: 6, position: 'relative' }}>
+                    <small className="text-muted d-block text-truncate fw-semibold">
                       {img.tags.join(', ')}
                     </small>
                   </div>

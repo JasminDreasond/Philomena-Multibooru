@@ -16,9 +16,102 @@ import { SettingsPanel } from './components/SettingsPanel';
 /** @typedef {import('./services/api').Account} Account */
 
 /**
- * @param {{ currentPage: number, totalPages: number, onPageChange: (page: number) => void }} props
+ * @returns {void}
  */
-const PaginationBar = ({ currentPage, totalPages, onPageChange }) => {
+const applyThemeFromStorage = () => {
+  const root = document.documentElement;
+  const mode = localStorage.getItem('app_themeMode') || 'system';
+
+  let isDark = false;
+  if (mode === 'dark') isDark = true;
+  else if (
+    mode === 'system' &&
+    window.matchMedia &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+  ) {
+    isDark = true;
+  }
+
+  root.setAttribute('data-theme', isDark ? 'dark' : 'light');
+
+  /**
+   * @param {string} color
+   * @param {number} percent
+   * @returns {string}
+   */
+  const shadeHexColor = (color, percent) => {
+    let f = parseInt(color.slice(1), 16),
+      t = percent < 0 ? 0 : 255,
+      p = percent < 0 ? percent * -1 : percent,
+      R = f >> 16,
+      G = (f >> 8) & 0x00ff,
+      B = f & 0x0000ff;
+    return (
+      '#' +
+      (
+        0x1000000 +
+        (Math.round((t - R) * p) + R) * 0x10000 +
+        (Math.round((t - G) * p) + G) * 0x100 +
+        (Math.round((t - B) * p) + B)
+      )
+        .toString(16)
+        .slice(1)
+    );
+  };
+
+  /**
+   * @param {string} key
+   * @param {string} cssVar
+   */
+  const applyColor = (key, cssVar) => {
+    const val = localStorage.getItem(key);
+    if (val) root.style.setProperty(cssVar, val);
+    else root.style.removeProperty(cssVar);
+  };
+
+  const customPrimary = localStorage.getItem('app_primary');
+  if (customPrimary) {
+    root.style.setProperty('--app-primary', customPrimary);
+    root.style.setProperty(
+      '--app-primary-hover',
+      shadeHexColor(customPrimary, isDark ? 0.15 : -0.15),
+    );
+  } else {
+    root.style.removeProperty('--app-primary');
+    root.style.removeProperty('--app-primary-hover');
+  }
+
+  const customBg = localStorage.getItem('app_bg');
+  if (customBg) {
+    root.style.setProperty('--app-bg', customBg);
+    root.style.setProperty('--app-surface', shadeHexColor(customBg, isDark ? 0.05 : 0.08));
+    root.style.setProperty('--app-border', shadeHexColor(customBg, isDark ? 0.15 : -0.1));
+  } else {
+    root.style.removeProperty('--app-bg');
+    root.style.removeProperty('--app-surface');
+    root.style.removeProperty('--app-border');
+  }
+
+  applyColor('app_navbar', '--app-navbar-bg');
+  applyColor('app_text', '--app-text');
+  applyColor('app_text_muted', '--app-text-muted');
+
+  applyColor('alert_warning_bg', '--alert-warning-bg');
+  applyColor('alert_warning_text', '--alert-warning-text');
+  applyColor('alert_info_bg', '--alert-info-bg');
+  applyColor('alert_info_text', '--alert-info-text');
+  applyColor('alert_danger_bg', '--alert-danger-bg');
+  applyColor('alert_danger_text', '--alert-danger-text');
+
+  applyColor('app_fave', '--fave-color');
+  applyColor('app_upvote', '--upvote-color');
+  applyColor('app_downvote', '--downvote-color');
+};
+
+/**
+ * @param {{ currentPage: number, isHomepage: boolean, totalPages: number, onPageChange: (page: number) => void }} props
+ */
+const PaginationBar = ({ currentPage, isHomepage, totalPages, onPageChange }) => {
   /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
   const [jumpValue, setJumpValue] = useState(currentPage.toString());
 
@@ -55,8 +148,8 @@ const PaginationBar = ({ currentPage, totalPages, onPageChange }) => {
 
   return (
     <div className="d-flex flex-column flex-md-row justify-content-center align-items-center my-4">
-      <ul className="pagination mb-0 me-md-3 shadow-sm">
-        <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+      <ul className="pagination mb-0 me-md-3">
+        <li className={`page-item ${isHomepage ? 'disabled' : ''}`}>
           <button
             className="page-link"
             onClick={() => onPageChange(currentPage - 1)}
@@ -92,11 +185,14 @@ const PaginationBar = ({ currentPage, totalPages, onPageChange }) => {
         </li>
       </ul>
 
-      <div className="d-flex align-items-center mt-3 mt-md-0 bg-white p-1 rounded shadow-sm border">
+      <div
+        className="d-flex align-items-center mt-3 mt-md-0 p-1 rounded border"
+        style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
+      >
         <span className="text-muted mx-2 small fw-semibold">Page:</span>
         <input
           type="number"
-          className="form-control form-control-sm text-center border-secondary"
+          className="form-control form-control-sm text-center page-jump-input"
           style={{ width: '70px' }}
           min={1}
           max={totalPages}
@@ -135,6 +231,9 @@ const App = () => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [showSettings, setShowSettings] = useState(false);
 
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isHomepage, setIsHomepage] = useState(true);
+
   /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
   const [pageLimit, setPageLimit] = useState(50);
 
@@ -171,7 +270,7 @@ const App = () => {
     const isSpecialSearch = queryToUse.trim() !== '' && queryToUse.trim() !== '*';
 
     // Only load special content if on Page 1 and no search query
-    if (!isSpecialSearch && pageToUse === 1) {
+    if (!isSpecialSearch && isHomepage) {
       /** @type {ImageResult[]} */
       const trendingResults = await searchImages('first_seen_at.gt:3 days ago', 4, 1);
       setTrendingImages(trendingResults);
@@ -207,7 +306,7 @@ const App = () => {
           const sysSettings = await getSystemSettings();
           const syncPromises = [syncUserGalleryPages(queryToUse, currentPage)];
 
-          if (!isSpecialSearch && currentPage === 1) {
+          if (!isSpecialSearch && isHomepage) {
             syncPromises.push(syncUserGalleryPages('first_seen_at.gt:3 days ago', 1));
             syncPromises.push(syncUserGalleryPages('my:watched', 1));
           }
@@ -218,12 +317,13 @@ const App = () => {
           const accounts = mainSync.accounts;
           const syncLimit = mainSync.syncLimit;
           const totalCount = mainSync.totalCount;
+          console.log(totalCount, syncLimit, Math.ceil(totalCount / syncLimit));
 
           setConnectedAccounts(accounts);
           setPageLimit(syncLimit);
           setTotalPages(Math.max(1, Math.ceil(totalCount / syncLimit)));
 
-          if (!isSpecialSearch && currentPage === 1 && accounts.length > 0) {
+          if (!isSpecialSearch && isHomepage && accounts.length > 0) {
             /** @type {Account[]} */
             const targetAccounts = sysSettings.mixAllBoorus === 1 ? accounts : [accounts[0]];
             /** @type {{account: Account, image: ImageObj}[]} */
@@ -246,6 +346,26 @@ const App = () => {
     setupEnvironment();
   }, [isDbReady, showSettings, currentPage, searchQuery]);
 
+  useEffect(() => {
+    applyThemeFromStorage();
+
+    const handleThemeEvent = () => applyThemeFromStorage();
+    window.addEventListener('themeChanged', handleThemeEvent);
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemThemeChange = () => {
+      if ((localStorage.getItem('app_themeMode') || 'system') === 'system') {
+        applyThemeFromStorage();
+      }
+    };
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+
+    return () => {
+      window.removeEventListener('themeChanged', handleThemeEvent);
+      mediaQuery.removeEventListener('change', handleSystemThemeChange);
+    };
+  }, []);
+
   /**
    * @returns {void}
    */
@@ -258,15 +378,18 @@ const App = () => {
    * @param {string} newQuery
    */
   const handleSearchSubmit = (newQuery) => {
+    setIsHomepage(false);
     setSearchQuery(newQuery);
     setCurrentPage(1);
     hasSynced.current = false;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   /**
    * @param {number} newPage
    */
   const changePage = (newPage) => {
+    setIsHomepage(false);
     setCurrentPage(newPage);
     hasSynced.current = false;
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -276,48 +399,65 @@ const App = () => {
    * @returns {void}
    */
   const goToHome = () => {
+    setIsHomepage(true);
     setSearchQuery('');
     setCurrentPage(1);
     hasSynced.current = false;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    handleCloseSettings();
   };
 
   /** @type {boolean} */
   const showSpecialContent =
-    (searchQuery.trim() === '' || searchQuery.trim() === '*') && currentPage === 1;
+    (searchQuery.trim() === '' || searchQuery.trim() === '*') && isHomepage;
 
   /** @type {Account[]} */
   const activeSidebarAccounts = connectedAccounts ? featuredImagesList.map((f) => f.account) : [];
 
   return (
-    <div className="bg-light min-vh-100 pb-5">
-      <nav className="navbar navbar-dark bg-dark shadow-sm sticky-top">
+    <div className="min-vh-100 pb-5" style={{ backgroundColor: 'var(--app-bg)' }}>
+      <nav className="navbar custom-navbar sticky-top py-1">
         <div className="container-fluid px-4 d-flex align-items-center">
-          <span className="navbar-brand mb-0 h1 fs-3">Philomena Multi-Booru</span>
-
-          <button
-            className="btn btn-outline-info btn-sm text-nowrap me-3 d-none d-md-inline"
-            onClick={goToHome}
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              goToHome();
+            }}
+            className="navbar-brand mb-0 fs-5 fw-bold d-flex align-items-center text-decoration-none"
+            style={{ color: 'var(--app-navbar-text)' }}
           >
-            Home
-          </button>
+            <img
+              src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+              alt="Logo"
+              className="app-logo bg-primary"
+            />
+            Philomena Multi-Booru
+          </a>
 
           {!showSettings && (
-            <SearchBar
-              onSearchSubmit={handleSearchSubmit}
-              initialQuery={searchQuery}
-              isLoading={isSearching}
-            />
+            <div className="mx-3 flex-grow-1" style={{ maxWidth: '600px' }}>
+              <SearchBar
+                onSearchSubmit={handleSearchSubmit}
+                initialQuery={searchQuery}
+                isLoading={isSearching}
+              />
+            </div>
           )}
 
           <div className="ms-auto d-flex align-items-center">
-            <span className="text-light me-3 d-none d-lg-inline">
+            <span
+              className="me-3 d-none d-lg-inline small fw-semibold"
+              style={{ color: 'var(--app-navbar-text)' }}
+            >
               Active APIs:{' '}
-              <span className="badge bg-success">
+              <span className="badge bg-success ms-1">
                 {connectedAccounts ? connectedAccounts.length : 0}
               </span>
             </span>
             <button
-              className="btn btn-outline-light btn-sm text-nowrap"
+              className="btn btn-sm btn-outline-light text-nowrap"
+              style={{ borderColor: 'var(--app-navbar-text)', color: 'var(--app-navbar-text)' }}
               onClick={() => {
                 if (!showSettings) hasSynced.current = false;
                 setShowSettings(!showSettings);
@@ -354,11 +494,14 @@ const App = () => {
                     {featuredImagesList.map((feature, idx) => (
                       <div
                         key={`feat-${feature.account.id}-${idx}`}
-                        className="card shadow-sm border-0 bg-dark text-white mb-4"
+                        className="card shadow-sm border-0 mb-4"
                       >
-                        <div className="card-header bg-secondary text-white fw-bold d-flex justify-content-between">
+                        <div
+                          className="card-header fw-bold d-flex justify-content-between"
+                          style={{ borderColor: 'var(--app-border)' }}
+                        >
                           <span>Featured Image</span>
-                          <small className="text-light opacity-75" title={feature.account.booruUrl}>
+                          <small className="opacity-75" title={feature.account.booruUrl}>
                             Booru {idx + 1}
                           </small>
                         </div>
@@ -379,7 +522,14 @@ const App = () => {
 
                     {/* Trending Images */}
                     <div className="card shadow-sm border-0 mb-4">
-                      <div className="card-header bg-primary text-white fw-bold d-flex justify-content-between align-items-center">
+                      <div
+                        className="card-header fw-bold d-flex justify-content-between align-items-center"
+                        style={{
+                          backgroundColor: 'var(--app-primary)',
+                          color: '#ffffff',
+                          borderColor: 'var(--app-border)',
+                        }}
+                      >
                         <span>Trending Images</span>
                         {activeSidebarAccounts.length > 0 && (
                           <button
@@ -415,7 +565,14 @@ const App = () => {
                     {/* Quick Links */}
                     {activeSidebarAccounts.map((acc, idx) => (
                       <div key={`links-${acc.id}-${idx}`} className="list-group shadow-sm mb-4">
-                        <div className="list-group-item bg-light text-muted fw-bold small text-truncate">
+                        <div
+                          className="list-group-item fw-bold small text-truncate"
+                          style={{
+                            backgroundColor: 'var(--app-surface)',
+                            borderColor: 'var(--app-border)',
+                            borderBottomWidth: '2px',
+                          }}
+                        >
                           Links: {acc.booruUrl}
                         </div>
                         <a
@@ -454,7 +611,7 @@ const App = () => {
                 >
                   {isSearching ? (
                     <div className="text-center mt-5">
-                      <div className="spinner-border text-secondary" role="status">
+                      <div className="spinner-border text-primary" role="status">
                         <span className="visually-hidden">Fetching from APIs...</span>
                       </div>
                       <p className="mt-2 text-muted fw-semibold">
@@ -466,6 +623,7 @@ const App = () => {
                       <PaginationBar
                         currentPage={currentPage}
                         totalPages={totalPages}
+                        isHomepage={isHomepage}
                         onPageChange={changePage}
                       />
 
@@ -473,6 +631,7 @@ const App = () => {
 
                       <PaginationBar
                         currentPage={currentPage}
+                        isHomepage={isHomepage}
                         totalPages={totalPages}
                         onPageChange={changePage}
                       />
@@ -485,10 +644,13 @@ const App = () => {
               {showSpecialContent && watchedImages.length > 0 && (
                 <div className="row mt-5">
                   <div className="col-12">
-                    <div className="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
-                      <h3 className="mb-0 text-secondary">Watched Images</h3>
+                    <div
+                      className="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2"
+                      style={{ borderColor: 'var(--app-border)' }}
+                    >
+                      <h3 className="mb-0">Watched Images</h3>
                       <button
-                        className="btn btn-outline-secondary btn-sm fw-bold"
+                        className="btn btn-secondary btn-sm fw-bold"
                         onClick={() => handleSearchSubmit('my:watched')}
                       >
                         Browse Watched Images
@@ -497,6 +659,7 @@ const App = () => {
 
                     <PaginationBar
                       currentPage={1}
+                      isHomepage={isHomepage}
                       totalPages={Math.ceil(watchedImages.length / pageLimit) || 1}
                       onPageChange={() => handleSearchSubmit('my:watched')}
                     />

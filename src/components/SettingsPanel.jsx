@@ -47,6 +47,39 @@ export const SettingsPanel = ({ onClose }) => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [mixBoorus, setMixBoorus] = useState(false);
 
+  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  const [themeMode, setThemeMode] = useState(localStorage.getItem('app_themeMode') || 'system');
+
+  /* Global Colors */
+  const [customPrimary, setCustomPrimary] = useState(localStorage.getItem('app_primary') || '');
+  const [customBg, setCustomBg] = useState(localStorage.getItem('app_bg') || '');
+  const [customNavbar, setCustomNavbar] = useState(localStorage.getItem('app_navbar') || '');
+
+  /* Text */
+  const [customText, setCustomText] = useState(localStorage.getItem('app_text') || '');
+  const [customTextMuted, setCustomTextMuted] = useState(
+    localStorage.getItem('app_text_muted') || '',
+  );
+
+  /* Alerts */
+  const [alertWarningBg, setAlertWarningBg] = useState(
+    localStorage.getItem('alert_warning_bg') || '',
+  );
+  const [alertWarningText, setAlertWarningText] = useState(
+    localStorage.getItem('alert_warning_text') || '',
+  );
+  const [alertInfoBg, setAlertInfoBg] = useState(localStorage.getItem('alert_info_bg') || '');
+  const [alertInfoText, setAlertInfoText] = useState(localStorage.getItem('alert_info_text') || '');
+  const [alertDangerBg, setAlertDangerBg] = useState(localStorage.getItem('alert_danger_bg') || '');
+  const [alertDangerText, setAlertDangerText] = useState(
+    localStorage.getItem('alert_danger_text') || '',
+  );
+
+  /* Interactions */
+  const [customFave, setCustomFave] = useState(localStorage.getItem('app_fave') || '');
+  const [customUpvote, setCustomUpvote] = useState(localStorage.getItem('app_upvote') || '');
+  const [customDownvote, setCustomDownvote] = useState(localStorage.getItem('app_downvote') || '');
+
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -189,8 +222,69 @@ export const SettingsPanel = ({ onClose }) => {
     await updateSystemSettings(val, isPersistent ? 1 : 0);
   };
 
+  /**
+   * @param {string} mode
+   */
+  const handleThemeModeChange = (mode) => {
+    setThemeMode(mode);
+    localStorage.setItem('app_themeMode', mode);
+    window.dispatchEvent(new Event('themeChanged'));
+  };
+
+  /**
+   * @param {string} key
+   * @param {string} value
+   * @param {import('react').Dispatch<import('react').SetStateAction<string>>} setter
+   */
+  const handleColorChange = (key, value, setter) => {
+    localStorage.setItem(key, value);
+    setter(value);
+    window.dispatchEvent(new Event('themeChanged'));
+  };
+
+  const resetColors = () => {
+    const keysToReset = [
+      'app_primary',
+      'app_bg',
+      'app_navbar',
+      'app_text',
+      'app_text_muted',
+      'alert_warning_bg',
+      'alert_warning_text',
+      'alert_info_bg',
+      'alert_info_text',
+      'alert_danger_bg',
+      'alert_danger_text',
+      'app_fave',
+      'app_upvote',
+      'app_downvote',
+    ];
+
+    keysToReset.forEach((key) => localStorage.removeItem(key));
+
+    setCustomPrimary('');
+    setCustomBg('');
+    setCustomNavbar('');
+    setCustomText('');
+    setCustomTextMuted('');
+    setAlertWarningBg('');
+    setAlertWarningText('');
+    setAlertInfoBg('');
+    setAlertInfoText('');
+    setAlertDangerBg('');
+    setAlertDangerText('');
+    setCustomFave('');
+    setCustomUpvote('');
+    setCustomDownvote('');
+
+    window.dispatchEvent(new Event('themeChanged'));
+  };
+
   return (
-    <div className="container mt-4 mb-4 p-4 bg-white rounded shadow-sm border">
+    <div
+      className="container mt-4 mb-4 p-4 rounded shadow-sm border"
+      style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
+    >
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>System Settings</h2>
         <button
@@ -214,7 +308,12 @@ export const SettingsPanel = ({ onClose }) => {
       >
         <div className="col-md-6 mb-4">
           <div className="card h-100 border-primary">
-            <div className="card-header bg-primary text-white">Add New API Account</div>
+            <div
+              className="card-header fw-bold"
+              style={{ backgroundColor: 'var(--app-primary)', color: '#ffffff' }}
+            >
+              Add New API Account
+            </div>
             <div className="card-body">
               <form onSubmit={handleAddAccount}>
                 <div className="mb-3">
@@ -241,13 +340,11 @@ export const SettingsPanel = ({ onClose }) => {
                     disabled={isLoading}
                   />
                 </div>
-
                 {errorMessage && (
                   <div className="alert alert-danger py-2 px-3 text-sm" role="alert">
                     {errorMessage}
                   </div>
                 )}
-
                 {warnRisk && (
                   <div className="form-check mb-3">
                     <input
@@ -266,7 +363,6 @@ export const SettingsPanel = ({ onClose }) => {
                     </label>
                   </div>
                 )}
-
                 <button type="submit" className="btn btn-primary w-100" disabled={isLoading}>
                   Save Account
                 </button>
@@ -277,7 +373,7 @@ export const SettingsPanel = ({ onClose }) => {
 
         <div className="col-md-6 mb-4">
           <div className="card h-100">
-            <div className="card-header">Connected Accounts</div>
+            <div className="card-header fw-bold">Connected Accounts</div>
             <ul
               className="list-group list-group-flush"
               style={{ maxHeight: '250px', overflowY: 'auto' }}
@@ -307,7 +403,7 @@ export const SettingsPanel = ({ onClose }) => {
               )}
             </ul>
             {accountsList.length > 0 && (
-              <div className="card-footer bg-white text-end">
+              <div className="card-footer text-end" style={{ backgroundColor: 'transparent' }}>
                 <button
                   className="btn btn-sm btn-danger"
                   onClick={handleClearAllAccounts}
@@ -321,12 +417,12 @@ export const SettingsPanel = ({ onClose }) => {
         </div>
       </div>
 
-      <hr className="my-4" />
+      <hr className="my-4" style={{ borderColor: 'var(--app-border)' }} />
 
       <div className="row mb-4">
         <div className="col-12">
-          <div className="card border-secondary">
-            <div className="card-header bg-secondary text-white">Storage Settings</div>
+          <div className="card">
+            <div className="card-header fw-bold">Storage Settings</div>
             <div className="card-body">
               <div className="mb-3">
                 <label className="form-label">Maximum Cached Items</label>
@@ -342,7 +438,6 @@ export const SettingsPanel = ({ onClose }) => {
                   Will be ignored if Persistent Storage is enabled.
                 </small>
               </div>
-
               <div className="form-check form-switch">
                 <input
                   className="form-check-input"
@@ -357,7 +452,6 @@ export const SettingsPanel = ({ onClose }) => {
                   Enable Persistent Storage (Requires Browser Permission)
                 </label>
               </div>
-
               <div className="form-check form-switch mt-2">
                 <input
                   className="form-check-input"
@@ -377,8 +471,216 @@ export const SettingsPanel = ({ onClose }) => {
         </div>
       </div>
 
-      <div className="alert alert-danger d-flex justify-content-between align-items-center mb-0">
-        <div>
+      <hr className="my-4" style={{ borderColor: 'var(--app-border)' }} />
+
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="card">
+            <div
+              className="card-header fw-bold"
+              style={{ backgroundColor: 'var(--app-primary)', color: '#ffffff' }}
+            >
+              Theme & Colors Editor
+            </div>
+            <div className="card-body">
+              <div className="mb-4">
+                <label className="form-label fw-semibold">Appearance Mode</label>
+                <select
+                  className="form-select bg-transparent"
+                  style={{ borderColor: 'var(--app-border)', color: 'var(--app-text)' }}
+                  value={themeMode}
+                  onChange={(e) => handleThemeModeChange(e.target.value)}
+                >
+                  <option value="system" style={{ color: '#000' }}>
+                    System Default
+                  </option>
+                  <option value="light" style={{ color: '#000' }}>
+                    Light Mode
+                  </option>
+                  <option value="dark" style={{ color: '#000' }}>
+                    Dark Mode
+                  </option>
+                </select>
+              </div>
+
+              <h6 className="fw-bold mb-3 mt-4 border-bottom pb-2">Global Colors</h6>
+              <div className="row mb-3">
+                <div className="col-md-4 mb-2">
+                  <label className="form-label small fw-semibold">Primary Color</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={customPrimary || '#4f46e5'}
+                    onChange={(e) =>
+                      handleColorChange('app_primary', e.target.value, setCustomPrimary)
+                    }
+                  />
+                </div>
+                <div className="col-md-4 mb-2">
+                  <label className="form-label small fw-semibold">App Background</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={customBg || '#f8fafc'}
+                    onChange={(e) => handleColorChange('app_bg', e.target.value, setCustomBg)}
+                  />
+                </div>
+                <div className="col-md-4 mb-2">
+                  <label className="form-label small fw-semibold">Navbar Background</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={customNavbar || '#0f172a'}
+                    onChange={(e) =>
+                      handleColorChange('app_navbar', e.target.value, setCustomNavbar)
+                    }
+                  />
+                </div>
+              </div>
+
+              <h6 className="fw-bold mb-3 mt-4 border-bottom pb-2">Text Colors</h6>
+              <div className="row mb-3">
+                <div className="col-md-6 mb-2">
+                  <label className="form-label small fw-semibold">Main Text</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={customText || '#334155'}
+                    onChange={(e) => handleColorChange('app_text', e.target.value, setCustomText)}
+                  />
+                </div>
+                <div className="col-md-6 mb-2">
+                  <label className="form-label small fw-semibold text-muted">Muted Text</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={customTextMuted || '#64748b'}
+                    onChange={(e) =>
+                      handleColorChange('app_text_muted', e.target.value, setCustomTextMuted)
+                    }
+                  />
+                </div>
+              </div>
+
+              <h6 className="fw-bold mb-3 mt-4 border-bottom pb-2">Alert Colors</h6>
+              <div className="row mb-3">
+                <div className="col-md-6 col-lg-3 mb-2">
+                  <label className="form-label small fw-semibold text-warning">Warning BG</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={alertWarningBg || '#fef3c7'}
+                    onChange={(e) =>
+                      handleColorChange('alert_warning_bg', e.target.value, setAlertWarningBg)
+                    }
+                  />
+                </div>
+                <div className="col-md-6 col-lg-3 mb-2">
+                  <label className="form-label small fw-semibold text-warning">Warning Text</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={alertWarningText || '#92400e'}
+                    onChange={(e) =>
+                      handleColorChange('alert_warning_text', e.target.value, setAlertWarningText)
+                    }
+                  />
+                </div>
+                <div className="col-md-6 col-lg-3 mb-2">
+                  <label className="form-label small fw-semibold text-info">Info BG</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={alertInfoBg || '#e0f2fe'}
+                    onChange={(e) =>
+                      handleColorChange('alert_info_bg', e.target.value, setAlertInfoBg)
+                    }
+                  />
+                </div>
+                <div className="col-md-6 col-lg-3 mb-2">
+                  <label className="form-label small fw-semibold text-info">Info Text</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={alertInfoText || '#075985'}
+                    onChange={(e) =>
+                      handleColorChange('alert_info_text', e.target.value, setAlertInfoText)
+                    }
+                  />
+                </div>
+                <div className="col-md-6 col-lg-3 mb-2">
+                  <label className="form-label small fw-semibold text-danger">Danger BG</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={alertDangerBg || '#fee2e2'}
+                    onChange={(e) =>
+                      handleColorChange('alert_danger_bg', e.target.value, setAlertDangerBg)
+                    }
+                  />
+                </div>
+                <div className="col-md-6 col-lg-3 mb-2">
+                  <label className="form-label small fw-semibold text-danger">Danger Text</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={alertDangerText || '#991b1b'}
+                    onChange={(e) =>
+                      handleColorChange('alert_danger_text', e.target.value, setAlertDangerText)
+                    }
+                  />
+                </div>
+              </div>
+
+              <h6 className="fw-bold mb-3 mt-4 border-bottom pb-2">Interaction Symbols</h6>
+              <div className="row mb-4">
+                <div className="col-md-4 mb-2">
+                  <label className="form-label small fw-semibold text-warning">
+                    Favorite Symbol
+                  </label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={customFave || '#f59e0b'}
+                    onChange={(e) => handleColorChange('app_fave', e.target.value, setCustomFave)}
+                  />
+                </div>
+                <div className="col-md-4 mb-2">
+                  <label className="form-label small fw-semibold text-success">Upvote Symbol</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={customUpvote || '#10b981'}
+                    onChange={(e) =>
+                      handleColorChange('app_upvote', e.target.value, setCustomUpvote)
+                    }
+                  />
+                </div>
+                <div className="col-md-4 mb-2">
+                  <label className="form-label small fw-semibold text-danger">
+                    Downvote Symbol
+                  </label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={customDownvote || '#ef4444'}
+                    onChange={(e) =>
+                      handleColorChange('app_downvote', e.target.value, setCustomDownvote)
+                    }
+                  />
+                </div>
+              </div>
+
+              <button className="btn btn-outline-danger btn-sm" onClick={resetColors}>
+                Reset All Colors to Default
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="alert alert-danger d-flex flex-column flex-md-row justify-content-between align-items-center mb-0 mt-2 shadow-sm">
+        <div className="mb-2 mb-md-0">
           <strong>Danger Zone:</strong> Factory reset will wipe the entire JsStore database.
         </div>
         <button
