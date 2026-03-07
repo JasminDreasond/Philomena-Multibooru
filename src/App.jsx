@@ -92,9 +92,26 @@ const applyThemeFromStorage = () => {
     root.style.removeProperty('--app-border');
   }
 
+  const customDanger = localStorage.getItem('app_danger');
+  if (customDanger) {
+    root.style.setProperty('--app-danger', customDanger);
+    root.style.setProperty(
+      '--app-danger-hover',
+      shadeHexColor(customDanger, isDark ? 0.15 : -0.15),
+    );
+  } else {
+    root.style.removeProperty('--app-danger');
+    root.style.removeProperty('--app-danger-hover');
+  }
+
   applyColor('app_navbar', '--app-navbar-bg');
   applyColor('app_text', '--app-text');
   applyColor('app_text_muted', '--app-text-muted');
+
+  applyColor('app_input_bg', '--app-input-bg');
+  applyColor('app_input_text', '--app-input-text');
+  applyColor('app_badge_bg', '--app-badge-bg');
+  applyColor('app_badge_text', '--app-badge-text');
 
   applyColor('alert_warning_bg', '--alert-warning-bg');
   applyColor('alert_warning_text', '--alert-warning-text');
@@ -193,7 +210,12 @@ const PaginationBar = ({ currentPage, isHomepage, totalPages, onPageChange }) =>
         <input
           type="number"
           className="form-control form-control-sm text-center page-jump-input"
-          style={{ width: '70px' }}
+          style={{
+            width: '70px',
+            backgroundColor: 'transparent',
+            borderColor: 'transparent',
+            color: 'var(--app-text)',
+          }}
           min={1}
           max={totalPages}
           value={jumpValue}
@@ -451,7 +473,7 @@ const App = () => {
               style={{ color: 'var(--app-navbar-text)' }}
             >
               Active APIs:{' '}
-              <span className="badge bg-success ms-1">
+              <span className="badge custom-badge ms-1">
                 {connectedAccounts ? connectedAccounts.length : 0}
               </span>
             </span>

@@ -4,11 +4,19 @@
   --app-surface: #ffffff;
   --app-text: #334155;
   --app-text-muted: #64748b;
-  --app-primary: #4f46e5; /* Indigo moderno e elegante */
+  --app-primary: #4f46e5;
   --app-primary-hover: #4338ca;
   --app-navbar-bg: #0f172a;
   --app-navbar-text: #f8fafc;
   --app-border: #e2e8f0;
+
+  /* Inputs, Badges e Botão Danger */
+  --app-input-bg: #ffffff;
+  --app-input-text: #334155;
+  --app-danger: #ef4444;
+  --app-danger-hover: #dc2626;
+  --app-badge-bg: #10b981;
+  --app-badge-text: #ffffff;
 
   /* Cores de Alertas (Soft) */
   --alert-warning-bg: #fef3c7;
@@ -19,11 +27,11 @@
   --alert-danger-text: #991b1b;
 
   /* Variáveis Exclusivas de Interação */
-  --fave-color: #f59e0b; /* Laranja/Âmbar */
-  --upvote-color: #10b981; /* Verde esmeralda */
-  --downvote-color: #ef4444; /* Vermelho vibrante */
+  --fave-color: #f59e0b;
+  --upvote-color: #10b981;
+  --downvote-color: #ef4444;
   --interaction-inactive: #ffffff;
-  --interaction-bg: rgba(15, 23, 42, 0.6);
+  --interaction-bg: rgba(0, 0, 0, 0.6);
 }
 
 [data-theme='dark'] {
@@ -37,6 +45,14 @@
   --app-navbar-bg: #020617;
   --app-navbar-text: #f8fafc;
   --app-border: #334155;
+
+  /* Inputs, Badges e Botão Danger Dark */
+  --app-input-bg: #0f172a;
+  --app-input-text: #f1f5f9;
+  --app-danger: #f87171;
+  --app-danger-hover: #ef4444;
+  --app-badge-bg: #059669;
+  --app-badge-text: #ffffff;
 
   /* Cores de Alertas Dark */
   --alert-warning-bg: #451a03;
@@ -99,7 +115,32 @@ body {
 }
 
 /* =========================================
-   Botões (Modernos e Animados)
+   Inputs Globais (Search, Forms)
+   ========================================= */
+.form-control,
+.form-select {
+  background-color: var(--app-input-bg) !important;
+  color: var(--app-input-text) !important;
+  border: 1px solid var(--app-border) !important;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--app-primary) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
+  background-color: var(--app-input-bg) !important;
+  color: var(--app-input-text) !important;
+}
+
+.form-control::placeholder {
+  color: var(--app-text-muted) !important;
+  opacity: 0.7;
+}
+
+/* =========================================
+   Botões e Badges (Modernos)
    ========================================= */
 .btn {
   border-radius: 8px;
@@ -134,6 +175,17 @@ body {
   color: var(--app-text) !important;
 }
 
+.btn-danger {
+  background-color: var(--app-danger) !important;
+  border-color: var(--app-danger) !important;
+  color: #ffffff !important;
+}
+
+.btn-danger:hover {
+  background-color: var(--app-danger-hover) !important;
+  border-color: var(--app-danger-hover) !important;
+}
+
 .btn-outline-light {
   border-color: var(--app-navbar-text) !important;
   color: var(--app-navbar-text) !important;
@@ -144,8 +196,13 @@ body {
   color: var(--app-navbar-bg) !important;
 }
 
+.custom-badge {
+  background-color: var(--app-badge-bg) !important;
+  color: var(--app-badge-text) !important;
+}
+
 /* =========================================
-   Paginação e Inputs (Customizada)
+   Paginação
    ========================================= */
 .pagination {
   gap: 4px;
@@ -179,27 +236,16 @@ body {
   background-color: transparent !important;
 }
 
-.page-jump-input {
-  background-color: var(--app-surface) !important;
-  color: var(--app-text) !important;
-  border: 1px solid var(--app-border) !important;
-  transition: all 0.2s ease;
-}
-
-.page-jump-input:focus {
-  border-color: var(--app-primary) !important;
-  box-shadow: 0 0 0 3px var(--app-border) !important;
-  outline: none;
-}
-
 /* =========================================
-   Alertas (Bootstrap 5 Overrides)
+   Alertas Dashboard Modernos
    ========================================= */
 .alert {
   border: none !important;
-  border-radius: 12px;
-  font-weight: 500;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border-left: 5px solid currentColor !important;
+  border-radius: 8px;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  padding: 1rem 1.25rem;
 }
 
 .alert-warning {
@@ -240,12 +286,10 @@ body {
   transform: scale(1.1);
 }
 
-/* Cores Inativas */
 .badge-inactive {
   color: var(--interaction-inactive);
 }
 
-/* Cores Ativas (Mapeamento Corrigido) */
 .active-fave {
   color: var(--fave-color);
   text-shadow: 0 0 8px rgba(245, 158, 11, 0.4);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   addAccount,
   getAllAccounts,
@@ -17,6 +17,9 @@ import {
  * @param {{ onClose: () => void }} props
  */
 export const SettingsPanel = ({ onClose }) => {
+  /** @type {import('react').MutableRefObject<HTMLInputElement | null>} */
+  const fileInputRef = useRef(null);
+
   /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
   const [urlInput, setUrlInput] = useState('');
 
@@ -54,11 +57,20 @@ export const SettingsPanel = ({ onClose }) => {
   const [customPrimary, setCustomPrimary] = useState(localStorage.getItem('app_primary') || '');
   const [customBg, setCustomBg] = useState(localStorage.getItem('app_bg') || '');
   const [customNavbar, setCustomNavbar] = useState(localStorage.getItem('app_navbar') || '');
+  const [customDanger, setCustomDanger] = useState(localStorage.getItem('app_danger') || '');
 
-  /* Text */
+  /* Textos, Inputs and Badges */
   const [customText, setCustomText] = useState(localStorage.getItem('app_text') || '');
   const [customTextMuted, setCustomTextMuted] = useState(
     localStorage.getItem('app_text_muted') || '',
+  );
+  const [customInputBg, setCustomInputBg] = useState(localStorage.getItem('app_input_bg') || '');
+  const [customInputText, setCustomInputText] = useState(
+    localStorage.getItem('app_input_text') || '',
+  );
+  const [customBadgeBg, setCustomBadgeBg] = useState(localStorage.getItem('app_badge_bg') || '');
+  const [customBadgeText, setCustomBadgeText] = useState(
+    localStorage.getItem('app_badge_text') || '',
   );
 
   /* Alerts */
@@ -247,8 +259,13 @@ export const SettingsPanel = ({ onClose }) => {
       'app_primary',
       'app_bg',
       'app_navbar',
+      'app_danger',
       'app_text',
       'app_text_muted',
+      'app_input_bg',
+      'app_input_text',
+      'app_badge_bg',
+      'app_badge_text',
       'alert_warning_bg',
       'alert_warning_text',
       'alert_info_bg',
@@ -265,8 +282,13 @@ export const SettingsPanel = ({ onClose }) => {
     setCustomPrimary('');
     setCustomBg('');
     setCustomNavbar('');
+    setCustomDanger('');
     setCustomText('');
     setCustomTextMuted('');
+    setCustomInputBg('');
+    setCustomInputText('');
+    setCustomBadgeBg('');
+    setCustomBadgeText('');
     setAlertWarningBg('');
     setAlertWarningText('');
     setAlertInfoBg('');
@@ -278,6 +300,109 @@ export const SettingsPanel = ({ onClose }) => {
     setCustomDownvote('');
 
     window.dispatchEvent(new Event('themeChanged'));
+  };
+
+  /**
+   * @returns {void}
+   */
+  const handleExportTheme = () => {
+    const keys = [
+      'app_primary',
+      'app_bg',
+      'app_navbar',
+      'app_danger',
+      'app_text',
+      'app_text_muted',
+      'app_input_bg',
+      'app_input_text',
+      'app_badge_bg',
+      'app_badge_text',
+      'alert_warning_bg',
+      'alert_warning_text',
+      'alert_info_bg',
+      'alert_info_text',
+      'alert_danger_bg',
+      'alert_danger_text',
+      'app_fave',
+      'app_upvote',
+      'app_downvote',
+    ];
+
+    const themeData = {};
+    keys.forEach((k) => {
+      const val = localStorage.getItem(k);
+      if (val) themeData[k] = val;
+    });
+
+    const blob = new Blob([JSON.stringify(themeData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'philomena-theme.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  /**
+   * @param {import('react').ChangeEvent<HTMLInputElement>} event
+   * @returns {void}
+   */
+  const handleImportTheme = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const json = JSON.parse(e.target.result);
+        const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+        const validKeys = [
+          'app_primary',
+          'app_bg',
+          'app_navbar',
+          'app_danger',
+          'app_text',
+          'app_text_muted',
+          'app_input_bg',
+          'app_input_text',
+          'app_badge_bg',
+          'app_badge_text',
+          'alert_warning_bg',
+          'alert_warning_text',
+          'alert_info_bg',
+          'alert_info_text',
+          'alert_danger_bg',
+          'alert_danger_text',
+          'app_fave',
+          'app_upvote',
+          'app_downvote',
+        ];
+
+        let importedCount = 0;
+        for (const key of Object.keys(json)) {
+          if (
+            validKeys.includes(key) &&
+            typeof json[key] === 'string' &&
+            hexRegex.test(json[key])
+          ) {
+            localStorage.setItem(key, json[key]);
+            importedCount++;
+          }
+        }
+
+        if (importedCount > 0) {
+          alert('Theme imported successfully! Reloading to apply all colors.');
+          window.location.reload();
+        } else {
+          alert('No valid colors found in the file.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Invalid JSON file format.');
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
   };
 
   return (
@@ -477,10 +602,28 @@ export const SettingsPanel = ({ onClose }) => {
         <div className="col-12">
           <div className="card">
             <div
-              className="card-header fw-bold"
+              className="card-header fw-bold d-flex justify-content-between align-items-center"
               style={{ backgroundColor: 'var(--app-primary)', color: '#ffffff' }}
             >
-              Theme & Colors Editor
+              <span>Theme & Colors Editor</span>
+              <div>
+                <input
+                  type="file"
+                  accept=".json"
+                  style={{ display: 'none' }}
+                  ref={fileInputRef}
+                  onChange={handleImportTheme}
+                />
+                <button
+                  className="btn btn-sm btn-outline-light me-2"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Import Theme
+                </button>
+                <button className="btn btn-sm btn-outline-light" onClick={handleExportTheme}>
+                  Export Theme
+                </button>
+              </div>
             </div>
             <div className="card-body">
               <div className="mb-4">
@@ -505,7 +648,7 @@ export const SettingsPanel = ({ onClose }) => {
 
               <h6 className="fw-bold mb-3 mt-4 border-bottom pb-2">Global Colors</h6>
               <div className="row mb-3">
-                <div className="col-md-4 mb-2">
+                <div className="col-md-3 mb-2">
                   <label className="form-label small fw-semibold">Primary Color</label>
                   <input
                     type="color"
@@ -516,7 +659,18 @@ export const SettingsPanel = ({ onClose }) => {
                     }
                   />
                 </div>
-                <div className="col-md-4 mb-2">
+                <div className="col-md-3 mb-2">
+                  <label className="form-label small fw-semibold">Danger Color</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={customDanger || '#ef4444'}
+                    onChange={(e) =>
+                      handleColorChange('app_danger', e.target.value, setCustomDanger)
+                    }
+                  />
+                </div>
+                <div className="col-md-3 mb-2">
                   <label className="form-label small fw-semibold">App Background</label>
                   <input
                     type="color"
@@ -525,7 +679,7 @@ export const SettingsPanel = ({ onClose }) => {
                     onChange={(e) => handleColorChange('app_bg', e.target.value, setCustomBg)}
                   />
                 </div>
-                <div className="col-md-4 mb-2">
+                <div className="col-md-3 mb-2">
                   <label className="form-label small fw-semibold">Navbar Background</label>
                   <input
                     type="color"
@@ -533,6 +687,54 @@ export const SettingsPanel = ({ onClose }) => {
                     value={customNavbar || '#0f172a'}
                     onChange={(e) =>
                       handleColorChange('app_navbar', e.target.value, setCustomNavbar)
+                    }
+                  />
+                </div>
+              </div>
+
+              <h6 className="fw-bold mb-3 mt-4 border-bottom pb-2">Inputs & Badges</h6>
+              <div className="row mb-3">
+                <div className="col-md-3 mb-2">
+                  <label className="form-label small fw-semibold">Input BG</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={customInputBg || '#ffffff'}
+                    onChange={(e) =>
+                      handleColorChange('app_input_bg', e.target.value, setCustomInputBg)
+                    }
+                  />
+                </div>
+                <div className="col-md-3 mb-2">
+                  <label className="form-label small fw-semibold">Input Text</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={customInputText || '#334155'}
+                    onChange={(e) =>
+                      handleColorChange('app_input_text', e.target.value, setCustomInputText)
+                    }
+                  />
+                </div>
+                <div className="col-md-3 mb-2">
+                  <label className="form-label small fw-semibold">Badge BG</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={customBadgeBg || '#10b981'}
+                    onChange={(e) =>
+                      handleColorChange('app_badge_bg', e.target.value, setCustomBadgeBg)
+                    }
+                  />
+                </div>
+                <div className="col-md-3 mb-2">
+                  <label className="form-label small fw-semibold">Badge Text</label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={customBadgeText || '#ffffff'}
+                    onChange={(e) =>
+                      handleColorChange('app_badge_text', e.target.value, setCustomBadgeText)
                     }
                   />
                 </div>
