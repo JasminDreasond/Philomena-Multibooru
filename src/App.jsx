@@ -606,10 +606,10 @@ const App = () => {
             </div>
           ) : (
             <>
-              <div className="row flex-nowrap flex-column flex-lg-row">
+              <div className="row g-4">
                 {/* Left Sidebar - Hidden during active searches or pagination */}
                 {showSpecialContent && (
-                  <div className="sidebar-container mb-4 mx-auto mx-lg-0 col-sm-4">
+                  <div className="col-12 col-lg-auto sidebar-container">
                     {/* Featured Images */}
                     {featuredImagesList.map((feature, idx) => (
                       <div
@@ -697,7 +697,7 @@ const App = () => {
                 )}
 
                 {/* Main Content Area */}
-                <div className="col" style={{ minWidth: 0, minHeight: '80vh' }}>
+                <div className="col-12 col-lg" style={{ minWidth: 0, minHeight: '80vh' }}>
                   {isSearching ? (
                     <div className="text-center mt-5">
                       <div className="spinner-border text-primary" role="status">
