@@ -9,6 +9,7 @@
   --app-navbar-bg: #0f172a;
   --app-navbar-text: #f8fafc;
   --app-border: #e2e8f0;
+  --app-spinner-color: #4f46e5;
 
   /* Inputs, Badges e Botão Danger */
   --app-input-bg: #ffffff;
@@ -32,6 +33,13 @@
   --downvote-color: #ef4444;
   --interaction-inactive: #ffffff;
   --interaction-bg: rgba(0, 0, 0, 0.6);
+
+  /* Overrides Nativos do Bootstrap 5 */
+  --bs-body-bg: var(--app-bg);
+  --bs-body-color: var(--app-text);
+  --bs-primary: var(--app-primary);
+  --bs-danger: var(--app-danger);
+  --bs-border-color: var(--app-border);
 }
 
 [data-theme='dark'] {
@@ -45,6 +53,7 @@
   --app-navbar-bg: #020617;
   --app-navbar-text: #f8fafc;
   --app-border: #334155;
+  --app-spinner-color: #6366f1;
 
   /* Inputs, Badges e Botão Danger Dark */
   --app-input-bg: #0f172a;
@@ -118,7 +127,8 @@ body {
    Inputs Globais (Search, Forms)
    ========================================= */
 .form-control,
-.form-select {
+.form-select,
+.page-jump-input {
   background-color: var(--app-input-bg) !important;
   color: var(--app-input-text) !important;
   border: 1px solid var(--app-border) !important;
@@ -127,7 +137,8 @@ body {
 }
 
 .form-control:focus,
-.form-select:focus {
+.form-select:focus,
+.page-jump-input:focus {
   border-color: var(--app-primary) !important;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
   background-color: var(--app-input-bg) !important;
@@ -140,7 +151,7 @@ body {
 }
 
 /* =========================================
-   Botões e Badges (Modernos)
+   Botões, Badges e Spinners
    ========================================= */
 .btn {
   border-radius: 8px;
@@ -199,6 +210,10 @@ body {
 .custom-badge {
   background-color: var(--app-badge-bg) !important;
   color: var(--app-badge-text) !important;
+}
+
+.spinner-border {
+  color: var(--app-spinner-color) !important;
 }
 
 /* =========================================
@@ -313,4 +328,17 @@ body {
   background-color: var(--app-navbar-bg) !important;
   color: var(--app-navbar-text) !important;
   transition: background-color 0.4s ease;
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+.custom-navbar .navbar-brand {
+  font-size: 1.1rem !important;
+}
+
+.app-logo {
+  height: 24px;
+  width: auto;
+  margin-right: 8px;
+  border-radius: 4px;
 }

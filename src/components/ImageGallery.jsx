@@ -5,9 +5,12 @@ import { useState } from 'react';
  */
 
 /**
- * @param {{ imagesList: ImageResult[] }} props
+ * @param {{ imagesList: ImageResult[], gridClass?: string }} props
  */
-export const ImageGallery = ({ imagesList }) => {
+export const ImageGallery = ({
+  imagesList,
+  gridClass = 'row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6 g-3',
+}) => {
   /** @type {[Set<number>, import('react').Dispatch<import('react').SetStateAction<Set<number>>>]} */
   const [unspoileredIds, setUnspoileredIds] = useState(new Set());
 
@@ -16,8 +19,8 @@ export const ImageGallery = ({ imagesList }) => {
 
   if (!hasImages) {
     return (
-      <div className="container text-center mt-5">
-        <h4 className="text-muted">No images found. Try a different search!</h4>
+      <div className="text-center mt-4 w-100">
+        <h5 className="text-muted">No images found.</h5>
       </div>
     );
   }
@@ -39,8 +42,8 @@ export const ImageGallery = ({ imagesList }) => {
   };
 
   return (
-    <div className="container">
-      <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+    <div className="w-100">
+      <div className={`row ${gridClass}`}>
         {imagesList.map((img) => {
           /** @type {string} */
           const targetUrl = `${img.booruUrl}${!img.booruUrl.endsWith('/') ? '/' : ''}${img.id}`;
@@ -76,15 +79,17 @@ export const ImageGallery = ({ imagesList }) => {
                   href={targetUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-decoration-none"
+                  className="text-decoration-none d-block h-100"
                   onClick={(e) => handleImageClick(e, img.id, img.spoilered)}
                 >
                   <div
                     style={{
                       position: 'relative',
-                      height: '250px',
+                      aspectRatio: '1 / 1',
                       backgroundColor: '#000',
                       overflow: 'hidden',
+                      borderTopLeftRadius: '12px',
+                      borderTopRightRadius: '12px',
                     }}
                   >
                     {isProcessing && (
@@ -93,8 +98,11 @@ export const ImageGallery = ({ imagesList }) => {
                         style={{ zIndex: 10 }}
                       >
                         <div className="spinner-border text-light mb-2" role="status"></div>
-                        <span className="badge bg-warning text-dark text-wrap px-3 py-2 text-center">
-                          Image is still processing or thumbnails are generating...
+                        <span
+                          className="badge bg-warning text-dark text-wrap px-3 py-2 text-center"
+                          style={{ fontSize: '0.75rem' }}
+                        >
+                          Processing...
                         </span>
                       </div>
                     )}
@@ -105,7 +113,7 @@ export const ImageGallery = ({ imagesList }) => {
                         style={{ zIndex: 5, pointerEvents: 'none' }}
                       >
                         <div className="badge bg-danger fs-6 opacity-75 text-wrap p-2 text-center shadow mb-2">
-                          Spoilered Content
+                          Spoilered
                           <br />
                           <small>(Click to reveal)</small>
                         </div>
@@ -144,7 +152,7 @@ export const ImageGallery = ({ imagesList }) => {
                       className="position-absolute bottom-0 w-100 p-2 text-white d-flex justify-content-between align-items-end"
                       style={{ zIndex: 6 }}
                     >
-                      <div className="interaction-container d-flex gap-2 align-items-center w-100 justify-content-between shadow-sm">
+                      <div className="interaction-container d-flex gap-1 align-items-center w-100 justify-content-between shadow-sm px-2">
                         <span
                           className={`badge-interaction ${isFav ? 'active-fave' : 'badge-inactive'}`}
                         >
@@ -161,8 +169,11 @@ export const ImageGallery = ({ imagesList }) => {
                       </div>
                     </div>
                   </div>
-                  <div className="card-body py-3" style={{ zIndex: 6, position: 'relative' }}>
-                    <small className="text-muted d-block text-truncate fw-semibold">
+                  <div className="card-body py-2 px-3" style={{ zIndex: 6, position: 'relative' }}>
+                    <small
+                      className="text-muted d-block text-truncate fw-semibold"
+                      style={{ fontSize: '0.75rem' }}
+                    >
                       {img.tags.join(', ')}
                     </small>
                   </div>

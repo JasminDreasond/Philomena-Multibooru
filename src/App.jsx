@@ -112,6 +112,7 @@ const applyThemeFromStorage = () => {
   applyColor('app_input_text', '--app-input-text');
   applyColor('app_badge_bg', '--app-badge-bg');
   applyColor('app_badge_text', '--app-badge-text');
+  applyColor('app_spinner', '--app-spinner-color');
 
   applyColor('alert_warning_bg', '--alert-warning-bg');
   applyColor('alert_warning_text', '--alert-warning-text');
@@ -165,7 +166,7 @@ const PaginationBar = ({ currentPage, isHomepage, totalPages, onPageChange }) =>
 
   return (
     <div className="d-flex flex-column flex-md-row justify-content-center align-items-center my-4">
-      <ul className="pagination mb-0 me-md-3">
+      <ul className="pagination mb-0 me-md-3 shadow-sm">
         <li className={`page-item ${isHomepage ? 'disabled' : ''}`}>
           <button
             className="page-link"
@@ -203,19 +204,14 @@ const PaginationBar = ({ currentPage, isHomepage, totalPages, onPageChange }) =>
       </ul>
 
       <div
-        className="d-flex align-items-center mt-3 mt-md-0 p-1 rounded border"
+        className="d-flex align-items-center mt-3 mt-md-0 p-1 rounded shadow-sm border"
         style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
       >
         <span className="text-muted mx-2 small fw-semibold">Page:</span>
         <input
           type="number"
           className="form-control form-control-sm text-center page-jump-input"
-          style={{
-            width: '70px',
-            backgroundColor: 'transparent',
-            borderColor: 'transparent',
-            color: 'var(--app-text)',
-          }}
+          style={{ width: '70px', padding: '0.25rem' }}
           min={1}
           max={totalPages}
           value={jumpValue}
@@ -303,6 +299,31 @@ const App = () => {
     }
   };
 
+  /**
+   * Run a new request in the API to sync without messing with what the user was doing.
+   * @returns {Promise<void>}
+   */
+  const executeBackgroundSync = async () => {
+    try {
+      /** @type {string} */
+      const queryToUse = searchQuery.trim() === '' ? '*' : searchQuery;
+      /** @type {boolean} */
+      const isSpecialSearch = queryToUse !== '*';
+
+      const syncPromises = [syncUserGalleryPages(queryToUse, currentPage)];
+
+      if (!isSpecialSearch && isHomepage) {
+        syncPromises.push(syncUserGalleryPages('first_seen_at.gt:3 days ago', 1));
+        syncPromises.push(syncUserGalleryPages('my:watched', 1));
+      }
+
+      await Promise.all(syncPromises);
+      await loadLocalData(pageLimit, currentPage, queryToUse);
+    } catch (err) {
+      console.error('Error on background sync:', err);
+    }
+  };
+
   useEffect(() => {
     /**
      * @returns {Promise<void>}
@@ -326,6 +347,8 @@ const App = () => {
           const isSpecialSearch = queryToUse !== '*';
 
           const sysSettings = await getSystemSettings();
+          await executeBackgroundSync();
+
           const syncPromises = [syncUserGalleryPages(queryToUse, currentPage)];
 
           if (!isSpecialSearch && isHomepage) {
@@ -388,6 +411,27 @@ const App = () => {
     };
   }, []);
 
+  // Inactive detector
+  useEffect(() => {
+    let hiddenTimestamp = 0;
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        hiddenTimestamp = Date.now();
+      } else {
+        if (hiddenTimestamp && Date.now() - hiddenTimestamp > 60000) {
+          // 60s
+          setIsSearching(true);
+          executeBackgroundSync().finally(() => setIsSearching(false));
+        }
+        hiddenTimestamp = 0;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [searchQuery, currentPage, pageLimit, isHomepage]);
+
   /**
    * @returns {void}
    */
@@ -438,7 +482,7 @@ const App = () => {
 
   return (
     <div className="min-vh-100 pb-5" style={{ backgroundColor: 'var(--app-bg)' }}>
-      <nav className="navbar custom-navbar sticky-top py-1">
+      <nav className="navbar custom-navbar sticky-top shadow-sm">
         <div className="container-fluid px-4 d-flex align-items-center">
           <a
             href="#"
@@ -446,7 +490,7 @@ const App = () => {
               e.preventDefault();
               goToHome();
             }}
-            className="navbar-brand mb-0 fs-5 fw-bold d-flex align-items-center text-decoration-none"
+            className="navbar-brand mb-0 fw-bold d-flex align-items-center text-decoration-none"
             style={{ color: 'var(--app-navbar-text)' }}
           >
             <img
@@ -562,25 +606,8 @@ const App = () => {
                           </button>
                         )}
                       </div>
-                      <div className="card-body p-2">
-                        <div className="row row-cols-2 g-2">
-                          {trendingImages.map((img) => (
-                            <div className="col" key={`trend-${img.booruUrl}-${img.id}`}>
-                              <a
-                                href={`${img.booruUrl}/${img.id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                <img
-                                  src={img.representations.thumb_small || img.representations.thumb}
-                                  className="w-100 rounded"
-                                  alt="Trending"
-                                  style={{ objectFit: 'cover', height: '100px' }}
-                                />
-                              </a>
-                            </div>
-                          ))}
-                        </div>
+                      <div className="card-body p-3">
+                        <ImageGallery imagesList={trendingImages} gridClass="row-cols-2 g-2" />
                       </div>
                     </div>
 
@@ -672,7 +699,7 @@ const App = () => {
                     >
                       <h3 className="mb-0">Watched Images</h3>
                       <button
-                        className="btn btn-secondary btn-sm fw-bold"
+                        className="btn btn-outline-secondary btn-sm fw-bold"
                         onClick={() => handleSearchSubmit('my:watched')}
                       >
                         Browse Watched Images

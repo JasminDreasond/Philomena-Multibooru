@@ -59,7 +59,7 @@ export const SettingsPanel = ({ onClose }) => {
   const [customNavbar, setCustomNavbar] = useState(localStorage.getItem('app_navbar') || '');
   const [customDanger, setCustomDanger] = useState(localStorage.getItem('app_danger') || '');
 
-  /* Textos, Inputs and Badges */
+  /* Textos, Inputs, Spinners and Badges */
   const [customText, setCustomText] = useState(localStorage.getItem('app_text') || '');
   const [customTextMuted, setCustomTextMuted] = useState(
     localStorage.getItem('app_text_muted') || '',
@@ -72,6 +72,7 @@ export const SettingsPanel = ({ onClose }) => {
   const [customBadgeText, setCustomBadgeText] = useState(
     localStorage.getItem('app_badge_text') || '',
   );
+  const [customSpinner, setCustomSpinner] = useState(localStorage.getItem('app_spinner') || '');
 
   /* Alerts */
   const [alertWarningBg, setAlertWarningBg] = useState(
@@ -266,6 +267,7 @@ export const SettingsPanel = ({ onClose }) => {
       'app_input_text',
       'app_badge_bg',
       'app_badge_text',
+      'app_spinner',
       'alert_warning_bg',
       'alert_warning_text',
       'alert_info_bg',
@@ -289,6 +291,7 @@ export const SettingsPanel = ({ onClose }) => {
     setCustomInputText('');
     setCustomBadgeBg('');
     setCustomBadgeText('');
+    setCustomSpinner('');
     setAlertWarningBg('');
     setAlertWarningText('');
     setAlertInfoBg('');
@@ -317,6 +320,7 @@ export const SettingsPanel = ({ onClose }) => {
       'app_input_text',
       'app_badge_bg',
       'app_badge_text',
+      'app_spinner',
       'alert_warning_bg',
       'alert_warning_text',
       'alert_info_bg',
@@ -367,6 +371,7 @@ export const SettingsPanel = ({ onClose }) => {
           'app_input_text',
           'app_badge_bg',
           'app_badge_text',
+          'app_spinner',
           'alert_warning_bg',
           'alert_warning_text',
           'alert_info_bg',
@@ -605,7 +610,7 @@ export const SettingsPanel = ({ onClose }) => {
               className="card-header fw-bold d-flex justify-content-between align-items-center"
               style={{ backgroundColor: 'var(--app-primary)', color: '#ffffff' }}
             >
-              <span>Theme & Colors Editor</span>
+              <span>Theme & Colors Editor (Beta)</span>
               <div>
                 <input
                   type="file"
@@ -692,9 +697,9 @@ export const SettingsPanel = ({ onClose }) => {
                 </div>
               </div>
 
-              <h6 className="fw-bold mb-3 mt-4 border-bottom pb-2">Inputs & Badges</h6>
+              <h6 className="fw-bold mb-3 mt-4 border-bottom pb-2">Inputs, Badges & Loaders</h6>
               <div className="row mb-3">
-                <div className="col-md-3 mb-2">
+                <div className="col-md-2 col-6 mb-2">
                   <label className="form-label small fw-semibold">Input BG</label>
                   <input
                     type="color"
@@ -705,7 +710,7 @@ export const SettingsPanel = ({ onClose }) => {
                     }
                   />
                 </div>
-                <div className="col-md-3 mb-2">
+                <div className="col-md-2 col-6 mb-2">
                   <label className="form-label small fw-semibold">Input Text</label>
                   <input
                     type="color"
@@ -716,7 +721,7 @@ export const SettingsPanel = ({ onClose }) => {
                     }
                   />
                 </div>
-                <div className="col-md-3 mb-2">
+                <div className="col-md-2 col-6 mb-2">
                   <label className="form-label small fw-semibold">Badge BG</label>
                   <input
                     type="color"
@@ -727,7 +732,7 @@ export const SettingsPanel = ({ onClose }) => {
                     }
                   />
                 </div>
-                <div className="col-md-3 mb-2">
+                <div className="col-md-2 col-6 mb-2">
                   <label className="form-label small fw-semibold">Badge Text</label>
                   <input
                     type="color"
@@ -735,6 +740,19 @@ export const SettingsPanel = ({ onClose }) => {
                     value={customBadgeText || '#ffffff'}
                     onChange={(e) =>
                       handleColorChange('app_badge_text', e.target.value, setCustomBadgeText)
+                    }
+                  />
+                </div>
+                <div className="col-md-4 col-12 mb-2">
+                  <label className="form-label small fw-semibold text-primary">
+                    Spinner Loader
+                  </label>
+                  <input
+                    type="color"
+                    className="form-control form-control-color w-100"
+                    value={customSpinner || '#4f46e5'}
+                    onChange={(e) =>
+                      handleColorChange('app_spinner', e.target.value, setCustomSpinner)
                     }
                   />
                 </div>
