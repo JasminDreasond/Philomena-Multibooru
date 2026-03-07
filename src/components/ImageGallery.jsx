@@ -6,9 +6,9 @@ import { useState } from 'react';
  */
 
 /**
- * @param {{ img: ImageResult }} props
+ * @param {{ img: ImageResult; className: string; }} props
  */
-export const Image = ({ img }) => {
+export const Image = ({ img, className }) => {
   /** @type {[Set<number>, import('react').Dispatch<import('react').SetStateAction<Set<number>>>]} */
   const [unspoileredIds, setUnspoileredIds] = useState(new Set());
 
@@ -49,6 +49,7 @@ export const Image = ({ img }) => {
         onClick={(e) => handleImageClick(e, img.id, img.spoilered)}
       >
         <div
+          className={`${className ? className : ''}`}
           style={{
             position: 'relative',
             aspectRatio: '1 / 1',

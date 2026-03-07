@@ -625,7 +625,7 @@ const App = () => {
                             Booru {idx + 1}
                           </small>
                         </div>
-                        <Image img={fixImageObj(feature.image)} />
+                        <Image className="rounded-0" img={fixImageObj(feature.image)} />
                       </div>
                     ))}
 
