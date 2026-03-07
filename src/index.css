@@ -413,7 +413,8 @@ body {
   font-size: 0.85rem;
 }
 
-.viewer-toolbar .btn-tool {
+.viewer-toolbar .btn-tool,
+.viewer-subinfo .btn-tool {
   color: var(--app-text);
   text-decoration: none;
   background: transparent;
@@ -426,12 +427,14 @@ body {
   transition: background-color 0.2s;
 }
 
-.viewer-toolbar .btn-tool:hover {
+.viewer-toolbar .btn-tool:hover,
+.viewer-subinfo .btn-tool:hover {
   background-color: rgba(255, 255, 255, 0.1);
   color: var(--app-text);
 }
 
-[data-theme='light'] .viewer-toolbar .btn-tool:hover {
+[data-theme='light'] .viewer-toolbar .btn-tool:hover,
+[data-theme='light'] .viewer-subinfo .btn-tool:hover {
   background-color: rgba(0, 0, 0, 0.1);
 }
 

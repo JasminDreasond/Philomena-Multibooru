@@ -152,7 +152,7 @@ export const ImageViewer = ({ image, onClose }) => {
 
       {/* Sub-info bar */}
       <div className="viewer-subinfo border-bottom" style={{ borderColor: 'var(--app-border)' }}>
-        Uploaded {timeSince(uploadDate)} by <strong>{uploaderName}</strong> {image.width}x
+        Uploaded {timeSince(uploadDate)} by <strong><a rel='noopener noreferrer' target='_blank' className='btn-tool' href={`${fixBooruUrl(image.booruUrl)}/profiles/${uploaderName}`}>{uploaderName}</a></strong> {image.width}x
         {image.height} {fileExtension.toUpperCase()} {formatBytes(image.size)}
       </div>
 
