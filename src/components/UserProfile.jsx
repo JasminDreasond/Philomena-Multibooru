@@ -79,8 +79,8 @@ export const UserProfile = ({
           const favedQuery = `faved_by_id:${userProfile.id}`;
 
           await Promise.all([
-            syncUserGalleryPages(uploaderQuery, 1, 4, account),
-            syncUserGalleryPages(favedQuery, 1, 4, account),
+            syncUserGalleryPages(uploaderQuery, 1, null, 4, account),
+            syncUserGalleryPages(favedQuery, 1, null, 4, account),
           ]);
 
           const [uploadsRes, favesRes, commentsRes] = await Promise.all([

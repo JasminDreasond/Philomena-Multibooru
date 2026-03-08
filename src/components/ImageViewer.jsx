@@ -104,6 +104,13 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
   const uploadDate = image ? image.createdAt : new Date();
   const uploaderName = image ? (image.uploader ?? 'Background Pony') : '';
 
+  // Smart Auto Refresh Listener
+  useEffect(() => {
+    const onRefresh = () => setRefreshTrigger((prev) => prev + 1);
+    window.addEventListener('appFocusRefresh', onRefresh);
+    return () => window.removeEventListener('appFocusRefresh', onRefresh);
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
     const getComments = async () => {

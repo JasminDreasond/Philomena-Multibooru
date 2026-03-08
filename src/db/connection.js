@@ -61,6 +61,7 @@ export const initDatabase = async () => {
     name: 'Queries',
     columns: {
       id: { primaryKey: true, dataType: 'string', notNull: true },
+      booruUrl: { dataType: 'string', notNull: true },
       imageId: { dataType: 'number', notNull: true },
       query: { dataType: 'string', notNull: true },
       createdAt: { dataType: 'number', notNull: true },

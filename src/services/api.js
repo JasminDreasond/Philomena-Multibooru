@@ -575,6 +575,7 @@ export const syncGalleryPage = async (
       const queryEntries = formattedImages.map((img) => ({
         id: `${booruUrl}_${img.id}_${normalizedQuery}`,
         imageId: img.id,
+        booruUrl,
         createdAt: img.createdAt,
         query: normalizedQuery,
       }));
@@ -594,45 +595,87 @@ export const syncGalleryPage = async (
  * @param {string} rawSearchString
  * @param {number} [limit=50]
  * @param {number} [page=1]
+ * @param {string[]|null} [allowedBoorus=null]
  * @returns {Promise<ImageResult[]>}
  */
-export const searchImages = async (rawSearchString = '*', limit = 50, page = 1) => {
-  /** @type {number} */
-  const skipCount = (page - 1) * limit;
+export const searchImages = async (
+  rawSearchString = '*',
+  limit = 50,
+  page = 1,
+  allowedBoorus = null,
+) => {
+  if (allowedBoorus && allowedBoorus.length === 0) return [];
 
+  /** @type {number} */
+  const fixedLimit = limit > 1000 ? 1000 : limit;
   /** @type {string} */
   const normalizedQuery = normalizeQueryString(rawSearchString);
+  /** @type {number} */
+  const skipCount = (page - 1) * fixedLimit;
 
   /** @type {ImageObj[]} */
   let results = [];
 
   if (normalizedQuery === '*') {
+    /** @type {object|undefined} */
+    const whereClause = allowedBoorus ? { booruUrl: { in: allowedBoorus } } : undefined;
+
     results = await dbConnection.select({
       from: 'Images',
-      limit: limit > 1000 ? 1000 : limit,
+      where: whereClause,
+      limit: fixedLimit,
       skip: skipCount,
       order: { by: 'createdAt', type: 'desc' },
     });
   } else {
-    results = await dbConnection.select({
-      from: 'Queries',
-      where: { query: normalizedQuery },
-      join: {
-        with: 'Images',
-        on: 'Queries.imageId = Images.id',
-        as: { id: 'imageId', createdAt: 'imgCreatedAt' },
-        type: 'inner',
-      },
-      limit: limit > 1000 ? 1000 : limit,
-      skip: skipCount,
-      order: { by: 'Images.createdAt', type: 'desc' },
-    });
+    /** @type {ImageObj[]} */
+    const gatheredResults = [];
+    /** @type {number} */
+    let currentSkip = skipCount;
+    /** @type {number} */
+    const batchSize = fixedLimit;
 
-    // Fix the results
-    results = results.map((item) => {
+    // Loop to keep fetching until we fill the requested limit or run out of data
+    while (gatheredResults.length < fixedLimit) {
+      /** @type {any[]} */
+      const batch = await dbConnection.select({
+        from: 'Queries',
+        where: { query: normalizedQuery },
+        join: {
+          with: 'Images',
+          on: 'Queries.imageId = Images.id',
+          as: { id: 'imageId', createdAt: 'imgCreatedAt', booruUrl: 'imgBooruUrl' },
+          type: 'inner',
+        },
+        limit: batchSize,
+        skip: currentSkip,
+        order: { by: 'Images.createdAt', type: 'desc' },
+      });
+
+      // Stop if the database has no more records for this query
+      if (batch.length === 0) break;
+
+      /** @type {any[]} */
+      let filteredBatch = batch;
+      if (allowedBoorus) {
+        filteredBatch = batch.filter((item) => allowedBoorus.includes(item.imgBooruUrl));
+      }
+
+      gatheredResults.push(...filteredBatch);
+      /** @type {number} */
+      currentSkip += batch.length;
+
+      // If the DB returned less than the batch size, we reached the end of the records
+      if (batch.length < batchSize) break;
+    }
+
+    // Process and clean the results to match the expected format
+    results = gatheredResults.slice(0, fixedLimit).map((item) => {
       item.id = item.imageId;
+      item.booruUrl = item.imgBooruUrl;
       delete item.imageId;
       delete item.imgCreatedAt;
+      delete item.imgBooruUrl;
       delete item.query;
       fixImageObj(item);
       return item;
@@ -666,21 +709,24 @@ export const searchImages = async (rawSearchString = '*', limit = 50, page = 1) 
 
 /**
  * @param {string} rawSearchString
+ * @param {string[]|null} [allowedBoorus=null]
  * @returns {Promise<number>}
  */
-export const countImages = async (rawSearchString = '*') => {
+export const countImages = async (rawSearchString = '*', allowedBoorus = null) => {
   /** @type {string} */
   const normalizedQuery = normalizeQueryString(rawSearchString);
+  const whereClause = allowedBoorus ? { booruUrl: { in: allowedBoorus } } : undefined;
 
   if (normalizedQuery === '*') {
     return await dbConnection.count({
+      where: whereClause,
       from: 'Images',
     });
   }
 
   return await dbConnection.count({
     from: 'Queries',
-    where: { query: normalizedQuery },
+    where: { query: normalizedQuery, ...whereClause },
   });
 };
 
@@ -743,34 +789,36 @@ export const toggleAccountStatus = async (accountId, isActive) => {
 };
 
 /**
- * Background task to sync pages into JsStore and get user accounts
+ * Background task to sync pages into JsStore filtering by allowed Boorus
  * @param {string} [query='*']
  * @param {number} [page=1]
+ * @param {string[]|null} [allowedBoorus=null]
  * @param {number} [perPage]
  * @param {Account} [apiKey]
  */
 export const syncUserGalleryPages = async (
   query = '*',
   page = 1,
+  allowedBoorus = null,
   perPage = undefined,
   account = undefined,
 ) => {
-  const accounts = !account ? await getActiveAccounts() : [account];
+  const allAccounts = !account ? await getActiveAccounts() : [account];
 
-  // Sync background data for active accounts
-  const syncs = [];
-  accounts.forEach((account) =>
-    syncs.push(
-      syncGalleryPage(fixBooruUrl(account.booruUrl), account.apiKey, query, page, perPage),
-    ),
+  // Hard filters the accounts to prevent unnecessary API requests
+  const accounts = allowedBoorus
+    ? allAccounts.filter((acc) => allowedBoorus.includes(acc.booruUrl))
+    : allAccounts;
+
+  if (accounts.length === 0) return { accounts: [], syncLimit: 50, totalCount: 0 };
+
+  const syncs = accounts.map((account) =>
+    syncGalleryPage(fixBooruUrl(account.booruUrl), account.apiKey, query, page, perPage),
   );
 
   const results = await Promise.all(syncs);
 
-  /** @type {number} */
   let combinedLimit = 0;
-
-  /** @type {number} */
   let combinedTotal = 0;
 
   results.forEach((data) => {
@@ -781,7 +829,6 @@ export const syncUserGalleryPages = async (
   });
 
   // Fallback to 50 if the sync returned 0 images (e.g., dead end page)
-  /** @type {number} */
   const finalLimit = combinedLimit > 0 ? combinedLimit : 50;
 
   return { accounts, syncLimit: finalLimit, totalCount: combinedTotal };

@@ -7,6 +7,7 @@ import {
   getFeaturedImage,
   fixImageObj,
   fixBooruUrl,
+  getActiveAccounts,
 } from './services/api';
 
 import { SearchBar } from './components/SearchBar';
@@ -282,21 +283,45 @@ const App = () => {
   /** @type {[{ booruUrl: string, username: string, id: number }|null, import('react').Dispatch<import('react').SetStateAction<{ booruUrl: string, username: string }|null>>]} */
   const [viewingProfile, setViewingProfile] = useState(null);
 
+  /** @type {[string[], import('react').Dispatch<import('react').SetStateAction<string[]>>]} */
+  const [visibleBoorus, setVisibleBoorus] = useState(() => {
+    const saved = localStorage.getItem('app_visibleBoorus');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  /** @type {[Account|null, import('react').Dispatch<import('react').SetStateAction<Account|null>>]} */
+  const [selectedLinkAccount, setSelectedLinkAccount] = useState(null);
+
   /** @type {import('react').MutableRefObject<boolean>} */
   const hasInitialized = useRef(false);
 
   /** @type {import('react').MutableRefObject<boolean>} */
   const hasSynced = useRef(false);
 
+  /** @type {import('react').MutableRefObject<boolean>} */
+  const isFirstLoad = useRef(true);
+
+  // Persists the visible Boorus to local storage
+  useEffect(() => {
+    localStorage.setItem('app_visibleBoorus', JSON.stringify(visibleBoorus));
+
+    // Auto re-sync when booru filters change (only after initial boot)
+    if (!isFirstLoad.current && isDbReady && hasInitialized.current) {
+      setIsSearching(true);
+      executeBackgroundSync(visibleBoorus).finally(() => setIsSearching(false));
+    }
+  }, [visibleBoorus]);
+
   /**
    * @param {number} limitToUse
    * @param {number} pageToUse
    * @param {string} queryToUse
+   * @param {string[]} boorusToUse
    * @returns {Promise<void>}
    */
-  const loadLocalData = async (limitToUse, pageToUse, queryToUse) => {
+  const loadLocalData = async (limitToUse, pageToUse, queryToUse, boorusToUse) => {
     /** @type {ImageResult[]} */
-    const mainResults = await searchImages(queryToUse, limitToUse, pageToUse);
+    const mainResults = await searchImages(queryToUse, limitToUse, pageToUse, boorusToUse);
     setCurrentImages(mainResults);
 
     /** @type {boolean} */
@@ -305,35 +330,40 @@ const App = () => {
     // Only load special content if on Page 1 and no search query
     if (!isSpecialSearch && isHomepage) {
       /** @type {ImageResult[]} */
-      const trendingResults = await searchImages('first_seen_at.gt:3 days ago', 4, 1);
+      const trendingResults = await searchImages('first_seen_at.gt:3 days ago', 4, 1, boorusToUse);
       setTrendingImages(trendingResults);
 
       /** @type {ImageResult[]} */
-      const watchedResults = await searchImages('my:watched', limitToUse, 1);
+      const watchedResults = await searchImages('my:watched', limitToUse, 1, boorusToUse);
       setWatchedImages(watchedResults);
     }
   };
 
   /**
-   * Run a new request in the API to sync without messing with what the user was doing.
+   * @param {string[]} boorusToUse
    * @returns {Promise<void>}
    */
-  const executeBackgroundSync = async () => {
+  const executeBackgroundSync = async (boorusToUse) => {
     try {
       /** @type {string} */
       const queryToUse = searchQuery.trim() === '' ? '*' : searchQuery;
       /** @type {boolean} */
       const isSpecialSearch = queryToUse !== '*';
 
-      const syncPromises = [syncUserGalleryPages(queryToUse, currentPage)];
+      const syncPromises = [syncUserGalleryPages(queryToUse, currentPage, boorusToUse)];
 
       if (!isSpecialSearch && isHomepage) {
-        syncPromises.push(syncUserGalleryPages('first_seen_at.gt:3 days ago', 1, 4));
-        syncPromises.push(syncUserGalleryPages('my:watched', 1));
+        syncPromises.push(syncUserGalleryPages('first_seen_at.gt:3 days ago', 1, boorusToUse, 4));
+        syncPromises.push(syncUserGalleryPages('my:watched', 1, boorusToUse));
       }
 
-      await Promise.all(syncPromises);
-      await loadLocalData(pageLimit, currentPage, queryToUse);
+      const results = await Promise.all(syncPromises);
+      const mainSync = results[0];
+
+      setPageLimit(mainSync.syncLimit);
+      setTotalPages(Math.max(1, Math.ceil(mainSync.totalCount / mainSync.syncLimit)));
+
+      await loadLocalData(mainSync.syncLimit, currentPage, queryToUse, boorusToUse);
     } catch (err) {
       console.error('Error on background sync:', err);
     }
@@ -348,7 +378,6 @@ const App = () => {
         hasInitialized.current = true;
         await initDatabase();
         setIsDbReady(true);
-        await loadLocalData(pageLimit, currentPage, searchQuery);
       }
 
       if (!showSettings && isDbReady && !hasSynced.current) {
@@ -356,39 +385,50 @@ const App = () => {
         setIsSearching(true);
 
         try {
+          const accounts = await getActiveAccounts();
+          setConnectedAccounts(accounts);
+
+          let activeUrls = visibleBoorus;
+          // Automatically check all boorus if none are saved or available
+          if (activeUrls.length === 0 && accounts.length > 0) {
+            activeUrls = accounts.map((a) => a.booruUrl);
+            setVisibleBoorus(activeUrls);
+          }
+
           /** @type {string} */
           const queryToUse = searchQuery.trim() === '' ? '*' : searchQuery;
           /** @type {boolean} */
           const isSpecialSearch = queryToUse !== '*';
-          await executeBackgroundSync();
 
-          const syncPromises = [syncUserGalleryPages(queryToUse, currentPage)];
+          const syncPromises = [syncUserGalleryPages(queryToUse, currentPage, activeUrls)];
 
           if (!isSpecialSearch && isHomepage) {
-            syncPromises.push(syncUserGalleryPages('first_seen_at.gt:3 days ago', 1, 4));
-            syncPromises.push(syncUserGalleryPages('my:watched', 1));
+            syncPromises.push(
+              syncUserGalleryPages('first_seen_at.gt:3 days ago', 1, activeUrls, 4),
+            );
+            syncPromises.push(syncUserGalleryPages('my:watched', 1, activeUrls));
           }
 
           const results = await Promise.all(syncPromises);
           const mainSync = results[0];
 
-          const accounts = mainSync.accounts;
-          const syncLimit = mainSync.syncLimit;
-          const totalCount = mainSync.totalCount;
-          console.log(totalCount, syncLimit, Math.ceil(totalCount / syncLimit));
+          setPageLimit(mainSync.syncLimit);
+          setTotalPages(Math.max(1, Math.ceil(mainSync.totalCount / mainSync.syncLimit)));
 
-          setConnectedAccounts(accounts);
-          setPageLimit(syncLimit);
-          setTotalPages(Math.max(1, Math.ceil(totalCount / syncLimit)));
+          if (!isSpecialSearch && isHomepage && activeUrls.length > 0) {
+            /** @type {Account[]} */
+            const filteredAccounts = accounts.filter((a) => activeUrls.includes(a.booruUrl));
+            if (filteredAccounts.length > 0) {
+              const acc = filteredAccounts[TinySimpleDice.rollArrayIndex(filteredAccounts)];
+              const feat = await getFeaturedImage(acc.booruUrl);
+              setFeaturedImage(feat ? { account: acc, image: feat } : null);
 
-          if (!isSpecialSearch && isHomepage && accounts.length > 0) {
-            /** @type {Account} */
-            const acc = accounts[TinySimpleDice.rollArrayIndex(accounts)];
-            const feat = await getFeaturedImage(acc.booruUrl);
-            setFeaturedImage(feat ? { account: acc, image: feat } : null);
+              if (!selectedLinkAccount) setSelectedLinkAccount(acc);
+            }
           }
 
-          await loadLocalData(syncLimit, currentPage, queryToUse);
+          await loadLocalData(mainSync.syncLimit, currentPage, queryToUse, activeUrls);
+          isFirstLoad.current = false;
         } finally {
           setIsSearching(false);
         }
@@ -422,7 +462,7 @@ const App = () => {
     };
   }, []);
 
-  // Inactive detector
+  // Smart Inactive Auto-Refresh detector
   useEffect(() => {
     let hiddenTimestamp = 0;
 
@@ -432,8 +472,15 @@ const App = () => {
       } else {
         if (hiddenTimestamp && Date.now() - hiddenTimestamp > 60000) {
           // 60s
-          setIsSearching(true);
-          executeBackgroundSync().finally(() => setIsSearching(false));
+
+          // Dispatches a global event that ImageViewer and UserProfile can listen to
+          window.dispatchEvent(new CustomEvent('appFocusRefresh'));
+
+          // Only syncs the main feed if we are not actively looking at a modal component
+          if (!viewingProfile && !viewingImage) {
+            setIsSearching(true);
+            executeBackgroundSync(visibleBoorus).finally(() => setIsSearching(false));
+          }
         }
         hiddenTimestamp = 0;
       }
@@ -441,7 +488,15 @@ const App = () => {
 
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [searchQuery, currentPage, pageLimit, isHomepage]);
+  }, [
+    searchQuery,
+    currentPage,
+    pageLimit,
+    isHomepage,
+    viewingProfile,
+    viewingImage,
+    visibleBoorus,
+  ]);
 
   /**
    * @returns {void}
@@ -499,7 +554,7 @@ const App = () => {
   };
 
   const handleOpenProfile = (booruUrl, username, id) => {
-    setViewingImage(null); // Fecha a imagem atual
+    setViewingImage(null);
     setViewingProfile({ booruUrl, username, id });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -507,9 +562,6 @@ const App = () => {
   /** @type {boolean} */
   const showSpecialContent =
     (searchQuery.trim() === '' || searchQuery.trim() === '*') && isHomepage;
-
-  /** @type {Account|null} */
-  const activeSidebarAccounts = connectedAccounts && featuredImage ? featuredImage.account : null;
 
   return (
     <div className="min-vh-100 pb-5" style={{ backgroundColor: 'var(--app-bg)' }}>
@@ -584,15 +636,84 @@ const App = () => {
               )}
 
               <div className="ms-lg-auto d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-3 gap-lg-0 mt-2 mt-lg-0">
-                <span
-                  className="me-lg-3 small d-lg-inline fw-semibold"
-                  style={{ color: 'var(--app-navbar-text)' }}
-                >
-                  Active APIs:{' '}
-                  <span className="badge custom-badge ms-1">
-                    {connectedAccounts ? connectedAccounts.length : 0}
-                  </span>
-                </span>
+                {/* Booru Instance Filter Dropdown */}
+                <div className="dropdown me-lg-3 w-100 w-lg-auto">
+                  <button
+                    className="btn btn-sm text-nowrap w-100 d-flex justify-content-between align-items-center gap-2"
+                    style={{
+                      backgroundColor: 'var(--app-surface)',
+                      color: 'var(--app-text)',
+                      border: '1px solid var(--app-border)',
+                    }}
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    data-bs-auto-close="outside"
+                  >
+                    <span className="fw-bold">
+                      Boorus ({visibleBoorus.length}/{connectedAccounts?.length || 0})
+                    </span>
+                    <i className="bi bi-chevron-down"></i>
+                  </button>
+                  <ul
+                    className="dropdown-menu dropdown-menu-end shadow-sm"
+                    style={{
+                      backgroundColor: 'var(--app-surface)',
+                      borderColor: 'var(--app-border)',
+                    }}
+                  >
+                    <li>
+                      <button
+                        className="dropdown-item fw-bold text-success"
+                        onClick={() => setVisibleBoorus(connectedAccounts.map((a) => a.booruUrl))}
+                      >
+                        Select All
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        className="dropdown-item fw-bold text-danger"
+                        onClick={() => setVisibleBoorus([])}
+                      >
+                        Deselect All
+                      </button>
+                    </li>
+                    <li>
+                      <hr
+                        className="dropdown-divider"
+                        style={{ borderColor: 'var(--app-border)' }}
+                      />
+                    </li>
+                    {connectedAccounts?.map((acc) => {
+                      const isVisible = visibleBoorus.includes(acc.booruUrl);
+                      return (
+                        <li key={acc.id}>
+                          <button
+                            className="dropdown-item d-flex align-items-center gap-2"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (isVisible)
+                                setVisibleBoorus(
+                                  visibleBoorus.filter((url) => url !== acc.booruUrl),
+                                );
+                              else setVisibleBoorus([...visibleBoorus, acc.booruUrl]);
+                            }}
+                            style={{ color: 'var(--app-text)' }}
+                          >
+                            <input
+                              type="checkbox"
+                              className="form-check-input m-0"
+                              checked={isVisible}
+                              readOnly
+                            />
+                            {new URL(acc.booruUrl).hostname}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+
                 <button
                   className="btn btn-sm btn-outline-light text-nowrap w-100 w-lg-auto"
                   data-bs-dismiss="offcanvas"
@@ -648,7 +769,7 @@ const App = () => {
                 {showSpecialContent && (
                   <div className="col-12 col-lg-auto sidebar-container">
                     {/* Featured Images */}
-                    {featuredImage && (
+                    {featuredImage && visibleBoorus.includes(featuredImage.account.booruUrl) && (
                       <div className="card shadow-sm border-0 mb-4 featured-images">
                         <div
                           className="card-header fw-bold d-flex justify-content-between"
@@ -675,14 +796,12 @@ const App = () => {
                         }}
                       >
                         <span>Trending Images</span>
-                        {activeSidebarAccounts && (
-                          <button
-                            onClick={() => handleSearchSubmit('first_seen_at.gt:3 days ago')}
-                            className="btn btn-link text-white text-decoration-none small p-0 align-baseline"
-                          >
-                            View All
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleSearchSubmit('first_seen_at.gt:3 days ago')}
+                          className="btn btn-link text-white text-decoration-none small p-0 align-baseline"
+                        >
+                          View All
+                        </button>
                       </div>
                       <div className="card-body p-3">
                         <ImageGallery
@@ -693,21 +812,44 @@ const App = () => {
                       </div>
                     </div>
 
-                    {/* Quick Links */}
-                    {activeSidebarAccounts && (
+                    {/* Quick Links with Configurable Account */}
+                    {selectedLinkAccount && visibleBoorus.length > 0 && (
                       <div className="list-group shadow-sm mb-4">
                         <div
-                          className="list-group-item fw-bold small text-truncate"
+                          className="list-group-item fw-bold small d-flex flex-column flex-sm-row justify-content-between align-items-sm-center py-2"
                           style={{
                             backgroundColor: 'var(--app-surface)',
                             borderColor: 'var(--app-border)',
                             borderBottomWidth: '2px',
                           }}
                         >
-                          Links: {new URL(activeSidebarAccounts.booruUrl).hostname}
+                          <span className="mb-2 mb-sm-0">Links:</span>
+                          <select
+                            className="form-select form-select-sm w-auto py-0"
+                            style={{
+                              fontSize: '0.8rem',
+                              backgroundColor: 'var(--app-bg)',
+                              color: 'var(--app-text)',
+                              borderColor: 'var(--app-border)',
+                            }}
+                            value={selectedLinkAccount.booruUrl}
+                            onChange={(e) =>
+                              setSelectedLinkAccount(
+                                connectedAccounts.find((a) => a.booruUrl === e.target.value),
+                              )
+                            }
+                          >
+                            {connectedAccounts
+                              .filter((a) => visibleBoorus.includes(a.booruUrl))
+                              .map((acc) => (
+                                <option key={acc.id} value={acc.booruUrl}>
+                                  {new URL(acc.booruUrl).hostname}
+                                </option>
+                              ))}
+                          </select>
                         </div>
                         <a
-                          href={`${fixBooruUrl(activeSidebarAccounts.booruUrl)}/search?q=*&sf=score&sd=desc`}
+                          href={`${fixBooruUrl(selectedLinkAccount.booruUrl)}/search?q=*&sf=score&sd=desc`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="list-group-item list-group-item-action fw-semibold"
@@ -715,7 +857,7 @@ const App = () => {
                           🌟 All Time Top Scoring
                         </a>
                         <a
-                          href={`${fixBooruUrl(activeSidebarAccounts.booruUrl)}/comments`}
+                          href={`${fixBooruUrl(selectedLinkAccount.booruUrl)}/comments`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="list-group-item list-group-item-action fw-semibold"
@@ -723,7 +865,7 @@ const App = () => {
                           💬 Recent Comments
                         </a>
                         <a
-                          href={`${fixBooruUrl(activeSidebarAccounts.booruUrl)}/search?q=first_seen_at.gt:3%20days%20ago&sf=comment_count&sd=desc`}
+                          href={`${fixBooruUrl(selectedLinkAccount.booruUrl)}/search?q=first_seen_at.gt:3%20days%20ago&sf=comment_count&sd=desc`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="list-group-item list-group-item-action fw-semibold"
