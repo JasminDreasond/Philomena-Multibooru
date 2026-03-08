@@ -58,7 +58,6 @@ export const CommentBody = ({ body, image }) => (
                 target="_blank"
                 rel="noopener noreferrer"
                 className="fw-bold text-decoration-none"
-                style={{ color: 'var(--app-primary)' }}
               >
                 &gt;&gt;{refId}
                 {sizeType}
@@ -72,7 +71,6 @@ export const CommentBody = ({ body, image }) => (
             href={`${href.startsWith('/') || href.startsWith('./') || href.startsWith('../') ? `${fixBooruUrl(image.booruUrl)}` : ''}${href}`}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: 'var(--app-primary)' }}
           >
             {children}
           </a>

@@ -274,7 +274,6 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="d-block text-truncate"
-                  style={{ color: 'var(--app-primary)' }}
                 >
                   {sourceUrl}
                 </a>
@@ -449,7 +448,17 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
                 <div className="flex-grow-1">
                   <div className="d-flex justify-content-between border-bottom pb-1 mb-2">
                     <span className="fw-bold fs-5" style={{ color: 'var(--app-text)' }}>
-                      {comment.author || 'Anonymous'}
+                      {comment.userId ? (
+                        <a
+                          rel="noopener noreferrer"
+                          target="_blank"
+                          href={`${fixBooruUrl(image.booruUrl)}/profiles/${comment.author}`}
+                        >
+                          {comment.author}
+                        </a>
+                      ) : (
+                        (comment.author ?? 'Anonymous')
+                      )}
                     </span>
                   </div>
                   <div className="mb-3" style={{ fontSize: '0.95rem' }}>

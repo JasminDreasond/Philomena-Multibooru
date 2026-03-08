@@ -95,6 +95,17 @@ body {
     sans-serif;
 }
 
+a,
+a:link,
+a:visited {
+  color: var(--app-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--app-primary-hover);
+}
+
 /* =========================================
    Cards e Superfícies
    ========================================= */
