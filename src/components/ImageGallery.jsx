@@ -129,17 +129,25 @@ export const Image = ({ img, className, onOpenImage }) => {
             <table className="interaction-container w-100 shadow-sm text-center">
               <tbody>
                 <tr>
-                  <td className={`badge-interaction text-end ${isFav ? 'active-fave' : 'badge-inactive'}`}>
+                  <td
+                    className={`badge-interaction text-end ${isFav ? 'active-fave' : 'badge-inactive'}`}
+                  >
                     ★ {img.faves}
                   </td>
-                  <td className={`badge-interaction text-end ${isUp ? 'active-up' : 'badge-inactive'}`}>
+                  <td
+                    className={`badge-interaction text-end ${isUp ? 'active-up' : 'badge-inactive'}`}
+                  >
                     ▲
                   </td>
                   <td className={`badge-interaction badge-inactive`}>{score}</td>
-                  <td className={`badge-interaction text-start ${isDown ? 'active-down' : 'badge-inactive'}`}>
+                  <td
+                    className={`badge-interaction text-start ${isDown ? 'active-down' : 'badge-inactive'}`}
+                  >
                     ▼
                   </td>
-                  <td className="badge-interaction text-start badge-inactive">💬 {img.commentCount || 0}</td>
+                  <td className="badge-interaction text-start badge-inactive">
+                    💬 {img.commentCount || 0}
+                  </td>
                 </tr>
               </tbody>
             </table>

@@ -30,7 +30,7 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
  * @property {string} imageUrl
  * @property {Date} awardedOn
  * @property {string} title
- * @property {string} label
+ * @property {string|null} label
  * @property {number} id
  */
 
@@ -116,7 +116,7 @@ export const fetchProfile = async (booruUrl, userId) => {
         throw new Error('Invalid philomena api user in "award.image_url".');
       if (typeof award.title !== 'string')
         throw new Error('Invalid philomena api user in "award.title".');
-      if (typeof award.label !== 'string')
+      if (typeof award.label !== 'string' && award.label !== null)
         throw new Error('Invalid philomena api user in "award.label".');
       if (typeof award.id !== 'number')
         throw new Error('Invalid philomena api user in "award.id".');

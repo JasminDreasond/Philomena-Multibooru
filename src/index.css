@@ -486,8 +486,11 @@ a:hover {
 }
 
 .philo-panel-body {
-  padding: 10px 12px;
   font-size: 0.9rem;
+}
+
+.philo-panel-body tr:nth-child(even) {
+  background-color:rgba(0,0,0, 0.3);
 }
 
 /* Classic Tags Styling */

@@ -245,20 +245,32 @@ export const UserProfile = ({ booruUrl, userId, onClose, onOpenImage, handleSear
             {/* Award */}
             <div className="philo-panel mb-3">
               <div className="philo-panel-header">Badges</div>
-              <div className="philo-panel-body p-2 d-flex flex-wrap gap-1">
-                {profile.awards.length > 0 ? (
-                  profile.awards.map((award, i) => (
-                    <img
-                      key={i}
-                      src={award.imageUrl}
-                      alt={award.title}
-                      title={award.title}
-                      style={{ width: '32px', height: '32px', borderRadius: '4px' }}
-                    />
-                  ))
-                ) : (
-                  <span className="text-muted small">No awards yet.</span>
-                )}
+              <div className="philo-panel-body gap-1">
+                <table className="w-100 m-0 py-2">
+                  <tbody>
+                    {profile.awards.length > 0 ? (
+                      profile.awards.map((award, i) => (
+                        <tr>
+                          <td className="text-center py-2 px-3">
+                            <img
+                              key={i}
+                              src={award.imageUrl}
+                              alt={award.title}
+                              title={award.title}
+                              style={{ width: '32px', height: '32px', borderRadius: '4px' }}
+                            />
+                            <div className="small">{award.title}</div>
+                          </td>
+                          <td className="text-center py-2 px-3">{timeSince(award.awardedOn)}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td className="text-center text-muted small">No awards yet.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
 
@@ -266,7 +278,7 @@ export const UserProfile = ({ booruUrl, userId, onClose, onOpenImage, handleSear
             <div className="philo-panel mb-4">
               <div className="philo-panel-header">About Me</div>
               <div
-                className="philo-panel-body small text-muted"
+                className="philo-panel-body small text-muted p-2"
                 style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
               >
                 {profile.description ? (
