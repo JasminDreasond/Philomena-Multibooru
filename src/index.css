@@ -116,15 +116,20 @@ a:hover {
   color: var(--app-text) !important;
   border: 1px solid var(--app-border) !important;
   border-radius: 12px;
+}
+
+.card:not(.no-anim),
+.list-group-item:not(.no-anim),
+.modal-content:not(.no-anim) {
   transition: all 0.3s ease;
 }
 
-.card:hover {
+.card:hover:not(.no-anim) {
   transform: translateY(-4px);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12) !important;
 }
 
-[data-theme='dark'] .card:hover {
+[data-theme='dark'] .card:hover:not(.no-anim) {
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5) !important;
 }
 
