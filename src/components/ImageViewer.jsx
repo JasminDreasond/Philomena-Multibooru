@@ -452,10 +452,7 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
                       {comment.author || 'Anonymous'}
                     </span>
                   </div>
-                  <div
-                    className="mb-3"
-                    style={{ fontSize: '0.95rem' }}
-                  >
+                  <div className="mb-3" style={{ fontSize: '0.95rem' }}>
                     <CommentBody body={comment.body} image={image} />
                   </div>
                   <div
