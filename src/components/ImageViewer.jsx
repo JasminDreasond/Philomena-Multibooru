@@ -11,7 +11,6 @@ const tags = [
 
   // Content Types
   { prefix: 'character:', className: 'character' },
-  { prefix: 'species:', className: 'species' },
   { prefix: 'series:', className: 'series' },
   { prefix: 'anatomy:', className: 'anatomy' },
   { prefix: 'oc:', className: 'oc' },
