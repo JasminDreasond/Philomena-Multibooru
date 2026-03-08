@@ -64,9 +64,9 @@ const formatBytes = (bytes) => {
 };
 
 /**
- * @param {{ image: ImageObj, onClose: () => void, onSearch: (query: string) => void }} props
+ * @param {{ image: ImageObj|null, onClose: () => void, onSearch: (query: string) => void, onOpenProfile: (booruUrl: string, username: string) => void }} props
  */
-export const ImageViewer = ({ image, onClose, onSearch }) => {
+export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isZoomed, setIsZoomed] = useState(false);
 
@@ -82,21 +82,27 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
   /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const isVideo = image.mimeType && image.mimeType.startsWith('video/');
-  const imageSrc = isZoomed
-    ? image.representations.full
-    : image.representations.large || image.representations.full;
-  const fileExtension = image.format || (image.mimeType ? image.mimeType.split('/')[1] : 'file');
-  const fileName = `${image.id}__${
-    image.tags
-      ? image.tags
-          .slice(0, 3)
-          .join('_')
-          .replace(/[^a-z0-9_]/gi, '')
-      : 'image'
-  }.${fileExtension}`;
-  const uploadDate = image.created_at || image.createdAt;
-  const uploaderName = image.uploader || 'Background Pony #XXXX';
+  const isVideo = image && image.mimeType && image.mimeType.startsWith('video/');
+  const imageSrc = image
+    ? isZoomed
+      ? image.representations.full
+      : image.representations.large || image.representations.full
+    : '';
+  const fileExtension = image
+    ? image.format || (image.mimeType ? image.mimeType.split('/')[1] : 'file')
+    : '';
+  const fileName = image
+    ? `${image.id}__${
+        image.tags
+          ? image.tags
+              .slice(0, 3)
+              .join('_')
+              .replace(/[^a-z0-9_]/gi, '')
+          : 'image'
+      }.${fileExtension}`
+    : '';
+  const uploadDate = image ? image.createdAt : new Date();
+  const uploaderName = image ? (image.uploader ?? 'Background Pony') : '';
 
   useEffect(() => {
     let isMounted = true;
@@ -116,11 +122,25 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
       }
     };
 
-    getComments();
+    if (image) getComments();
     return () => {
       isMounted = false;
     };
   }, [image, refreshTrigger]);
+
+  if (!image) {
+    return (
+      <div className="container mt-5 fade-in">
+        <button onClick={onClose} className="btn btn-secondary mb-4">
+          &laquo; Back
+        </button>
+        <div className="alert alert-danger text-center shadow-sm">
+          <h4 className="alert-heading">User not found</h4>
+          <p>We couldn't retrieve the image. They might not exist or the API is unavailable.</p>
+        </div>
+      </div>
+    );
+  }
 
   /**
    * @returns {void}
@@ -156,6 +176,18 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
       .replace(/\s+/g, '-')
       .toLowerCase()
       .trim()}${extraTag ? ` tag-${extraTag.className}` : ''}`;
+  };
+
+  /**
+   * @param {MouseEvent} e
+   * @param {string} booruUrl
+   * @param {string} username
+   */
+  const handleProfileClick = (e, booruUrl, username) => {
+    if (localStorage.getItem('app_inAppProfileViewer') === 'true') {
+      e.preventDefault();
+      onOpenProfile(booruUrl, username);
+    }
   };
 
   const sources = image.sourceUrls ? image.sourceUrls : image.sourceUrl ? [image.sourceUrl] : [];
@@ -202,6 +234,7 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
             target="_blank"
             className="btn-tool"
             href={`${fixBooruUrl(image.booruUrl)}/profiles/${uploaderName}`}
+            onClick={(e) => handleProfileClick(e, image.booruUrl, image.uploaderId)}
           >
             {uploaderName}
           </a>
@@ -475,6 +508,7 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
                           rel="noopener noreferrer"
                           target="_blank"
                           href={`${fixBooruUrl(image.booruUrl)}/profiles/${comment.author}`}
+                          onClick={(e) => handleProfileClick(e, image.booruUrl, comment.userId)}
                         >
                           {comment.author}
                         </a>

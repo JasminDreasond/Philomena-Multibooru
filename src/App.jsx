@@ -13,6 +13,7 @@ import { SearchBar } from './components/SearchBar';
 import { ImageGallery, Image } from './components/ImageGallery';
 import { SettingsPanel } from './components/SettingsPanel';
 import { ImageViewer } from './components/ImageViewer';
+import { UserProfile } from './components/UserProfile';
 
 /** @typedef {import('./services/api').ImageResult} ImageResult */
 /** @typedef {import('./services/api').ImageObj} ImageObj */
@@ -278,6 +279,9 @@ const App = () => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isDark, setIsDark] = useState(false);
 
+  /** @type {[{ booruUrl: string, username: string }|null, import('react').Dispatch<import('react').SetStateAction<{ booruUrl: string, username: string }|null>>]} */
+  const [viewingProfile, setViewingProfile] = useState(null);
+
   /** @type {import('react').MutableRefObject<boolean>} */
   const hasInitialized = useRef(false);
 
@@ -324,7 +328,7 @@ const App = () => {
       const syncPromises = [syncUserGalleryPages(queryToUse, currentPage)];
 
       if (!isSpecialSearch && isHomepage) {
-        syncPromises.push(syncUserGalleryPages('first_seen_at.gt:3 days ago', 1));
+        syncPromises.push(syncUserGalleryPages('first_seen_at.gt:3 days ago', 1, 4));
         syncPromises.push(syncUserGalleryPages('my:watched', 1));
       }
 
@@ -363,7 +367,7 @@ const App = () => {
           const syncPromises = [syncUserGalleryPages(queryToUse, currentPage)];
 
           if (!isSpecialSearch && isHomepage) {
-            syncPromises.push(syncUserGalleryPages('first_seen_at.gt:3 days ago', 1));
+            syncPromises.push(syncUserGalleryPages('first_seen_at.gt:3 days ago', 1, 4));
             syncPromises.push(syncUserGalleryPages('my:watched', 1));
           }
 
@@ -460,6 +464,7 @@ const App = () => {
    */
   const handleSearchSubmit = (newQuery) => {
     setIsHomepage(false);
+    setViewingProfile(null);
     setSearchQuery(newQuery);
     setCurrentPage(1);
     setViewingImage(null);
@@ -472,6 +477,7 @@ const App = () => {
    */
   const changePage = (newPage) => {
     setIsHomepage(false);
+    setViewingProfile(null);
     setCurrentPage(newPage);
     hasSynced.current = false;
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -485,6 +491,7 @@ const App = () => {
     setSearchQuery('');
     setCurrentPage(1);
     setViewingImage(null);
+    setViewingProfile(null);
     hasSynced.current = false;
     window.scrollTo({ top: 0, behavior: 'smooth' });
     handleCloseSettings();
@@ -494,7 +501,14 @@ const App = () => {
    * @param {ImageObj} img
    */
   const handleOpenImage = (img) => {
+    setViewingProfile(null);
     setViewingImage(img);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenProfile = (booruUrl, username) => {
+    setViewingImage(null); // Fecha a imagem atual
+    setViewingProfile({ booruUrl, username });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -606,11 +620,19 @@ const App = () => {
 
       {showSettings ? (
         <SettingsPanel isDark={isDark} onClose={handleCloseSettings} />
+      ) : viewingProfile ? (
+        <UserProfile
+          booruUrl={viewingProfile.booruUrl}
+          username={viewingProfile.username}
+          onClose={() => setViewingProfile(null)}
+          onOpenImage={handleOpenImage}
+        />
       ) : viewingImage ? (
         <ImageViewer
           image={viewingImage}
           onClose={() => setViewingImage(null)}
           onSearch={handleSearchSubmit}
+          onOpenProfile={handleOpenProfile}
         />
       ) : (
         <div className="container-fluid px-4 mt-4">

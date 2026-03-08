@@ -54,6 +54,10 @@ export const SettingsPanel = ({ isDark, onClose }) => {
   /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
   const [themeMode, setThemeMode] = useState(localStorage.getItem('app_themeMode') || 'system');
 
+  const [inAppProfileViewer, setInAppProfileViewer] = useState(
+    localStorage.getItem('app_inAppProfileViewer') === 'true',
+  );
+
   const [inAppViewer, setInAppViewer] = useState(
     localStorage.getItem('app_inAppViewer') === 'true',
   );
@@ -622,6 +626,26 @@ export const SettingsPanel = ({ isDark, onClose }) => {
                   htmlFor="inAppViewerSwitch"
                 >
                   Enable In-App Image Viewer (Opens images within the app instead of new tabs)
+                </label>
+              </div>
+              <div className="form-check form-switch mt-2">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  role="switch"
+                  id="inAppProfileViewerSwitch"
+                  checked={inAppProfileViewer}
+                  onChange={(e) => {
+                    setInAppProfileViewer(e.target.checked);
+                    localStorage.setItem('app_inAppProfileViewer', e.target.checked);
+                  }}
+                  disabled={isLoading}
+                />
+                <label
+                  className="form-check-label fw-semibold text-primary"
+                  htmlFor="inAppProfileViewerSwitch"
+                >
+                  Enable In-App Profile Viewer (Opens user profiles within the app)
                 </label>
               </div>
             </div>
