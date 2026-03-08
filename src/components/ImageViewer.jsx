@@ -89,7 +89,7 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
     const getComments = async () => {
       setIsLoadingComments(true);
       try {
-        const data = await fetchComments(image.booruUrl, await getAccountBooruApi(image.booruUrl));
+        const data = await fetchComments(image.booruUrl, await getAccountBooruApi(image.booruUrl), `image_id:${image.id}`);
         if (isMounted) setComments(data.comments || []);
       } catch (err) {
         console.error('Failed to fetch comments:', err);

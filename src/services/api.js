@@ -40,12 +40,12 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
 /**
  * @param {string} booruUrl
  * @param {string} apiKey
- * @param {string} query
- * @param {number} page
+ * @param {string} [query='*']
+ * @param {number} [page=1]
  *
  * @returns {Promise<CommentObj>}
  */
-export const fetchComments = async (booruUrl, apiKey, query, page) => {
+export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => {
   const result = await fetchPhilomena(booruUrl, 'search/comments', apiKey, { q: query, page });
   if (typeof result.total !== 'number')
     throw new Error('Invalid philomena api result in "result.total".');
