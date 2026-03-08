@@ -3,10 +3,17 @@ import { fetchComments, fixBooruUrl, getAccountBooruApi } from '../services/api'
 import { CommentBody } from './CommentBody';
 
 const tags = [
-  { s: 'artist:', t: 'artist', },
-  { s: 'prompter:', t: 'prompter', },
-  { s: 'editor:', t: 'editor', },
-  { s: 'comic:', t: 'comic', },
+  { prefix: 'artist:', className: 'artist' },
+  { prefix: 'prompter:', className: 'prompter' },
+  { prefix: 'editor:', className: 'editor' },
+  { prefix: 'voice actor:', className: 'voice-actor' },
+  { prefix: 'character:', className: 'character' },
+  { prefix: 'species:', className: 'species' },
+  { prefix: 'series:', className: 'series' },
+  { prefix: 'oc:', className: 'oc' },
+  { prefix: 'comic:', className: 'comic' },
+  { prefix: 'meta:', className: 'meta' },
+  { prefix: 'spoiler:', className: 'spoiler' },
 ];
 
 /**
@@ -132,13 +139,13 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
    * @returns {string}
    */
   const getTagClass = (tag) => {
-    const extraTag = tags.find(i => tag.startsWith(i.s));
+    const extraTag = tags.find((i) => tag.startsWith(i.prefix));
     return `tag-${tag
       .replace(/[^a-zA-Z\s:]/g, '')
       .replace(/:/g, '-')
       .replace(/\s+/g, '-')
       .toLowerCase()
-      .trim()}${extraTag ? ` tag-${extraTag.t}` : ''}`;
+      .trim()}${extraTag ? ` tag-${extraTag.className}` : ''}`;
   };
 
   const sources = image.sourceUrls ? image.sourceUrls : image.sourceUrl ? [image.sourceUrl] : [];
@@ -258,12 +265,12 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
               {image.tags?.map((tag, idx) => (
                 <div
                   key={idx}
-                  className="philo-tag"
+                  className={`philo-tag ${getTagClass(tag)}`}
                   style={{ cursor: 'pointer' }}
                   onClick={() => onSearch(tag)}
                   title={`Search for ${tag}`}
                 >
-                  <span className={`philo-tag-name ${getTagClass(tag)}`}>{tag}</span>
+                  <span className={'philo-tag-name'}>{tag}</span>
                 </div>
               ))}
             </div>

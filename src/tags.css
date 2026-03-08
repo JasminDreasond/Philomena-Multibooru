@@ -1,25 +1,92 @@
-/* Specific Tag Colors (Enhanced) */
-.philo-tag-name.tag-safe {
+/* Ratings */
+.philo-tag.tag-safe {
+  border-color: #2980b9;
+}
+.philo-tag.tag-safe .philo-tag-name {
   background-color: #2980b9;
   color: white;
 }
-.philo-tag-name.tag-suggestive {
+
+.philo-tag.tag-suggestive {
+  border-color: #f39c12;
+}
+.philo-tag.tag-suggestive .philo-tag-name {
   background-color: #f39c12;
   color: white;
 }
-.philo-tag-name.tag-explicit {
+
+.philo-tag.tag-explicit,
+.philo-tag.tag-questionable {
+  border-color: #c0392b;
+}
+.philo-tag.tag-explicit .philo-tag-name,
+.philo-tag.tag-questionable .philo-tag-name {
   background-color: #c0392b;
   color: white;
 }
-.philo-tag-name.tag-artist {
+
+/* Artist and Prompter */
+.philo-tag.tag-artist {
+  border-color: #8e44ad;
+}
+.philo-tag.tag-artist .philo-tag-name {
   background-color: #8e44ad;
   color: white;
 }
-.philo-tag-name.tag-prompter {
+
+.philo-tag.tag-prompter {
+  border-color: #16a085;
+}
+.philo-tag.tag-prompter .philo-tag-name {
   background-color: #16a085;
   color: white;
 }
-.philo-tag-name.tag-editor {
+
+.philo-tag.tag-editor {
+  border-color: #d35400;
+}
+.philo-tag.tag-editor .philo-tag-name {
   background-color: #d35400;
+  color: white;
+}
+
+.philo-tag.tag-species {
+  border-color: #2ecc71;
+}
+.philo-tag.tag-species .philo-tag-name {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.philo-tag.tag-oc {
+  border-color: #6b9312;
+}
+.philo-tag.tag-oc .philo-tag-name {
+  background-color: #6b9312;
+  color: white;
+}
+
+.philo-tag.tag-series {
+  border-color: #96281b;
+}
+.philo-tag.tag-series .philo-tag-name {
+  background-color: #96281b;
+  color: white;
+}
+
+.philo-tag.tag-comic {
+  border-color: #e67e22;
+}
+.philo-tag.tag-comic .philo-tag-name {
+  background-color: #e67e22;
+  color: white;
+}
+
+/* Meta */
+.philo-tag.tag-meta {
+  border-color: #7f8c8d;
+}
+.philo-tag.tag-meta .philo-tag-name {
+  background-color: #7f8c8d;
   color: white;
 }
