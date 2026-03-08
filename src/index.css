@@ -542,7 +542,7 @@ a:hover {
   opacity: 0.8;
 }
 
-[data-theme='light'] .philo-tag-name:not([class*='tag-']) {
+[data-theme='light'] .philo-tag-name {
   background-color: #e2e8f0;
   color: #334155;
 }
