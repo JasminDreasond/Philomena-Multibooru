@@ -303,11 +303,11 @@ export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => 
  * @returns {Promise<{ total: number; interactions: any[]; images: any[] }>}
  */
 const searchImagesApi = async (booruUrl, apiKey, query, page, perPage) => {
-  const result = await fetchPhilomena(booruUrl, 'search/images', apiKey, {
-    q: query,
-    page,
-    per_page: perPage,
-  });
+  const data = { q: query };
+  if (typeof page === 'number') data.page = page;
+  if (typeof perPage === 'number') data.per_page = perPage;
+
+  const result = await fetchPhilomena(booruUrl, 'search/images', apiKey, data);
   if (typeof result.total !== 'number')
     throw new Error('Invalid philomena api result in "result.total".');
   if (!Array.isArray(result.interactions))
