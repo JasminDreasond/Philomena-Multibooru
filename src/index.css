@@ -523,32 +523,6 @@ body {
   transition: background-color 0.2s;
 }
 
-/* Specific Tag Colors (Enhanced) */
-.philo-tag-name.tag-safe {
-  background-color: #2980b9;
-  color: white;
-}
-.philo-tag-name.tag-suggestive {
-  background-color: #f39c12;
-  color: white;
-}
-.philo-tag-name.tag-explicit {
-  background-color: #c0392b;
-  color: white;
-}
-.philo-tag-name.tag-artist {
-  background-color: #8e44ad;
-  color: white;
-}
-.philo-tag-name.tag-prompter {
-  background-color: #16a085;
-  color: white;
-}
-.philo-tag-name.tag-editor {
-  background-color: #d35400;
-  color: white;
-}
-
 .philo-tag-count {
   background-color: rgba(0, 0, 0, 0.2);
   color: #ffffff;
