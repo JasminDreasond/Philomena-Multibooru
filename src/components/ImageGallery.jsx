@@ -44,7 +44,7 @@ export const Image = ({ img, className, onOpenImage }) => {
 
   return (
     <div
-      className="card h-100 shadow-sm border-0"
+      className="card h-100 shadow-sm border-0 interaction-card"
       style={{ backgroundColor: 'var(--app-surface)', color: 'var(--app-text)' }}
     >
       <a
@@ -61,8 +61,6 @@ export const Image = ({ img, className, onOpenImage }) => {
             aspectRatio: '1 / 1',
             backgroundColor: '#000',
             overflow: 'hidden',
-            borderTopLeftRadius: '12px',
-            borderTopRightRadius: '12px',
           }}
         >
           {isProcessing && (

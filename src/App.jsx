@@ -837,11 +837,6 @@ const App = () => {
                     <div className="card shadow-sm border-0 mb-4">
                       <div
                         className="card-header fw-bold d-flex justify-content-between align-items-center"
-                        style={{
-                          backgroundColor: 'var(--app-primary)',
-                          color: '#ffffff',
-                          borderColor: 'var(--app-border)',
-                        }}
                       >
                         <span>Trending Images</span>
                         <button

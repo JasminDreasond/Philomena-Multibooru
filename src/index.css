@@ -115,7 +115,23 @@ a:hover {
   background-color: var(--app-surface) !important;
   color: var(--app-text) !important;
   border: 1px solid var(--app-border) !important;
+}
+
+.interaction-card {
   border-radius: 12px;
+}
+
+.interaction-container,
+.interaction-card div {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.featured-images .interaction-card div,
+.featured-images .interaction-card,
+.featured-images .interaction-container,
+.featured-images .card-body {
+    border-radius: 0px;
 }
 
 .card:not(.no-anim),
@@ -135,7 +151,6 @@ a:hover {
 
 .card-header {
   border-bottom: 1px solid var(--app-border) !important;
-  background-color: transparent !important;
   color: var(--app-text) !important;
 }
 
@@ -480,7 +495,6 @@ a:hover {
 }
 
 .philo-panel-header {
-  background-color: var(--app-surface);
   border-bottom: 1px solid var(--app-border);
   padding: 6px 12px;
   font-size: 0.85rem;
@@ -488,6 +502,10 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.philo-panel-header, .card-header {
+  background-color: var(--app-navbar-bg);
 }
 
 .philo-panel-body {
