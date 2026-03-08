@@ -69,8 +69,8 @@ export const UserProfile = ({ booruUrl, username, onClose, onOpenImage }) => {
           console.log(userProfile);
           // Fetch secondary data concurrently to populate the profile panels
           const account = await getAccountBooru(booruUrl);
-          const uploaderQuery = `uploader:${userProfile.id}`;
-          const favedQuery = `faved_by:${userProfile.id}`;
+          const uploaderQuery = `uploader_id:${userProfile.id}`;
+          const favedQuery = `faved_by_id:${userProfile.id}`;
           // const authorQuery = `artist:${userProfile.name}`;
 
           await Promise.all([
@@ -88,9 +88,9 @@ export const UserProfile = ({ booruUrl, username, onClose, onOpenImage }) => {
           console.log(uploadsRes, favesRes);
 
           if (isMounted) {
-            if (uploadsRes.images) setRecentUploads(uploadsRes.images);
-            if (favesRes.images) setRecentFaves(favesRes.images);
-            // if (commentsRes.comments) setRecentComments(commentsRes.comments.slice(0, 3));
+            setRecentUploads(uploadsRes);
+            setRecentFaves(favesRes);
+            // setRecentComments(commentsRes.comments.slice(0, 3));
           }
         }
       } catch (err) {
