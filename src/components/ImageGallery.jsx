@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { fixBooruUrl } from '../services/api';
 
 /**
  * @typedef {import('../services/api').ImageResult} ImageResult
@@ -34,7 +33,7 @@ export const Image = ({ img, className, onOpenImage }) => {
     }
   };
 
-  const targetUrl = `${fixBooruUrl(img.booruUrl)}/${img.id}`;
+  const targetUrl = `${img.booruUrl}/${img.id}`;
   const isVideo = img.mimeType && img.mimeType.startsWith('video/');
   const score = img.upvotes - img.downvotes;
   const isFav = img.interaction === 'faved';
@@ -188,7 +187,7 @@ export const ImageGallery = ({
     <div className="w-100">
       <div className={`row ${gridClass}`}>
         {imagesList.map((img) => (
-          <div className="col" key={`${fixBooruUrl(img.booruUrl)}-${img.id}`}>
+          <div className="col" key={`${img.booruUrl}-${img.id}`}>
             <Image img={img} onOpenImage={onOpenImage} />
           </div>
         ))}

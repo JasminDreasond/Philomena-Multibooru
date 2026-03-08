@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
   fetchProfile,
-  fixBooruUrl,
   searchImages,
   fetchComments,
   syncUserGalleryPages,
@@ -153,7 +152,7 @@ export const UserProfile = ({
         </button>
         <div className="ms-auto d-flex flex-wrap gap-1">
           <a
-            href={`${fixBooruUrl(booruUrl)}/profiles/${profile.slug}`}
+            href={`${booruUrl}/profiles/${profile.slug}`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-tool"
@@ -193,21 +192,21 @@ export const UserProfile = ({
           <div className="d-flex flex-wrap gap-3 text-muted small fw-semibold">
             <div className="d-flex flex-column">
               <a
-                href={`${fixBooruUrl(booruUrl)}/conversations/new?recipient=${username}`}
+                href={`${booruUrl}/conversations/new?recipient=${username}`}
                 target="_blank"
                 className="text-decoration-none text-muted btn-tool p-0"
               >
                 Send message
               </a>
               <a
-                href={`${fixBooruUrl(booruUrl)}/conversations?with=${userId}`}
+                href={`${booruUrl}/conversations?with=${userId}`}
                 target="_blank"
                 className="text-decoration-none text-muted btn-tool p-0"
               >
                 Our conversations
               </a>
               <a
-                href={`${fixBooruUrl(booruUrl)}/profiles/${username}/reports/new`}
+                href={`${booruUrl}/profiles/${username}/reports/new`}
                 target="_blank"
                 className="text-decoration-none text-muted btn-tool p-0"
               >
@@ -216,28 +215,28 @@ export const UserProfile = ({
             </div>
             <div className="d-flex flex-column">
               <a
-                href={`${fixBooruUrl(booruUrl)}/search?q=uploader_id%3A${userId}`}
+                href={`${booruUrl}/search?q=uploader_id%3A${userId}`}
                 target="_blank"
                 className="text-decoration-none text-muted btn-tool p-0"
               >
                 Uploads
               </a>
               <a
-                href={`${fixBooruUrl(booruUrl)}/comments?cq=user_id%3A${userId}`}
+                href={`${booruUrl}/comments?cq=user_id%3A${userId}`}
                 target="_blank"
                 className="text-decoration-none text-muted btn-tool p-0"
               >
                 Comments
               </a>
               <a
-                href={`${fixBooruUrl(booruUrl)}/posts?pq=user_id%3A${userId}`}
+                href={`${booruUrl}/posts?pq=user_id%3A${userId}`}
                 target="_blank"
                 className="text-decoration-none text-muted btn-tool p-0"
               >
                 Posts
               </a>
               <a
-                href={`${fixBooruUrl(booruUrl)}/reports`}
+                href={`${booruUrl}/reports`}
                 target="_blank"
                 className="text-decoration-none text-muted btn-tool p-0"
               >
@@ -246,21 +245,21 @@ export const UserProfile = ({
             </div>
             <div className="d-flex flex-column">
               <a
-                href={`${fixBooruUrl(booruUrl)}/search?q=faved_by_id%3A${userId}`}
+                href={`${booruUrl}/search?q=faved_by_id%3A${userId}`}
                 target="_blank"
                 className="text-decoration-none text-muted btn-tool p-0"
               >
                 Favorites
               </a>
               <a
-                href={`${fixBooruUrl(booruUrl)}/profiles/${username}/tag_changes`}
+                href={`${booruUrl}/profiles/${username}/tag_changes`}
                 target="_blank"
                 className="text-decoration-none text-muted btn-tool p-0"
               >
                 Tag changes
               </a>
               <a
-                href={`${fixBooruUrl(booruUrl)}/profiles/${username}/source_changes`}
+                href={`${booruUrl}/profiles/${username}/source_changes`}
                 target="_blank"
                 className="text-decoration-none text-muted btn-tool p-0"
               >
@@ -439,7 +438,7 @@ export const UserProfile = ({
               <div className="philo-panel-header justify-content-between">
                 <span>Recent Comments</span>
                 <a
-                  href={`${fixBooruUrl(booruUrl)}/comments?q=author:${profile.slug}`}
+                  href={`${booruUrl}/comments?q=author:${profile.slug}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-decoration-none text-light fw-bold"
@@ -482,7 +481,7 @@ export const UserProfile = ({
                             <span>Posted {timeSince(comment.createdAt)}</span>
                             <div className="d-flex gap-2">
                               <a
-                                href={`${fixBooruUrl(booruUrl)}/images/${comment.imageId}#comment_${comment.id}`}
+                                href={`${booruUrl}/images/${comment.imageId}#comment_${comment.id}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-muted text-decoration-none"

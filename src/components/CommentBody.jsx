@@ -1,5 +1,4 @@
 import ReactMarkdown from 'react-markdown';
-import { fixBooruUrl } from '../services/api';
 
 /**
  * @param {string} text
@@ -36,7 +35,7 @@ export const CommentBody = ({ body, image }) => (
 
               return (
                 <a
-                  href={`${fixBooruUrl(image.booruUrl)}/images/${refId}`}
+                  href={`${image.booruUrl}/images/${refId}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="d-inline-block mt-2 mb-2"
@@ -54,7 +53,7 @@ export const CommentBody = ({ body, image }) => (
             // If it's from another image, just render a normal link without charging thumbnail
             return (
               <a
-                href={`${fixBooruUrl(image.booruUrl)}/images/${refId}`}
+                href={`${image.booruUrl}/images/${refId}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="fw-bold text-decoration-none"
@@ -68,7 +67,7 @@ export const CommentBody = ({ body, image }) => (
         // Process normal links
         return (
           <a
-            href={`${href.startsWith('/') || href.startsWith('./') || href.startsWith('../') ? `${fixBooruUrl(image.booruUrl)}` : ''}${href}`}
+            href={`${href.startsWith('/') || href.startsWith('./') || href.startsWith('../') ? `${image.booruUrl}` : ''}${href}`}
             target="_blank"
             rel="noopener noreferrer"
           >

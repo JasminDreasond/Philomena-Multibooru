@@ -128,11 +128,11 @@ export const SettingsPanel = ({ isDark, onClose }) => {
 
     if (urlInput && keyInput) {
       /** @type {string} */
-      const normalizedUrl = urlInput.trim().replace(/\/$/, '');
+      const normalizedUrl = fixBooruUrl(urlInput.trim().replace(/\/$/, ''));
 
       /** @type {boolean} */
       const urlExists = accountsList.some(
-        (acc) => fixBooruUrl(acc.booruUrl).replace(/\/$/, '') === normalizedUrl,
+        (acc) => acc.booruUrl.replace(/\/$/, '') === normalizedUrl,
       );
 
       if (urlExists && !acceptRisk) {
@@ -514,7 +514,7 @@ export const SettingsPanel = ({ isDark, onClose }) => {
                     className="list-group-item d-flex justify-content-between align-items-center"
                   >
                     <div className="text-truncate" style={{ maxWidth: '70%' }}>
-                      <strong>{fixBooruUrl(acc.booruUrl)}</strong>
+                      <strong>{acc.booruUrl}</strong>
                     </div>
                     <button
                       className="btn btn-sm btn-outline-danger"

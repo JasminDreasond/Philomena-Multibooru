@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchComments, fixBooruUrl, getAccountBooruApi } from '../services/api';
+import { fetchComments, getAccountBooruApi } from '../services/api';
 import { CommentBody } from './CommentBody';
 
 const tags = [
@@ -199,8 +199,8 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
 
   const sources = image.sourceUrls ? image.sourceUrls : image.sourceUrl ? [image.sourceUrl] : [];
 
-  const bbcodeFull = `[img]${image.representations.full}[/img]\n[url=${fixBooruUrl(image.booruUrl)}/images/${image.id}]View on Booru[/url] - [url=${sources[0] || ''}]Original source[/url]`;
-  const bbcodeThumb = `[url=${fixBooruUrl(image.booruUrl)}/images/${image.id}][img]${image.representations.thumb}[/img][/url]\n[url=${fixBooruUrl(image.booruUrl)}/images/${image.id}]View on Booru[/url] - [url=${sources[0] || ''}]Original source[/url]`;
+  const bbcodeFull = `[img]${image.representations.full}[/img]\n[url=${image.booruUrl}/images/${image.id}]View on Booru[/url] - [url=${sources[0] || ''}]Original source[/url]`;
+  const bbcodeThumb = `[url=${image.booruUrl}/images/${image.id}][img]${image.representations.thumb}[/img][/url]\n[url=${image.booruUrl}/images/${image.id}]View on Booru[/url] - [url=${sources[0] || ''}]Original source[/url]`;
 
   return (
     <div className="fade-in">
@@ -219,7 +219,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
 
         <div className="me-auto d-flex flex-wrap gap-1">
           <a
-            href={`${fixBooruUrl(image.booruUrl)}/${image.id}`}
+            href={`${image.booruUrl}/${image.id}`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-tool"
@@ -241,7 +241,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
               rel="noopener noreferrer"
               target="_blank"
               className="btn-tool"
-              href={`${fixBooruUrl(image.booruUrl)}/profiles/${uploaderName}`}
+              href={`${image.booruUrl}/profiles/${uploaderName}`}
               onClick={(e) =>
                 handleProfileClick(e, image.booruUrl, image.uploader, image.uploaderId)
               }
@@ -310,7 +310,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
             🏷️ Tags{' '}
             <a
               className="text-muted ms-auto fw-normal text-sm"
-              href={`${fixBooruUrl(image.booruUrl)}/images/${image.id}/tag_changes`}
+              href={`${image.booruUrl}/images/${image.id}/tag_changes`}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -360,7 +360,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
         <div className="d-flex gap-2 mb-4">
           <a
             className="btn btn-sm btn-secondary fw-bold px-3"
-            href={`${fixBooruUrl(image.booruUrl)}/images/${image.id}/reports/new`}
+            href={`${image.booruUrl}/images/${image.id}/reports/new`}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -521,7 +521,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
                         <a
                           rel="noopener noreferrer"
                           target="_blank"
-                          href={`${fixBooruUrl(image.booruUrl)}/profiles/${comment.author}`}
+                          href={`${image.booruUrl}/profiles/${comment.author}`}
                           onClick={(e) =>
                             handleProfileClick(e, image.booruUrl, comment.author, comment.userId)
                           }
@@ -544,7 +544,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
                       Posted {timeSince(comment.createdAt)}
                       <br />
                       <a
-                        href={`${fixBooruUrl(image.booruUrl)}/images/${image.id}/comments/${comment.id}/reports/new`}
+                        href={`${image.booruUrl}/images/${image.id}/comments/${comment.id}/reports/new`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-muted text-decoration-none"
@@ -554,7 +554,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
                     </div>
                     <div className="d-flex align-items-end gap-2">
                       <a
-                        href={`${fixBooruUrl(image.booruUrl)}/images/${image.id}#comment_${comment.id}`}
+                        href={`${image.booruUrl}/images/${image.id}#comment_${comment.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-muted text-decoration-none"

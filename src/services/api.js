@@ -695,10 +695,7 @@ export const searchImages = async (
     results = results.map((item) => {
       item.interaction =
         {
-          ...interactions.find(
-            (int) =>
-              int.imageId === item.id && fixBooruUrl(int.booruUrl) === fixBooruUrl(item.booruUrl),
-          ),
+          ...interactions.find((int) => int.imageId === item.id && int.booruUrl === item.booruUrl),
         }.value ?? null;
       return item;
     });
@@ -813,7 +810,7 @@ export const syncUserGalleryPages = async (
   if (accounts.length === 0) return { accounts: [], syncLimit: 50, totalCount: 0 };
 
   const syncs = accounts.map((account) =>
-    syncGalleryPage(fixBooruUrl(account.booruUrl), account.apiKey, query, page, perPage),
+    syncGalleryPage(account.booruUrl, account.apiKey, query, page, perPage),
   );
 
   const results = await Promise.all(syncs);
@@ -902,7 +899,7 @@ export const factoryResetDatabase = async () => {
  */
 export const getFeaturedImage = async (booruUrl) => {
   try {
-    const response = await fetch(`${fixBooruUrl(booruUrl)}/api/v1/json/images/featured`);
+    const response = await fetch(`${booruUrl}/api/v1/json/images/featured`);
     if (!response.ok) return null;
     const data = await response.json();
     return data.image ? parseImageData(booruUrl, fixImageObj(data.image)) : null;
@@ -945,7 +942,7 @@ export const clearSpecificBooruCache = async (booruUrls) => {
   if (!Array.isArray(booruUrls) || booruUrls.length === 0) return;
 
   /** @type {string[]} */
-  const normalizedUrls = booruUrls.map((url) => fixBooruUrl(url));
+  const normalizedUrls = booruUrls.map((url) => url);
 
   try {
     /** @type {object} */

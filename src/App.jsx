@@ -6,7 +6,6 @@ import {
   searchImages,
   getFeaturedImage,
   fixImageObj,
-  fixBooruUrl,
   getActiveAccounts,
   clearImageCache,
 } from './services/api';
@@ -860,7 +859,7 @@ const App = () => {
                           </select>
                         </div>
                         <a
-                          href={`${fixBooruUrl(selectedLinkAccount.booruUrl)}/search?q=*&sf=score&sd=desc`}
+                          href={`${selectedLinkAccount.booruUrl}/search?q=*&sf=score&sd=desc`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="list-group-item list-group-item-action fw-semibold"
@@ -868,7 +867,7 @@ const App = () => {
                           🌟 All Time Top Scoring
                         </a>
                         <a
-                          href={`${fixBooruUrl(selectedLinkAccount.booruUrl)}/comments`}
+                          href={`${selectedLinkAccount.booruUrl}/comments`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="list-group-item list-group-item-action fw-semibold"
@@ -876,7 +875,7 @@ const App = () => {
                           💬 Recent Comments
                         </a>
                         <a
-                          href={`${fixBooruUrl(selectedLinkAccount.booruUrl)}/search?q=first_seen_at.gt:3%20days%20ago&sf=comment_count&sd=desc`}
+                          href={`${selectedLinkAccount.booruUrl}/search?q=first_seen_at.gt:3%20days%20ago&sf=comment_count&sd=desc`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="list-group-item list-group-item-action fw-semibold"
