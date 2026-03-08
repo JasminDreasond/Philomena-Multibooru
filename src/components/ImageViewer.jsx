@@ -281,7 +281,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
         {/* Description Panel */}
         <div className="philo-panel">
           <div className="philo-panel-header">📄 Description</div>
-          <div className="philo-panel-body text-muted">
+          <div className="philo-panel-body text-muted p-2">
             {image.description ? (
               <CommentBody body={image.description} image={image} />
             ) : (
@@ -303,7 +303,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
               History ({image.tags?.length || 0} tags)
             </a>
           </div>
-          <div className="philo-panel-body">
+          <div className="philo-panel-body p-2">
             <div className="philo-tag-container">
               {image.tags?.map((tag, idx) => (
                 <div
@@ -323,7 +323,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
         {/* Source Panel */}
         <div className="philo-panel">
           <div className="philo-panel-header">🔗 Sources</div>
-          <div className="philo-panel-body">
+          <div className="philo-panel-body p-2">
             {sources.length > 0 ? (
               sources.map((sourceUrl, i) => (
                 <a
@@ -363,7 +363,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
         {/* Share Panel */}
         {showShare && (
           <div className="philo-panel mb-4 shadow-sm">
-            <div className="philo-panel-body">
+            <div className="philo-panel-body p-2">
               <div className="mb-3 d-flex align-items-center">
                 <label className="fw-bold me-2" style={{ width: '120px' }}>
                   Small thumbnail

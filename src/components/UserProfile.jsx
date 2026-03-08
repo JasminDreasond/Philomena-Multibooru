@@ -333,7 +333,7 @@ export const UserProfile = ({ booruUrl, userId, onClose, onOpenImage, handleSear
                   View all
                 </button>
               </div>
-              <div className="philo-panel-body p-2 bg-dark">
+              <div className="philo-panel-body p-2">
                 {recentUploads.length > 0 ? (
                   <div className="row row-cols-2 row-cols-md-4 g-2">
                     {recentUploads.map((img) => (
@@ -359,7 +359,7 @@ export const UserProfile = ({ booruUrl, userId, onClose, onOpenImage, handleSear
                   View all
                 </button>
               </div>
-              <div className="philo-panel-body p-2 bg-dark">
+              <div className="philo-panel-body p-2">
                 {recentFaves.length > 0 ? (
                   <div className="row row-cols-2 row-cols-md-4 g-2">
                     {recentFaves.map((img) => (
@@ -387,7 +387,7 @@ export const UserProfile = ({ booruUrl, userId, onClose, onOpenImage, handleSear
                   View all
                 </a>
               </div>
-              <div className="philo-panel-body p-0">
+              <div className="philo-panel-body">
                 {recentComments.length > 0 ? (
                   <div className="d-flex flex-column">
                     {recentComments.map((comment) => (
