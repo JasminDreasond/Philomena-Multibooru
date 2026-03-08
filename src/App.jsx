@@ -243,8 +243,8 @@ const App = () => {
   /** @type {[ImageResult[], import('react').Dispatch<import('react').SetStateAction<ImageResult[]>>]} */
   const [watchedImages, setWatchedImages] = useState([]);
 
-  /** @type {[{account: Account, image: ImageObj}[], import('react').Dispatch<import('react').SetStateAction<{account: Account, image: ImageObj}[]>>]} */
-  const [featuredImagesList, setFeaturedImagesList] = useState([]);
+  /** @type {[{account: Account, image: ImageObj}|null, import('react').Dispatch<import('react').SetStateAction<{account: Account, image: ImageObj}[]>>]} */
+  const [featuredImage, setFeaturedImage] = useState(null);
 
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isDbReady, setIsDbReady] = useState(false);
@@ -382,16 +382,10 @@ const App = () => {
           setTotalPages(Math.max(1, Math.ceil(totalCount / syncLimit)));
 
           if (!isSpecialSearch && isHomepage && accounts.length > 0) {
-            /** @type {Account[]} */
-            const targetAccounts = [accounts[TinySimpleDice.rollArrayIndex(accounts)]];
-            /** @type {{account: Account, image: ImageObj}[]} */
-            const fetchedFeatures = [];
-
-            for (const acc of targetAccounts) {
-              const feat = await getFeaturedImage(acc.booruUrl);
-              if (feat) fetchedFeatures.push({ account: acc, image: feat });
-            }
-            setFeaturedImagesList(fetchedFeatures);
+            /** @type {Account} */
+            const acc = accounts[TinySimpleDice.rollArrayIndex(accounts)];
+            const feat = await getFeaturedImage(acc.booruUrl);
+            setFeaturedImage(feat ? { account: acc, image: feat } : null);
           }
 
           await loadLocalData(syncLimit, currentPage, queryToUse);
@@ -514,8 +508,8 @@ const App = () => {
   const showSpecialContent =
     (searchQuery.trim() === '' || searchQuery.trim() === '*') && isHomepage;
 
-  /** @type {Account[]} */
-  const activeSidebarAccounts = connectedAccounts ? featuredImagesList.map((f) => f.account) : [];
+  /** @type {Account|null} */
+  const activeSidebarAccounts = connectedAccounts && featuredImage ? featuredImage.account : null;
 
   return (
     <div className="min-vh-100 pb-5" style={{ backgroundColor: 'var(--app-bg)' }}>
@@ -654,11 +648,8 @@ const App = () => {
                 {showSpecialContent && (
                   <div className="col-12 col-lg-auto sidebar-container">
                     {/* Featured Images */}
-                    {featuredImagesList.map((feature, idx) => (
-                      <div
-                        key={`feat-${feature.account.id}-${idx}`}
-                        className="card shadow-sm border-0 mb-4 featured-images"
-                      >
+                    {featuredImage && (
+                      <div className="card shadow-sm border-0 mb-4 featured-images">
                         <div
                           className="card-header fw-bold d-flex justify-content-between"
                           style={{ borderColor: 'var(--app-border)' }}
@@ -667,11 +658,11 @@ const App = () => {
                         </div>
                         <Image
                           className="rounded-0"
-                          img={fixImageObj(feature.image)}
+                          img={fixImageObj(featuredImage.image)}
                           onOpenImage={handleOpenImage}
                         />
                       </div>
-                    ))}
+                    )}
 
                     {/* Trending Images */}
                     <div className="card shadow-sm border-0 mb-4">
@@ -684,7 +675,7 @@ const App = () => {
                         }}
                       >
                         <span>Trending Images</span>
-                        {activeSidebarAccounts.length > 0 && (
+                        {activeSidebarAccounts && (
                           <button
                             onClick={() => handleSearchSubmit('first_seen_at.gt:3 days ago')}
                             className="btn btn-link text-white text-decoration-none small p-0 align-baseline"
@@ -703,8 +694,8 @@ const App = () => {
                     </div>
 
                     {/* Quick Links */}
-                    {activeSidebarAccounts.map((acc, idx) => (
-                      <div key={`links-${acc.id}-${idx}`} className="list-group shadow-sm mb-4">
+                    {activeSidebarAccounts && (
+                      <div className="list-group shadow-sm mb-4">
                         <div
                           className="list-group-item fw-bold small text-truncate"
                           style={{
@@ -713,10 +704,10 @@ const App = () => {
                             borderBottomWidth: '2px',
                           }}
                         >
-                          Links: {fixBooruUrl(acc.booruUrl)}
+                          Links: {new URL(activeSidebarAccounts.booruUrl).hostname}
                         </div>
                         <a
-                          href={`${fixBooruUrl(acc.booruUrl)}/search?q=*&sf=score&sd=desc`}
+                          href={`${fixBooruUrl(activeSidebarAccounts.booruUrl)}/search?q=*&sf=score&sd=desc`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="list-group-item list-group-item-action fw-semibold"
@@ -724,7 +715,7 @@ const App = () => {
                           🌟 All Time Top Scoring
                         </a>
                         <a
-                          href={`${fixBooruUrl(acc.booruUrl)}/comments`}
+                          href={`${fixBooruUrl(activeSidebarAccounts.booruUrl)}/comments`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="list-group-item list-group-item-action fw-semibold"
@@ -732,7 +723,7 @@ const App = () => {
                           💬 Recent Comments
                         </a>
                         <a
-                          href={`${fixBooruUrl(acc.booruUrl)}/search?q=first_seen_at.gt:3%20days%20ago&sf=comment_count&sd=desc`}
+                          href={`${fixBooruUrl(activeSidebarAccounts.booruUrl)}/search?q=first_seen_at.gt:3%20days%20ago&sf=comment_count&sd=desc`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="list-group-item list-group-item-action fw-semibold"
@@ -740,7 +731,7 @@ const App = () => {
                           🔥 Most Commented-on
                         </a>
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
 

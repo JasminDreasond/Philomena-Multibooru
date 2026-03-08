@@ -229,17 +229,24 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
       <div className="viewer-subinfo border-bottom" style={{ borderColor: 'var(--app-border)' }}>
         Uploaded {timeSince(uploadDate)} by{' '}
         <strong>
-          <a
-            rel="noopener noreferrer"
-            target="_blank"
-            className="btn-tool"
-            href={`${fixBooruUrl(image.booruUrl)}/profiles/${uploaderName}`}
-            onClick={(e) => handleProfileClick(e, image.booruUrl, image.uploader, image.uploaderId)}
-          >
-            {uploaderName}
-          </a>
+          {image.uploaderId ? (
+            <a
+              rel="noopener noreferrer"
+              target="_blank"
+              className="btn-tool"
+              href={`${fixBooruUrl(image.booruUrl)}/profiles/${uploaderName}`}
+              onClick={(e) =>
+                handleProfileClick(e, image.booruUrl, image.uploader, image.uploaderId)
+              }
+            >
+              {uploaderName}
+            </a>
+          ) : (
+            <span className="px-2">{uploaderName}</span>
+          )}
         </strong>{' '}
-        {image.width}x{image.height} {fileExtension.toUpperCase()} {formatBytes(image.size)}
+        {image.width}x{image.height} {fileExtension.toUpperCase()} {formatBytes(image.size)} in{' '}
+        {new URL(image.booruUrl).hostname}
       </div>
 
       {/* Image Area */}

@@ -503,6 +503,9 @@ export const fixImageObj = (img) => {
   return img;
 };
 
+/** @type {Record<string, number>} */
+const syncTimes = {};
+
 /**
  * Background task to sync pages into JsStore
  * @param {string} booruUrl
@@ -518,6 +521,9 @@ export const syncGalleryPage = async (
   page = 1,
   perPage = undefined,
 ) => {
+  if (typeof syncTimes[booruUrl] !== 'number') syncTimes[booruUrl] = 0;
+  syncTimes[booruUrl]++;
+  const time = syncTimes[booruUrl];
   try {
     const data = await searchImagesApi(booruUrl, apiKey, query, page, perPage);
     /** @type {string} */
@@ -577,7 +583,7 @@ export const syncGalleryPage = async (
 
     await enforceStorageLimit();
 
-    console.log(`Synced page ${page} from ${booruUrl}`);
+    console.log(`Synced page ${page} from ${booruUrl} (${time})`);
     return data;
   } catch (error) {
     console.error('Failed to sync gallery page:', error);

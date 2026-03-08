@@ -73,7 +73,6 @@ export const UserProfile = ({
         if (isMounted) setProfile(userProfile);
 
         if (userProfile) {
-          console.log(userProfile);
           // Fetch secondary data concurrently to populate the profile panels
           const account = await getAccountBooru(booruUrl);
           const uploaderQuery = `uploader_id:${userProfile.id}`;
@@ -179,7 +178,7 @@ export const UserProfile = ({
             <div className="text-muted small fw-semibold">
               Member since {timeSince(profile.createdAt)}
             </div>
-            <div className="text-muted small">{booruUrl}</div>
+            <div className="text-muted small">{new URL(booruUrl).hostname}</div>
           </div>
           <div className="d-flex flex-wrap gap-3 text-muted small fw-semibold">
             <div className="d-flex flex-column">
@@ -302,10 +301,9 @@ export const UserProfile = ({
                   <tbody>
                     {profile.awards.length > 0 ? (
                       profile.awards.map((award, i) => (
-                        <tr>
+                        <tr key={i}>
                           <td className="text-center py-2 px-3">
                             <img
-                              key={i}
                               src={award.imageUrl}
                               alt={award.title}
                               title={award.title}
