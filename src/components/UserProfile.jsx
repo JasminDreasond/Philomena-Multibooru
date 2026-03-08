@@ -266,7 +266,7 @@ export const UserProfile = ({ booruUrl, userId, onClose, onOpenImage, handleSear
                       ))
                     ) : (
                       <tr>
-                        <td className="text-center text-muted small">No awards yet.</td>
+                        <td className="text-center text-muted small p-2">No awards yet.</td>
                       </tr>
                     )}
                   </tbody>
