@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
+import TinySimpleDice from 'tiny-essentials/libs/TinySimpleDice';
 import { initDatabase } from './db/connection';
 import {
   syncUserGalleryPages,
   searchImages,
   getFeaturedImage,
-  getSystemSettings,
   fixImageObj,
   fixBooruUrl,
 } from './services/api';
@@ -360,8 +360,6 @@ const App = () => {
           const queryToUse = searchQuery.trim() === '' ? '*' : searchQuery;
           /** @type {boolean} */
           const isSpecialSearch = queryToUse !== '*';
-
-          const sysSettings = await getSystemSettings();
           await executeBackgroundSync();
 
           const syncPromises = [syncUserGalleryPages(queryToUse, currentPage)];
@@ -385,7 +383,7 @@ const App = () => {
 
           if (!isSpecialSearch && isHomepage && accounts.length > 0) {
             /** @type {Account[]} */
-            const targetAccounts = sysSettings.mixAllBoorus === 1 ? accounts : [accounts[0]];
+            const targetAccounts = [accounts[TinySimpleDice.rollArrayIndex(accounts)]];
             /** @type {{account: Account, image: ImageObj}[]} */
             const fetchedFeatures = [];
 
@@ -665,12 +663,6 @@ const App = () => {
                           style={{ borderColor: 'var(--app-border)' }}
                         >
                           <span>Featured Image</span>
-                          <small
-                            className="opacity-75"
-                            title={fixBooruUrl(feature.account.booruUrl)}
-                          >
-                            Booru {idx + 1}
-                          </small>
                         </div>
                         <Image
                           className="rounded-0"

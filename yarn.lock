@@ -1865,6 +1865,11 @@ supports-color@^7.1.0:
   dependencies:
     has-flag "^4.0.0"
 
+tiny-essentials@^1.25.1:
+  version "1.25.1"
+  resolved "https://registry.yarnpkg.com/tiny-essentials/-/tiny-essentials-1.25.1.tgz#18a8c1198f700afb69526b2a93dbf95bdbd7a888"
+  integrity sha512-GESAwWrq3o5w1+QgoUS/XAkKdyNbabcXVi4YFiQOw51jV/FKTcd0uAmIMOuo90rPqEsz4EgqAreFjN3HjsjEYA==
+
 tinyglobby@^0.2.15:
   version "0.2.15"
   resolved "https://registry.yarnpkg.com/tinyglobby/-/tinyglobby-0.2.15.tgz#e228dd1e638cea993d2fdb4fcd2d4602a79951c2"

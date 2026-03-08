@@ -196,7 +196,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
   const bbcodeThumb = `[url=${fixBooruUrl(image.booruUrl)}/images/${image.id}][img]${image.representations.thumb}[/img][/url]\n[url=${fixBooruUrl(image.booruUrl)}/images/${image.id}]View on Booru[/url] - [url=${sources[0] || ''}]Original source[/url]`;
 
   return (
-    <div className="fade-in pb-5">
+    <div className="fade-in">
       {/* Top Toolbar */}
       <div className="viewer-toolbar d-flex flex-wrap align-items-center px-3 py-1 gap-3">
         <button onClick={onClose} className="ms-auto btn-tool" title="Back to Gallery">

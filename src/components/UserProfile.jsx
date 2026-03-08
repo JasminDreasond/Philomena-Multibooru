@@ -129,7 +129,7 @@ export const UserProfile = ({ booruUrl, userId, onClose, onOpenImage, handleSear
   const profile = pf;
 
   return (
-    <div className="fade-in pb-5">
+    <div className="fade-in">
       {/* Top Toolbar */}
       <div className="viewer-toolbar d-flex flex-wrap align-items-center px-3 py-1 gap-3 mb-4">
         <button onClick={onClose} className="btn-tool" title="Back">
@@ -155,9 +155,10 @@ export const UserProfile = ({ booruUrl, userId, onClose, onOpenImage, handleSear
             style={{
               width: '120px',
               height: '120px',
-              backgroundImage: `url(${profile.avatarUrl})`,
+              backgroundImage: profile.avatarUrl ? `url(${profile.avatarUrl})` : null,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
+              backgroundColor: profile.avatarUrl ? 'transparent' : 'var(--app-primary)',
               flexShrink: 0,
             }}
           ></div>

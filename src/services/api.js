@@ -336,7 +336,6 @@ const normalizeQueryString = (rawQuery) => {
  * @property {number} id
  * @property {number} maxItems
  * @property {number} persistentStorage
- * @property {number} mixAllBoorus
  */
 
 /**
@@ -348,7 +347,7 @@ export const getSystemSettings = async () => {
   if (settings.length > 0) return settings[0];
 
   /** @type {SystemSettings} */
-  const defaultSettings = { id: 1, maxItems: 10000, persistentStorage: 0, mixAllBoorus: 0 };
+  const defaultSettings = { id: 1, maxItems: 10000, persistentStorage: 0 };
   await dbConnection.insert({ into: 'Settings', values: [defaultSettings] });
   return defaultSettings;
 };
@@ -356,13 +355,12 @@ export const getSystemSettings = async () => {
 /**
  * @param {number} maxItems
  * @param {number} persistentStorage
- * @param {number} mixAllBoorus
  * @returns {Promise<void>}
  */
-export const updateSystemSettings = async (maxItems, persistentStorage, mixAllBoorus) => {
+export const updateSystemSettings = async (maxItems, persistentStorage) => {
   await dbConnection.update({
     in: 'Settings',
-    set: { maxItems, persistentStorage, mixAllBoorus },
+    set: { maxItems, persistentStorage },
     where: { id: 1 },
   });
 };

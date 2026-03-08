@@ -73,7 +73,6 @@ export const initDatabase = async () => {
       id: { primaryKey: true, dataType: 'number', notNull: true },
       maxItems: { dataType: 'number', notNull: true },
       persistentStorage: { dataType: 'number', notNull: true },
-      mixAllBoorus: { dataType: 'number', notNull: true }, // Nova coluna
     },
   };
 

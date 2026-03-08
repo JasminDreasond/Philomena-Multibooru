@@ -490,7 +490,7 @@ a:hover {
 }
 
 .philo-panel-body tr:nth-child(even) {
-  background-color:rgba(0,0,0, 0.3);
+  background-color: rgba(0, 0, 0, 0.3);
 }
 
 /* Classic Tags Styling */
