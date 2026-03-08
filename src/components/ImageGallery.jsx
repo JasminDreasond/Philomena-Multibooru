@@ -123,22 +123,26 @@ export const Image = ({ img, className, onOpenImage }) => {
           </div>
 
           <div
-            className="position-absolute bottom-0 w-100 text-white d-flex justify-content-between align-items-end"
+            className="position-absolute top-0 w-100 text-white d-flex justify-content-between align-items-end"
             style={{ zIndex: 6 }}
           >
-            <div className="interaction-container d-flex gap-1 align-items-center w-100 justify-content-between shadow-sm px-2">
-              <span className={`badge-interaction ${isFav ? 'active-fave' : 'badge-inactive'}`}>
-                ★ {img.faves}
-              </span>
-              <span className={`badge-interaction ${isUp ? 'active-up' : 'badge-inactive'}`}>
-                ▲
-              </span>
-              <span className={`badge-interaction badge-inactive`}>{score}</span>
-              <span className={`badge-interaction ${isDown ? 'active-down' : 'badge-inactive'}`}>
-                ▼
-              </span>
-              <span className="badge-interaction badge-inactive">💬 {img.commentCount || 0}</span>
-            </div>
+            <table className="interaction-container w-100 shadow-sm text-center">
+              <tbody>
+                <tr>
+                  <td className={`badge-interaction text-end ${isFav ? 'active-fave' : 'badge-inactive'}`}>
+                    ★ {img.faves}
+                  </td>
+                  <td className={`badge-interaction text-end ${isUp ? 'active-up' : 'badge-inactive'}`}>
+                    ▲
+                  </td>
+                  <td className={`badge-interaction badge-inactive`}>{score}</td>
+                  <td className={`badge-interaction text-start ${isDown ? 'active-down' : 'badge-inactive'}`}>
+                    ▼
+                  </td>
+                  <td className="badge-interaction text-start badge-inactive">💬 {img.commentCount || 0}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
         <div className="card-body py-2 px-3" style={{ zIndex: 6, position: 'relative' }}>
