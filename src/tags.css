@@ -66,6 +66,54 @@
   color: white;
 }
 
+.philo-tag.tag-project {
+  border-color: #4834d4;
+}
+.philo-tag.tag-project .philo-tag-name {
+  background-color: #4834d4;
+  color: white;
+}
+
+.philo-tag.tag-anatomy {
+  border-color: #833471;
+}
+.philo-tag.tag-anatomy .philo-tag-name {
+  background-color: #833471;
+  color: white;
+}
+
+.philo-tag.tag-software {
+  border-color: #576574;
+}
+.philo-tag.tag-software .philo-tag-name {
+  background-color: #576574;
+  color: white;
+}
+
+.philo-tag.tag-status {
+  border-color: #fbc531;
+}
+.philo-tag.tag-status .philo-tag-name {
+  background-color: #fbc531;
+  color: white;
+}
+
+.philo-tag.tag-warning {
+  border-color: #e84118;
+}
+.philo-tag.tag-warning .philo-tag-name {
+  background-color: #e84118;
+  color: white;
+}
+
+.philo-tag.tag-spoiler {
+  border-color: #2f3640;
+}
+.philo-tag.tag-spoiler .philo-tag-name {
+  background-color: #2f3640;
+  color: white;
+}
+
 .philo-tag.tag-series {
   border-color: #96281b;
 }

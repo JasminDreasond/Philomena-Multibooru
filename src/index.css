@@ -506,21 +506,15 @@ a:hover {
   font-weight: 600;
   border: 1px solid rgba(0, 0, 0, 0.2);
   cursor: pointer;
-  /* Smooth elastic transition */
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: filter 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .philo-tag:hover {
-  /* Lift effect */
-  transform: translateY(-2px) scale(1.03);
   filter: brightness(1.15);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
-  border: 0px solid transparent !important;
 }
 
 .philo-tag:active {
-  /* Pressed effect */
-  transform: translateY(0) scale(0.98);
   filter: brightness(0.9);
 }
 
