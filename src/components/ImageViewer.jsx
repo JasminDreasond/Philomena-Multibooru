@@ -89,7 +89,11 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
     const getComments = async () => {
       setIsLoadingComments(true);
       try {
-        const data = await fetchComments(image.booruUrl, await getAccountBooruApi(image.booruUrl), `image_id:${image.id}`);
+        const data = await fetchComments(
+          image.booruUrl,
+          await getAccountBooruApi(image.booruUrl),
+          `image_id:${image.id}`,
+        );
         if (isMounted) setComments(data.comments || []);
       } catch (err) {
         console.error('Failed to fetch comments:', err);
@@ -139,7 +143,7 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
       .trim()}${tag.startsWith('artist:') ? ' tag-artist' : ''}${tag.startsWith('prompter:') ? ' tag-prompter' : ''}${tag.startsWith('editor:') ? ' tag-editor' : ''}`;
   };
 
-  const sources = (image.sourceUrls ?? image.sourceUrls) ? [image.sourceUrl] : [];
+  const sources = image.sourceUrls ? image.sourceUrls : image.sourceUrl ? [image.sourceUrl] : [];
 
   const bbcodeFull = `[img]${image.representations.full}[/img]\n[url=${fixBooruUrl(image.booruUrl)}/images/${image.id}]View on Booru[/url] - [url=${sources[0] || ''}]Original source[/url]`;
   const bbcodeThumb = `[url=${fixBooruUrl(image.booruUrl)}/images/${image.id}][img]${image.representations.thumb}[/img][/url]\n[url=${fixBooruUrl(image.booruUrl)}/images/${image.id}]View on Booru[/url] - [url=${sources[0] || ''}]Original source[/url]`;
@@ -333,7 +337,7 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
 
         {/* Source Panel */}
         <div className="philo-panel">
-          <div className="philo-panel-header">🔗 Source</div>
+          <div className="philo-panel-header">🔗 Sources</div>
           <div className="philo-panel-body">
             {sources.length > 0 ? (
               sources.map((sourceUrl, i) => (
