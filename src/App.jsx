@@ -301,16 +301,54 @@ const App = () => {
   /** @type {import('react').MutableRefObject<boolean>} */
   const isFirstLoad = useRef(true);
 
-  // Persists the visible Boorus to local storage
-  useEffect(() => {
-    localStorage.setItem('app_visibleBoorus', JSON.stringify(visibleBoorus));
+  // Refs for Dropdown and Sync control Smart
+  const booruDropdownRef = useRef(null);
+  const lastSyncedBoorus = useRef(visibleBoorus);
+  const latestVisibleBoorus = useRef(visibleBoorus);
 
-    // Auto re-sync when booru filters change (only after initial boot)
-    if (!isFirstLoad.current && isDbReady && hasInitialized.current) {
-      setIsSearching(true);
-      executeBackgroundSync(visibleBoorus).finally(() => setIsSearching(false));
-    }
+  // Updates references and localStorage visual without causing immediate side-effects
+  useEffect(() => {
+    latestVisibleBoorus.current = visibleBoorus;
+    localStorage.setItem('app_visibleBoorus', JSON.stringify(visibleBoorus));
   }, [visibleBoorus]);
+
+  /**
+   * Shoot refresh of the boorus if there was a real change
+   * @param {string[]} newBoorus
+   */
+  const applyBooruChanges = async (newBoorus) => {
+    const oldSet = new Set(lastSyncedBoorus.current);
+    const newSet = new Set(newBoorus);
+    const isSame = oldSet.size === newSet.size && [...oldSet].every((x) => newSet.has(x));
+
+    if (isSame) return; // Just gives refresh if you really changed something
+
+    setIsSearching(true);
+    await clearImageCache(); // Cleans old images
+    lastSyncedBoorus.current = newBoorus;
+    await executeBackgroundSync(newBoorus);
+    setIsSearching(false);
+  };
+
+  // Bootstrap native listener to capture the exact moment that dropdown closes
+  useEffect(() => {
+    const el = booruDropdownRef.current;
+    if (!el) return;
+
+    const handleHidden = () => {
+      window.dispatchEvent(new CustomEvent('boorusDropdownClosed'));
+    };
+
+    el.addEventListener('hidden.bs.dropdown', handleHidden);
+    return () => el.removeEventListener('hidden.bs.dropdown', handleHidden);
+  }, []);
+
+  // Engages sync with the most current state variables
+  useEffect(() => {
+    const onDropdownClosed = () => applyBooruChanges(latestVisibleBoorus.current);
+    window.addEventListener('boorusDropdownClosed', onDropdownClosed);
+    return () => window.removeEventListener('boorusDropdownClosed', onDropdownClosed);
+  });
 
   /**
    * @param {number} limitToUse
@@ -426,6 +464,9 @@ const App = () => {
               if (!selectedLinkAccount) setSelectedLinkAccount(acc);
             }
           }
+
+          lastSyncedBoorus.current = activeUrls; // Register initial sync
+          latestVisibleBoorus.current = activeUrls;
 
           await loadLocalData(mainSync.syncLimit, currentPage, queryToUse, activeUrls);
           isFirstLoad.current = false;
@@ -563,16 +604,6 @@ const App = () => {
   const showSpecialContent =
     (searchQuery.trim() === '' || searchQuery.trim() === '*') && isHomepage;
 
-  /**
-   * @param {string[]}
-   */
-  const updateVisibleBoorus = async (accounts) => {
-    setIsSearching(true);
-    await clearImageCache();
-    setIsSearching(false);
-    setVisibleBoorus(accounts);
-  };
-
   return (
     <div className="min-vh-100 pb-5" style={{ backgroundColor: 'var(--app-bg)' }}>
       <nav className="navbar navbar-expand-lg custom-navbar sticky-top shadow-sm">
@@ -632,7 +663,7 @@ const App = () => {
                   <SearchBar
                     onSearchSubmit={(q) => {
                       handleSearchSubmit(q);
-                      // Trigger visual close for manual DOM if needed, but BS5 handles it cleanly with attributes
+                      // Trigger visual close for manual DOM if you need it, but Bootstrap already manages well
                       const offcanvasElement = document.getElementById('mobileMenu');
                       if (offcanvasElement && offcanvasElement.classList.contains('show')) {
                         const closeBtn = offcanvasElement.querySelector('.btn-close');
@@ -647,7 +678,7 @@ const App = () => {
 
               <div className="ms-lg-auto d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-3 gap-lg-0 mt-2 mt-lg-0">
                 {/* Booru Instance Filter Dropdown */}
-                <div className="dropdown me-lg-3 w-100 w-lg-auto">
+                <div className="dropdown me-lg-3 w-100 w-lg-auto" ref={booruDropdownRef}>
                   <button
                     className="btn btn-sm text-nowrap w-100 d-flex justify-content-between align-items-center gap-2"
                     style={{
@@ -675,7 +706,11 @@ const App = () => {
                     <li>
                       <button
                         className="dropdown-item fw-bold text-success"
-                        onClick={() => setVisibleBoorus(connectedAccounts.map((a) => a.booruUrl))}
+                        onClick={() => {
+                          const allAccounts = connectedAccounts.map((a) => a.booruUrl);
+                          setVisibleBoorus(allAccounts);
+                          applyBooruChanges(allAccounts); // Apply immediately!
+                        }}
                       >
                         Select All
                       </button>
@@ -683,7 +718,10 @@ const App = () => {
                     <li>
                       <button
                         className="dropdown-item fw-bold text-danger"
-                        onClick={() => updateVisibleBoorus([])}
+                        onClick={() => {
+                          setVisibleBoorus([]);
+                          applyBooruChanges([]); // Apply immediately!
+                        }}
                       >
                         Deselect All
                       </button>
@@ -703,10 +741,10 @@ const App = () => {
                             onClick={(e) => {
                               e.preventDefault();
                               if (isVisible)
-                                updateVisibleBoorus(
+                                setVisibleBoorus(
                                   visibleBoorus.filter((url) => url !== acc.booruUrl),
                                 );
-                              else updateVisibleBoorus([...visibleBoorus, acc.booruUrl]);
+                              else setVisibleBoorus([...visibleBoorus, acc.booruUrl]);
                             }}
                             style={{ color: 'var(--app-text)' }}
                           >
