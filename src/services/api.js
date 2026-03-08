@@ -18,6 +18,129 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
 };
 
 /**
+ * @typedef {Object} UserProfileLink
+ * @property {string} state
+ * @property {Date} created_at
+ * @property {number} user_id
+ * @property {number} tag_id
+ */
+
+/**
+ * @typedef {Object} UserProfileAward
+ * @property {string} image_url
+ * @property {Date} awarded_on
+ * @property {string} title
+ * @property {string} label
+ * @property {number} id
+ */
+
+/**
+ * @typedef {Object} UserProfileData
+ * @property {number} id
+ * @property {number} uploadsCount
+ * @property {number} commentsCount
+ * @property {number} postsCount
+ * @property {number} topicsCount
+ * @property {string} name
+ * @property {string} description
+ * @property {string} role
+ * @property {string} slug
+ * @property {string} avatarUrl
+ * @property {Date} createdAt
+ * @property {UserProfileLink[]} links
+ * @property {UserProfileAward[]} awards
+ */
+
+/**
+ * @param {string} booruUrl
+ * @param {number} userId
+ * @returns {Promise<UserProfileData|null>}
+ */
+export const fetchProfile = async (booruUrl, userId) => {
+  try {
+    const result = await fetchPhilomena(booruUrl, `profiles/${userId}`);
+    if (!result) return null;
+
+    if (typeof result.id !== 'number')
+      throw new Error('Invalid philomena api result in "result.id".');
+
+    if (typeof result.uploads_count !== 'number')
+      throw new Error('Invalid philomena api result in "result.uploads_count".');
+    if (typeof result.comments_count !== 'number')
+      throw new Error('Invalid philomena api result in "result.comments_count".');
+    if (typeof result.posts_count !== 'number')
+      throw new Error('Invalid philomena api result in "result.posts_count".');
+    if (typeof result.topics_count !== 'number')
+      throw new Error('Invalid philomena api result in "result.topics_count".');
+
+    if (typeof result.name !== 'string')
+      throw new Error('Invalid philomena api result in "result.name".');
+    if (typeof result.description !== 'string')
+      throw new Error('Invalid philomena api result in "result.description".');
+    if (typeof result.role !== 'string')
+      throw new Error('Invalid philomena api result in "result.role".');
+    if (typeof result.slug !== 'string')
+      throw new Error('Invalid philomena api result in "result.slug".');
+    if (typeof result.avatar_url !== 'string')
+      throw new Error('Invalid philomena api result in "result.avatar_url".');
+
+    if (typeof result.created_at !== 'string')
+      throw new Error('Invalid philomena api result in "result.created_at".');
+
+    if (!Array.isArray(result.links))
+      throw new Error('Invalid philomena api result in "result.links".');
+    if (!Array.isArray(result.awards))
+      throw new Error('Invalid philomena api result in "result.awards".');
+    result.created_at = new Date(result.created_at);
+    
+    result.links.forEach(link => {
+      if (typeof link.state !== 'string')
+        throw new Error('Invalid philomena api result in "link.state".');
+      if (typeof link.created_at !== 'string')
+        throw new Error('Invalid philomena api result in "link.created_at	".');
+      if (typeof link.user_id !== 'number')
+        throw new Error('Invalid philomena api result in "link.user_id".');
+      if (typeof link.tag_id !== 'number')
+        throw new Error('Invalid philomena api result in "link.tag_id".');
+      link.created_at = new Date(link.created_at);
+    });
+    
+    result.awards	.forEach(award => {
+      if (typeof award.awarded_on !== 'string')
+        throw new Error('Invalid philomena api result in "award.awarded_on".');
+      if (typeof award.image_url !== 'string')
+        throw new Error('Invalid philomena api result in "award.image_url".');
+      if (typeof award.title !== 'string')
+        throw new Error('Invalid philomena api result in "award.title".');
+      if (typeof award.label !== 'string')
+        throw new Error('Invalid philomena api result in "award.label".');
+      if (typeof award.id !== 'number')
+        throw new Error('Invalid philomena api result in "award.id".');
+      award.awarded_on = new Date(award.awarded_on);
+    });
+
+    return {
+      id: result.id,
+      uploadsCount: result.uploads_count,
+      commentsCount: result.comments_count,
+      postsCount: result.posts_count,
+      topicsCount: result.topics_count,
+      name: result.name,
+      description: result.description,
+      role: result.role,
+      slug: result.slug,
+      avatarUrl: result.avatar_url,
+      createdAt: result.created_at,
+      links: result.links,
+      awards: result.awards,
+    };
+  } catch (error) {
+    console.error('Failed to fetch profile:', error);
+    return null;
+  }
+};
+
+/**
  * @typedef {Object} CommentData
  * @property {string} author
  * @property {string} avatar
