@@ -63,6 +63,16 @@ export const UserProfile = ({
   /** @type {[CommentData[], import('react').Dispatch<import('react').SetStateAction<CommentData[]>>]} */
   const [recentComments, setRecentComments] = useState([]);
 
+  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Smart Auto Refresh Listener
+  useEffect(() => {
+    const onRefresh = () => setRefreshTrigger((prev) => prev + 1);
+    window.addEventListener('appFocusRefresh', onRefresh);
+    return () => window.removeEventListener('appFocusRefresh', onRefresh);
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -106,7 +116,7 @@ export const UserProfile = ({
     return () => {
       isMounted = false;
     };
-  }, [booruUrl, userId]);
+  }, [booruUrl, userId, refreshTrigger]);
 
   if (isLoading) {
     return (
