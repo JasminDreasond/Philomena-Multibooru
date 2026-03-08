@@ -587,11 +587,11 @@ export const SettingsPanel = ({ isDark }) => {
             )}
 
             <div
-              className="row"
+              className="row pt-3"
               style={{ opacity: isLoading ? 0.6 : 1, pointerEvents: isLoading ? 'none' : 'auto' }}
             >
               <div className="col-md-6 mb-4">
-                <div className="card h-100 border-primary">
+                <div className="card no-anim h-100 border-primary">
                   <div
                     className="card-header fw-bold"
                     style={{ backgroundColor: 'var(--app-primary)', color: '#ffffff' }}
@@ -656,7 +656,7 @@ export const SettingsPanel = ({ isDark }) => {
               </div>
 
               <div className="col-md-6 mb-4">
-                <div className="card h-100">
+                <div className="card no-anim h-100">
                   <div className="card-header fw-bold">Connected Accounts</div>
                   <ul
                     className="list-group list-group-flush"
@@ -713,7 +713,7 @@ export const SettingsPanel = ({ isDark }) => {
               className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom"
               style={{ borderColor: 'var(--app-border)' }}
             >
-              <div>
+              <div className='pt-3'>
                 <h5 className="fw-bold mb-1">Global Content Filters</h5>
                 <p className="text-muted small m-0">
                   Select the active filter for each connected booru. This applies to all searches.
@@ -940,8 +940,8 @@ export const SettingsPanel = ({ isDark }) => {
 
         {/* APP TAB */}
         {activeTab === 'app' && (
-          <div className="fade-in">
-            <div className="card">
+          <div className="fade-in pt-3">
+            <div className="card no-anim">
               <div className="card-header fw-bold">App & Storage Settings</div>
               <div className="card-body">
                 <div className="mb-3">
@@ -1022,8 +1022,8 @@ export const SettingsPanel = ({ isDark }) => {
 
         {/* Theme TAB */}
         {activeTab === 'theme' && (
-          <div className="fade-in">
-            <div className="card">
+          <div className="fade-in pt-3">
+            <div className="card no-anim">
               <div
                 className="card-header fw-bold d-flex justify-content-between align-items-center"
                 style={{ backgroundColor: 'var(--app-primary)', color: '#ffffff' }}
