@@ -924,6 +924,7 @@ export const fixBooruUrl = (url) => (url.endsWith('/') ? url.substring(0, url.le
 export const clearImageCache = async () => {
   try {
     await dbConnection.clear('Queries');
+    await dbConnection.clear('Interactions');
     await dbConnection.clear('Images');
 
     // Note: You might want to clear 'Interactions' as well
@@ -932,5 +933,33 @@ export const clearImageCache = async () => {
     console.log('Image and Query cache cleared successfully.');
   } catch (error) {
     console.error('Failed to clear image cache:', error);
+  }
+};
+
+/**
+ * Clears cache for specific booru URLs from Images, Queries, and Interactions tables.
+ * @param {string[]} booruUrls
+ * @returns {Promise<void>}
+ */
+export const clearSpecificBooruCache = async (booruUrls) => {
+  if (!Array.isArray(booruUrls) || booruUrls.length === 0) return;
+
+  /** @type {string[]} */
+  const normalizedUrls = booruUrls.map((url) => fixBooruUrl(url));
+
+  try {
+    /** @type {object} */
+    const whereClause = {
+      booruUrl: { in: normalizedUrls },
+    };
+
+    // Deleting from all related tables to maintain data integrity
+    await dbConnection.remove({ from: 'Queries', where: whereClause });
+    await dbConnection.remove({ from: 'Interactions', where: whereClause });
+    await dbConnection.remove({ from: 'Images', where: whereClause });
+
+    console.log(`Cache cleared for: ${normalizedUrls.join(', ')}`);
+  } catch (error) {
+    console.error('Failed to clear specific booru cache:', error);
   }
 };
