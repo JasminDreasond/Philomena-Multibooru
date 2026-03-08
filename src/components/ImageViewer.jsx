@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 import { fetchComments, fixBooruUrl, getAccountBooruApi } from '../services/api';
 import { CommentBody } from './CommentBody';
 
+const tags = [
+  { s: 'artist:', t: 'artist', },
+  { s: 'prompter:', t: 'prompter', },
+  { s: 'editor:', t: 'editor', },
+  { s: 'comic:', t: 'comic', },
+];
+
 /**
  * @typedef {import('../services/api').ImageObj} ImageObj
  * @typedef {import('../services/api').CommentData} CommentData
@@ -125,12 +132,13 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
    * @returns {string}
    */
   const getTagClass = (tag) => {
+    const extraTag = tags.find(i => tag.startsWith(i.s));
     return `tag-${tag
       .replace(/[^a-zA-Z\s:]/g, '')
       .replace(/:/g, '-')
       .replace(/\s+/g, '-')
       .toLowerCase()
-      .trim()}${tag.startsWith('artist:') ? ' tag-artist' : ''}${tag.startsWith('prompter:') ? ' tag-prompter' : ''}${tag.startsWith('editor:') ? ' tag-editor' : ''}`;
+      .trim()}${extraTag ? ` tag-${extraTag.t}` : ''}`;
   };
 
   const sources = image.sourceUrls ? image.sourceUrls : image.sourceUrl ? [image.sourceUrl] : [];
