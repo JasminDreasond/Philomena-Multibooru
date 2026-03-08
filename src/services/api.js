@@ -983,8 +983,12 @@ export const clearSpecificBooruCache = async (booruUrls) => {
  */
 
 /**
+ * @typedef {{ filters: FilterItem[]; total: number; }} FilterObj
+ */
+
+/**
  * @param {Record<string, any>} result
- * @returns {{ filters: FilterItem[]; total: number; }}
+ * @returns {FilterObj}
  */
 const parseFilterList = (result) => {
   if (typeof result.total !== 'number')
