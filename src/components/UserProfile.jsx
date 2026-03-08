@@ -86,15 +86,16 @@ export const UserProfile = ({
           const account = await getAccountBooru(booruUrl);
           const uploaderQuery = `uploader_id:${userProfile.id}`;
           const favedQuery = `faved_by_id:${userProfile.id}`;
+          const allowedBoorus = [booruUrl];
 
           await Promise.all([
-            syncUserGalleryPages(uploaderQuery, 1, null, 4, account),
-            syncUserGalleryPages(favedQuery, 1, null, 4, account),
+            syncUserGalleryPages(uploaderQuery, 1, allowedBoorus, 4, account),
+            syncUserGalleryPages(favedQuery, 1, allowedBoorus, 4, account),
           ]);
 
           const [uploadsRes, favesRes, commentsRes] = await Promise.all([
-            searchImages(uploaderQuery, 4, 1),
-            searchImages(favedQuery, 4, 1),
+            searchImages(uploaderQuery, 4, 1, allowedBoorus),
+            searchImages(favedQuery, 4, 1, allowedBoorus),
             fetchComments(booruUrl, account.apiKey, `user_id:${userId}`, 1),
           ]);
 
