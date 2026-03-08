@@ -38,9 +38,16 @@ const timeSince = (date) => {
 };
 
 /**
- * @param {{ booruUrl: string, userId: number, handleSearchSubmit: (query: string) => void, onClose: () => void, onOpenImage: (img: ImageResult) => void }} props
+ * @param {{ booruUrl: string, username: string, userId: number, handleSearchSubmit: (query: string) => void, onClose: () => void, onOpenImage: (img: ImageResult) => void }} props
  */
-export const UserProfile = ({ booruUrl, userId, onClose, onOpenImage, handleSearchSubmit }) => {
+export const UserProfile = ({
+  booruUrl,
+  userId,
+  username,
+  onClose,
+  onOpenImage,
+  handleSearchSubmit,
+}) => {
   /** @type {[UserProfileData|null, import('react').Dispatch<import('react').SetStateAction<UserProfileData|null>>]} */
   const [pf, setProfile] = useState(null);
 
@@ -172,38 +179,82 @@ export const UserProfile = ({ booruUrl, userId, onClose, onOpenImage, handleSear
             <div className="text-muted small fw-semibold">
               Member since {timeSince(profile.createdAt)}
             </div>
+            <div className="text-muted small">{booruUrl}</div>
           </div>
           <div className="d-flex flex-wrap gap-3 text-muted small fw-semibold">
             <div className="d-flex flex-column">
-              <a href="#" className="text-decoration-none text-muted btn-tool p-0">
+              <a
+                href={`${fixBooruUrl(booruUrl)}/conversations/new?recipient=${username}`}
+                target="_blank"
+                className="text-decoration-none text-muted btn-tool p-0"
+              >
                 Send message
               </a>
-              <a href="#" className="text-decoration-none text-muted btn-tool p-0">
+              <a
+                href={`${fixBooruUrl(booruUrl)}/conversations?with=${userId}`}
+                target="_blank"
+                className="text-decoration-none text-muted btn-tool p-0"
+              >
                 Our conversations
               </a>
-              <a href="#" className="text-decoration-none text-muted btn-tool p-0">
+              <a
+                href={`${fixBooruUrl(booruUrl)}/profiles/${username}/reports/new`}
+                target="_blank"
+                className="text-decoration-none text-muted btn-tool p-0"
+              >
                 Report this user
               </a>
             </div>
             <div className="d-flex flex-column">
-              <a href="#" className="text-decoration-none text-muted btn-tool p-0">
+              <a
+                href={`${fixBooruUrl(booruUrl)}/search?q=uploader_id%3A${userId}`}
+                target="_blank"
+                className="text-decoration-none text-muted btn-tool p-0"
+              >
                 Uploads
               </a>
-              <a href="#" className="text-decoration-none text-muted btn-tool p-0">
+              <a
+                href={`${fixBooruUrl(booruUrl)}/comments?cq=user_id%3A${userId}`}
+                target="_blank"
+                className="text-decoration-none text-muted btn-tool p-0"
+              >
                 Comments
               </a>
-              <a href="#" className="text-decoration-none text-muted btn-tool p-0">
+              <a
+                href={`${fixBooruUrl(booruUrl)}/posts?pq=user_id%3A${userId}`}
+                target="_blank"
+                className="text-decoration-none text-muted btn-tool p-0"
+              >
                 Posts
+              </a>
+              <a
+                href={`${fixBooruUrl(booruUrl)}/reports`}
+                target="_blank"
+                className="text-decoration-none text-muted btn-tool p-0"
+              >
+                My reports
               </a>
             </div>
             <div className="d-flex flex-column">
-              <a href="#" className="text-decoration-none text-muted btn-tool p-0">
+              <a
+                href={`${fixBooruUrl(booruUrl)}/search?q=faved_by_id%3A${userId}`}
+                target="_blank"
+                className="text-decoration-none text-muted btn-tool p-0"
+              >
                 Favorites
               </a>
-              <a href="#" className="text-decoration-none text-muted btn-tool p-0">
+              <a
+                href={`${fixBooruUrl(booruUrl)}/profiles/${username}/tag_changes`}
+                target="_blank"
+                className="text-decoration-none text-muted btn-tool p-0"
+              >
                 Tag changes
               </a>
-              <a href="#" className="text-decoration-none text-muted btn-tool p-0">
+              <a
+                href={`${fixBooruUrl(booruUrl)}/profiles/${username}/source_changes`}
+                target="_blank"
+                className="text-decoration-none text-muted btn-tool p-0"
+              >
                 Source changes
               </a>
             </div>

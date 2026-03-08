@@ -183,10 +183,10 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
    * @param {string} booruUrl
    * @param {number} id
    */
-  const handleProfileClick = (e, booruUrl, id) => {
+  const handleProfileClick = (e, booruUrl, username, id) => {
     if (localStorage.getItem('app_inAppProfileViewer') === 'true') {
       e.preventDefault();
-      onOpenProfile(booruUrl, id);
+      onOpenProfile(booruUrl, username, id);
     }
   };
 
@@ -234,7 +234,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
             target="_blank"
             className="btn-tool"
             href={`${fixBooruUrl(image.booruUrl)}/profiles/${uploaderName}`}
-            onClick={(e) => handleProfileClick(e, image.booruUrl, image.uploaderId)}
+            onClick={(e) => handleProfileClick(e, image.booruUrl, image.uploader, image.uploaderId)}
           >
             {uploaderName}
           </a>
@@ -508,7 +508,9 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
                           rel="noopener noreferrer"
                           target="_blank"
                           href={`${fixBooruUrl(image.booruUrl)}/profiles/${comment.author}`}
-                          onClick={(e) => handleProfileClick(e, image.booruUrl, comment.userId)}
+                          onClick={(e) =>
+                            handleProfileClick(e, image.booruUrl, comment.author, comment.userId)
+                          }
                         >
                           {comment.author}
                         </a>
