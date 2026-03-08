@@ -19,7 +19,7 @@ import { ImageViewer } from './components/ImageViewer';
 /** @typedef {import('./services/api').Account} Account */
 
 /**
- * @returns {void}
+ * @returns {{ isDark: boolean, mode: string }}
  */
 const applyThemeFromStorage = () => {
   const root = document.documentElement;
@@ -258,7 +258,7 @@ const App = () => {
   const [isHomepage, setIsHomepage] = useState(true);
 
   /** @type {[ImageObj|null, import('react').Dispatch<import('react').SetStateAction<ImageObj|null>>]} */
-  const [viewingImage, setViewingImage] = useState(null); // <-- Novo estado para controlar a visualização da imagem
+  const [viewingImage, setViewingImage] = useState(null);
 
   /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
   const [pageLimit, setPageLimit] = useState(50);
@@ -607,7 +607,11 @@ const App = () => {
       {showSettings ? (
         <SettingsPanel isDark={isDark} onClose={handleCloseSettings} />
       ) : viewingImage ? (
-        <ImageViewer image={viewingImage} onClose={() => setViewingImage(null)} />
+        <ImageViewer
+          image={viewingImage}
+          onClose={() => setViewingImage(null)}
+          onSearch={handleSearchSubmit}
+        />
       ) : (
         <div className="container-fluid px-4 mt-4">
           {!isDbReady ? (

@@ -18,6 +18,80 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
 };
 
 /**
+ * @typedef {Object} CommentData
+ * @property {string} author
+ * @property {string} avatar
+ * @property {string} body
+ * @property {Date} createdAt
+ * @property {string|null} editReason
+ * @property {Date|null} editedAt
+ * @property {number} id
+ * @property {number} imageId
+ * @property {Date} updatedAt
+ * @property {number|null} userId
+ */
+
+/**
+ * @typedef {Object} CommentObj
+ * @property {number} total
+ * @property {CommentData[]} comments
+ */
+
+/**
+ * @param {string} booruUrl
+ * @param {string} apiKey
+ * @param {string} query
+ * @param {number} page
+ *
+ * @returns {Promise<CommentObj>}
+ */
+export const fetchComments = async (booruUrl, apiKey, query, page) => {
+  const result = await fetchPhilomena(booruUrl, 'search/comments', apiKey, { q: query, page });
+  if (typeof result.total !== 'number')
+    throw new Error('Invalid philomena api result in "result.total".');
+  if (!Array.isArray(result.comments))
+    throw new Error('Invalid philomena api result in "result.comments".');
+  return {
+    total: result.total,
+    comments: result.comments.map((comment) => {
+      if (typeof comment.author !== 'string')
+        throw new Error('Invalid philomena api result in "comment.author".');
+      if (typeof comment.avatar !== 'string')
+        throw new Error('Invalid philomena api result in "comment.avatar".');
+      if (typeof comment.body !== 'string')
+        throw new Error('Invalid philomena api result in "comment.body".');
+      if (typeof comment.created_at !== 'string')
+        throw new Error('Invalid philomena api result in "comment.created_at".');
+      if (typeof comment.edit_reason !== 'string' && comment.edit_reason !== null)
+        throw new Error('Invalid philomena api result in "comment.edit_reason".');
+      if (typeof comment.edited_at !== 'string' && comment.edited_at !== null)
+        throw new Error('Invalid philomena api result in "comment.edited_at".');
+      if (typeof comment.id !== 'number')
+        throw new Error('Invalid philomena api result in "comment.id".');
+      if (typeof comment.image_id !== 'number')
+        throw new Error('Invalid philomena api result in "comment.image_id".');
+      if (typeof comment.updated_at !== 'string')
+        throw new Error('Invalid philomena api result in "comment.updated_at".');
+      if (typeof comment.user_id !== 'number' && comment.user_id !== null)
+        throw new Error('Invalid philomena api result in "comment.user_id".');
+
+      return {
+        author: comment.author,
+        avatar: comment.avatar,
+        body: comment.body,
+        createdAt: new Date(comment.created_at),
+        editReason: comment.edit_reason,
+        editedAt: comment.edited_at ? new Date(comment.edited_at) : null,
+        id: comment.id,
+        imageId: comment.image_id,
+        updatedAt: new Date(comment.updated_at),
+        userId: comment.user_id,
+      };
+    }),
+  };
+};
+
+/**
  * @typedef {'faved'|'upVote'|'downVote'|null} InteractionValue
  */
 
@@ -565,6 +639,19 @@ export const getAllAccounts = async () => {
   return await dbConnection.select({
     from: 'Accounts',
   });
+};
+
+/**
+ * @returns {Promise<string|null>}
+ */
+export const getAccountBooruApi = async (booruUrl) => {
+  const accounts = await dbConnection.select({
+    from: 'Accounts',
+    where: {
+      booruUrl,
+    },
+  });
+  return accounts[0]?.apiKey ?? null;
 };
 
 /**

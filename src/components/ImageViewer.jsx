@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
-import { fixBooruUrl } from '../services/api';
+import ReactMarkdown from 'react-markdown';
+import { fetchComments, fixBooruUrl, getAccountBooruApi } from '../services/api';
 
 /**
  * @typedef {import('../services/api').ImageObj} ImageObj
+ * @typedef {import('../services/api').CommentData} CommentData
  */
 
 /**
  * Calculates a relative time string (e.g., "11 years ago")
- * @param {string} dateString
+ * @param {Date} date
  * @returns {string}
  */
-const timeSince = (dateString) => {
-  const date = new Date(dateString);
+const timeSince = (date) => {
   const seconds = Math.floor((new Date() - date) / 1000);
   let interval = seconds / 31536000;
   if (interval > 1) return Math.floor(interval) + ' years ago';
@@ -39,17 +40,33 @@ const formatBytes = (bytes) => {
 };
 
 /**
- * @param {{ image: ImageObj, onClose: () => void }} props
+ * @param {string} text
+ * @returns {string}
  */
-export const ImageViewer = ({ image, onClose }) => {
+const preProcessPhilomenaTags = (text) => {
+  if (!text) return '';
+  // Converte >>123s para um formato que o ReactMarkdown consegue isolar e ler facilmente
+  return text.replace(/>>(\d+)([stp])/g, '[$1_$2](#philo-ref-$1-$2)');
+};
+
+/**
+ * @param {{ image: ImageObj, onClose: () => void, onSearch: (query: string) => void }} props
+ */
+export const ImageViewer = ({ image, onClose, onSearch }) => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isZoomed, setIsZoomed] = useState(false);
 
-  /** @type {[any[], import('react').Dispatch<import('react').SetStateAction<any[]>>]} */
+  /** @type {[CommentData[], import('react').Dispatch<import('react').SetStateAction<CommentData[]>>]} */
   const [comments, setComments] = useState([]);
 
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isLoadingComments, setIsLoadingComments] = useState(true);
+
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [showShare, setShowShare] = useState(false);
+
+  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const isVideo = image.mimeType && image.mimeType.startsWith('video/');
   const imageSrc = isZoomed
@@ -69,15 +86,11 @@ export const ImageViewer = ({ image, onClose }) => {
 
   useEffect(() => {
     let isMounted = true;
-    const fetchComments = async () => {
+    const getComments = async () => {
       setIsLoadingComments(true);
       try {
-        const url = `${fixBooruUrl(image.booruUrl)}/api/v1/json/images/${image.id}/comments`;
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          if (isMounted) setComments(data.comments || []);
-        }
+        const data = await fetchComments(image.booruUrl, await getAccountBooruApi(image.booruUrl));
+        if (isMounted) setComments(data.comments || []);
       } catch (err) {
         console.error('Failed to fetch comments:', err);
       } finally {
@@ -85,11 +98,11 @@ export const ImageViewer = ({ image, onClose }) => {
       }
     };
 
-    fetchComments();
+    getComments();
     return () => {
       isMounted = false;
     };
-  }, [image]);
+  }, [image, refreshTrigger]);
 
   /**
    * @returns {void}
@@ -105,7 +118,15 @@ export const ImageViewer = ({ image, onClose }) => {
   };
 
   /**
-   * Helper to style specific Philomena tags accurately
+   * @param {string} text
+   * @returns {void}
+   */
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    alert('Copied to clipboard!');
+  };
+
+  /**
    * @param {string} tag
    * @returns {string}
    */
@@ -119,6 +140,71 @@ export const ImageViewer = ({ image, onClose }) => {
   };
 
   const sources = (image.sourceUrls ?? image.sourceUrls) ? [image.sourceUrl] : [];
+
+  const bbcodeFull = `[img]${image.representations.full}[/img]\n[url=${fixBooruUrl(image.booruUrl)}/images/${image.id}]View on Booru[/url] - [url=${sources[0] || ''}]Original source[/url]`;
+  const bbcodeThumb = `[url=${fixBooruUrl(image.booruUrl)}/images/${image.id}][img]${image.representations.thumb}[/img][/url]\n[url=${fixBooruUrl(image.booruUrl)}/images/${image.id}]View on Booru[/url] - [url=${sources[0] || ''}]Original source[/url]`;
+
+  const commentComponents = {
+    img: () => null, // Remove markdown de imagens tradicionais
+    a: ({ href, children }) => {
+      // Intercepta a sintaxe especial de imagens
+      if (href?.startsWith('#philo-ref-')) {
+        const match = href.match(/#philo-ref-(\d+)-([stp])/);
+        if (match) {
+          const refId = match[1];
+          const sizeType = match[2];
+
+          // Se a referência for da própria imagem atual, exibe a thumbnail solicitada
+          if (parseInt(refId, 10) === image.id) {
+            let targetThumb = image.representations.thumb_small;
+            if (sizeType === 't') targetThumb = image.representations.small;
+            if (sizeType === 'p') targetThumb = image.representations.medium;
+
+            return (
+              <a
+                href={`${fixBooruUrl(image.booruUrl)}/images/${refId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="d-inline-block mt-2 mb-2"
+              >
+                <img
+                  src={targetThumb}
+                  alt={`>>${refId}${sizeType}`}
+                  className="rounded shadow-sm"
+                  style={{ maxWidth: '100%' }}
+                />
+              </a>
+            );
+          }
+
+          // Se for de outra imagem, apenas renderiza um link normal sem carregar miniatura
+          return (
+            <a
+              href={`${fixBooruUrl(image.booruUrl)}/images/${refId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="fw-bold text-decoration-none"
+              style={{ color: 'var(--app-primary)' }}
+            >
+              &gt;&gt;{refId}
+              {sizeType}
+            </a>
+          );
+        }
+      }
+      // Processa links normais
+      return (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: 'var(--app-primary)' }}
+        >
+          {children}
+        </a>
+      );
+    },
+  };
 
   return (
     <div className="fade-in pb-5">
@@ -152,8 +238,18 @@ export const ImageViewer = ({ image, onClose }) => {
 
       {/* Sub-info bar */}
       <div className="viewer-subinfo border-bottom" style={{ borderColor: 'var(--app-border)' }}>
-        Uploaded {timeSince(uploadDate)} by <strong><a rel='noopener noreferrer' target='_blank' className='btn-tool' href={`${fixBooruUrl(image.booruUrl)}/profiles/${uploaderName}`}>{uploaderName}</a></strong> {image.width}x
-        {image.height} {fileExtension.toUpperCase()} {formatBytes(image.size)}
+        Uploaded {timeSince(uploadDate)} by{' '}
+        <strong>
+          <a
+            rel="noopener noreferrer"
+            target="_blank"
+            className="btn-tool"
+            href={`${fixBooruUrl(image.booruUrl)}/profiles/${uploaderName}`}
+          >
+            {uploaderName}
+          </a>
+        </strong>{' '}
+        {image.width}x{image.height} {fileExtension.toUpperCase()} {formatBytes(image.size)}
       </div>
 
       {/* Image Area */}
@@ -189,14 +285,16 @@ export const ImageViewer = ({ image, onClose }) => {
         )}
       </div>
 
-      {/* Content Area (Constrained width for readability, like the screenshot) */}
+      {/* Content Area */}
       <div className="container" style={{ maxWidth: '980px' }}>
         {/* Description Panel */}
         <div className="philo-panel">
           <div className="philo-panel-header">📄 Description</div>
           <div className="philo-panel-body text-muted">
             {image.description ? (
-              <div dangerouslySetInnerHTML={{ __html: image.description }} />
+              <ReactMarkdown components={commentComponents}>
+                {preProcessPhilomenaTags(image.description)}
+              </ReactMarkdown>
             ) : (
               <i>No description provided.</i>
             )}
@@ -211,6 +309,7 @@ export const ImageViewer = ({ image, onClose }) => {
               className="text-muted ms-auto fw-normal text-sm"
               href={`${fixBooruUrl(image.booruUrl)}/images/${image.id}/tag_changes`}
               target="_blank"
+              rel="noopener noreferrer"
             >
               History ({image.tags?.length || 0} tags)
             </a>
@@ -218,9 +317,14 @@ export const ImageViewer = ({ image, onClose }) => {
           <div className="philo-panel-body">
             <div className="philo-tag-container">
               {image.tags?.map((tag, idx) => (
-                <div key={idx} className="philo-tag">
+                <div
+                  key={idx}
+                  className="philo-tag"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => onSearch(tag)}
+                  title={`Search for ${tag}`}
+                >
                   <span className={`philo-tag-name ${getTagClass(tag)}`}>{tag}</span>
-                  {/* Mocking the count block for visual accuracy to Philomena */}
                 </div>
               ))}
             </div>
@@ -232,12 +336,13 @@ export const ImageViewer = ({ image, onClose }) => {
           <div className="philo-panel-header">🔗 Source</div>
           <div className="philo-panel-body">
             {sources.length > 0 ? (
-              sources.map((sourceUrl) => (
+              sources.map((sourceUrl, i) => (
                 <a
+                  key={i}
                   href={sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className='d-block'
+                  className="d-block text-truncate"
                   style={{ color: 'var(--app-primary)' }}
                 >
                   {sourceUrl}
@@ -255,43 +360,203 @@ export const ImageViewer = ({ image, onClose }) => {
             className="btn btn-sm btn-secondary fw-bold px-3"
             href={`${fixBooruUrl(image.booruUrl)}/images/${image.id}/reports/new`}
             target="_blank"
+            rel="noopener noreferrer"
           >
             ⚠️ Report
           </a>
-          <button className="btn btn-sm btn-secondary fw-bold px-3">➡️ Share</button>
+          <button
+            className={`btn btn-sm fw-bold px-3 ${showShare ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setShowShare(!showShare)}
+          >
+            ➡️ Share
+          </button>
         </div>
 
+        {/* Share Panel (Tantabus Style) */}
+        {showShare && (
+          <div
+            className="philo-panel mb-4 shadow-sm"
+            style={{ backgroundColor: '#1a1a1a', color: '#ccc', borderColor: '#333' }}
+          >
+            <div className="philo-panel-body">
+              <div className="mb-3 d-flex align-items-center">
+                <label className="fw-bold me-2" style={{ width: '120px' }}>
+                  Small thumbnail
+                </label>
+                <input
+                  type="text"
+                  className="form-control form-control-sm me-2 bg-dark text-light border-secondary"
+                  value={`>>${image.id}s`}
+                  readOnly
+                />
+                <button
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() => copyToClipboard(`>>${image.id}s`)}
+                >
+                  📋 Copy
+                </button>
+              </div>
+              <div className="mb-3 d-flex align-items-center">
+                <label className="fw-bold me-2" style={{ width: '120px' }}>
+                  Thumbnail
+                </label>
+                <input
+                  type="text"
+                  className="form-control form-control-sm me-2 bg-dark text-light border-secondary"
+                  value={`>>${image.id}t`}
+                  readOnly
+                />
+                <button
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() => copyToClipboard(`>>${image.id}t`)}
+                >
+                  📋 Copy
+                </button>
+              </div>
+              <div
+                className="mb-4 d-flex align-items-center border-bottom pb-4"
+                style={{ borderColor: '#333' }}
+              >
+                <label className="fw-bold me-2" style={{ width: '120px' }}>
+                  Preview
+                </label>
+                <input
+                  type="text"
+                  className="form-control form-control-sm me-2 bg-dark text-light border-secondary"
+                  value={`>>${image.id}p`}
+                  readOnly
+                />
+                <button
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() => copyToClipboard(`>>${image.id}p`)}
+                >
+                  📋 Copy
+                </button>
+              </div>
+
+              <h6 className="fw-normal mb-3">BBCode</h6>
+              <div className="mb-3">
+                <div className="d-flex justify-content-between mb-1">
+                  <label className="fw-bold fs-6">Full size BBCode</label>
+                  <button
+                    className="btn btn-sm btn-link text-decoration-none text-muted p-0"
+                    onClick={() => copyToClipboard(bbcodeFull)}
+                  >
+                    📋 Copy
+                  </button>
+                </div>
+                <textarea
+                  className="form-control form-control-sm bg-dark text-light border-secondary"
+                  rows="3"
+                  readOnly
+                  value={bbcodeFull}
+                ></textarea>
+              </div>
+              <div className="mb-2">
+                <div className="d-flex justify-content-between mb-1">
+                  <label className="fw-bold fs-6">Thumbnailed BBCode</label>
+                  <button
+                    className="btn btn-sm btn-link text-decoration-none text-muted p-0"
+                    onClick={() => copyToClipboard(bbcodeThumb)}
+                  >
+                    📋 Copy
+                  </button>
+                </div>
+                <textarea
+                  className="form-control form-control-sm bg-dark text-light border-secondary"
+                  rows="3"
+                  readOnly
+                  value={bbcodeThumb}
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Comments Section */}
-        <h5
-          className="fw-bold mb-3 border-bottom pb-2"
+        <div
+          className="d-flex align-items-center mb-3 border-bottom pb-2"
           style={{ borderColor: 'var(--app-border)' }}
         >
-          Comments
-        </h5>
+          <h5 className="fw-bold mb-0 me-3">{comments.length} comments posted</h5>
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            onClick={() => setRefreshTrigger((prev) => prev + 1)}
+          >
+            🔄 Refresh
+          </button>
+        </div>
 
         {isLoadingComments ? (
           <div className="text-center py-4">
             <div className="spinner-border text-primary" role="status"></div>
           </div>
         ) : comments.length === 0 ? (
-          <div className="alert alert-secondary text-center">No comments yet.</div>
+          <div className="text-center">No comments yet.</div>
         ) : (
           <div className="d-flex flex-column gap-3">
             {comments.map((comment) => (
-              <div key={comment.id} className="philo-panel mb-0">
-                <div className="philo-panel-header justify-content-between">
-                  <span className="fw-bold" style={{ color: 'var(--app-primary)' }}>
-                    {comment.author || 'Anonymous'}
-                  </span>
-                  <span className="text-muted fw-normal" style={{ fontSize: '0.75rem' }}>
-                    {timeSince(comment.created_at)}
-                  </span>
-                </div>
+              <div key={comment.id} className="philo-panel mb-0 d-flex flex-column flex-sm-row p-3">
+                {/* Avatar Left Box */}
                 <div
-                  className="philo-panel-body"
-                  style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}
-                  dangerouslySetInnerHTML={{ __html: comment.body }}
-                />
+                  className="me-3 mb-2 mb-sm-0 text-center"
+                  style={{ width: '80px', flexShrink: 0 }}
+                >
+                  <div
+                    className="bg-secondary rounded mb-1"
+                    style={{
+                      width: '80px',
+                      height: '80px',
+                      backgroundImage: `url(${comment.avatar})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
+                  ></div>
+                </div>
+
+                {/* Comment Content */}
+                <div className="flex-grow-1">
+                  <div className="d-flex justify-content-between border-bottom pb-1 mb-2">
+                    <span className="fw-bold fs-5" style={{ color: 'var(--app-text)' }}>
+                      {comment.author || 'Anonymous'}
+                    </span>
+                  </div>
+                  <div
+                    className="mb-3"
+                    style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', fontSize: '0.95rem' }}
+                  >
+                    <ReactMarkdown components={commentComponents}>
+                      {preProcessPhilomenaTags(comment.body)}
+                    </ReactMarkdown>
+                  </div>
+                  <div
+                    className="d-flex justify-content-between text-muted"
+                    style={{ fontSize: '0.75rem' }}
+                  >
+                    <div>
+                      Posted {timeSince(comment.createdAt)}
+                      <br />
+                      <a
+                        href={`${fixBooruUrl(image.booruUrl)}/images/${image.id}/comments/${comment.id}/reports/new`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted text-decoration-none"
+                      >
+                        ⚑ Report
+                      </a>
+                    </div>
+                    <div className="d-flex align-items-end gap-2">
+                      <a
+                        href={`${fixBooruUrl(image.booruUrl)}/images/${image.id}#comment_${comment.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted text-decoration-none"
+                      >
+                        🔗 Link
+                      </a>
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
