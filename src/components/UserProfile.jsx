@@ -38,9 +38,9 @@ const timeSince = (date) => {
 };
 
 /**
- * @param {{ booruUrl: string, userId: number, onClose: () => void, onOpenImage: (img: ImageResult) => void }} props
+ * @param {{ booruUrl: string, userId: number, handleSearchSubmit: (query: string) => void, onClose: () => void, onOpenImage: (img: ImageResult) => void }} props
  */
-export const UserProfile = ({ booruUrl, userId, onClose, onOpenImage }) => {
+export const UserProfile = ({ booruUrl, userId, onClose, onOpenImage, handleSearchSubmit }) => {
   /** @type {[UserProfileData|null, import('react').Dispatch<import('react').SetStateAction<UserProfileData|null>>]} */
   const [pf, setProfile] = useState(null);
 
@@ -80,7 +80,7 @@ export const UserProfile = ({ booruUrl, userId, onClose, onOpenImage }) => {
           const [uploadsRes, favesRes, commentsRes] = await Promise.all([
             searchImages(uploaderQuery, 4, 1),
             searchImages(favedQuery, 4, 1),
-            fetchComments(booruUrl, account.apiKey, `user_id:${userId}`, 1)
+            fetchComments(booruUrl, account.apiKey, `user_id:${userId}`, 1),
           ]);
 
           if (isMounted) {
@@ -119,10 +119,7 @@ export const UserProfile = ({ booruUrl, userId, onClose, onOpenImage }) => {
         </button>
         <div className="alert alert-danger text-center shadow-sm">
           <h4 className="alert-heading">User not found</h4>
-          <p>
-            We couldn't retrieve the profile. They might not exist
-            or the API is unavailable.
-          </p>
+          <p>We couldn't retrieve the profile. They might not exist or the API is unavailable.</p>
         </div>
       </div>
     );
@@ -317,14 +314,12 @@ export const UserProfile = ({ booruUrl, userId, onClose, onOpenImage }) => {
             <div className="philo-panel mb-4">
               <div className="philo-panel-header justify-content-between">
                 <span>Recent Uploads</span>
-                <a
-                  href={`${fixBooruUrl(booruUrl)}/search?q=uploader:${profile.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-decoration-none text-light fw-bold"
+                <button
+                  onClick={() => handleSearchSubmit(`uploader:${profile.slug}`)}
+                  className="btn btn-link text-white text-decoration-none small p-0 align-baseline"
                 >
                   View all
-                </a>
+                </button>
               </div>
               <div className="philo-panel-body p-2 bg-dark">
                 {recentUploads.length > 0 ? (
@@ -345,14 +340,12 @@ export const UserProfile = ({ booruUrl, userId, onClose, onOpenImage }) => {
             <div className="philo-panel mb-4">
               <div className="philo-panel-header justify-content-between">
                 <span>Recent Favorites</span>
-                <a
-                  href={`${fixBooruUrl(booruUrl)}/search?q=faved_by:${profile.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-decoration-none text-light fw-bold"
+                <button
+                  onClick={() => handleSearchSubmit(`faved_by:${profile.slug}`)}
+                  className="btn btn-link text-white text-decoration-none small p-0 align-baseline"
                 >
                   View all
-                </a>
+                </button>
               </div>
               <div className="philo-panel-body p-2 bg-dark">
                 {recentFaves.length > 0 ? (

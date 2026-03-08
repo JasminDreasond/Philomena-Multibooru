@@ -626,6 +626,7 @@ const App = () => {
           userId={viewingProfile.id}
           onClose={() => setViewingProfile(null)}
           onOpenImage={handleOpenImage}
+          handleSearchSubmit={handleSearchSubmit}
         />
       ) : viewingImage ? (
         <ImageViewer
