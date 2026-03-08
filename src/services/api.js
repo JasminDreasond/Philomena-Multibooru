@@ -917,3 +917,20 @@ export const getFeaturedImage = async (booruUrl) => {
  * @returns {string}
  */
 export const fixBooruUrl = (url) => (url.endsWith('/') ? url.substring(0, url.length - 1) : url);
+
+/**
+ * @returns {Promise<void>}
+ */
+export const clearImageCache = async () => {
+  try {
+    await dbConnection.clear('Queries');
+    await dbConnection.clear('Images');
+
+    // Note: You might want to clear 'Interactions' as well
+    // if they are strictly tied to the cached images.
+
+    console.log('Image and Query cache cleared successfully.');
+  } catch (error) {
+    console.error('Failed to clear image cache:', error);
+  }
+};

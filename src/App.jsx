@@ -8,6 +8,7 @@ import {
   fixImageObj,
   fixBooruUrl,
   getActiveAccounts,
+  clearImageCache,
 } from './services/api';
 
 import { SearchBar } from './components/SearchBar';
@@ -563,6 +564,16 @@ const App = () => {
   const showSpecialContent =
     (searchQuery.trim() === '' || searchQuery.trim() === '*') && isHomepage;
 
+  /**
+   * @param {string[]}
+   */
+  const updateVisibleBoorus = async (accounts) => {
+    setIsSearching(true);
+    await clearImageCache();
+    setIsSearching(false);
+    setVisibleBoorus(accounts);
+  };
+
   return (
     <div className="min-vh-100 pb-5" style={{ backgroundColor: 'var(--app-bg)' }}>
       <nav className="navbar navbar-expand-lg custom-navbar sticky-top shadow-sm">
@@ -673,7 +684,7 @@ const App = () => {
                     <li>
                       <button
                         className="dropdown-item fw-bold text-danger"
-                        onClick={() => setVisibleBoorus([])}
+                        onClick={() => updateVisibleBoorus([])}
                       >
                         Deselect All
                       </button>
@@ -693,10 +704,10 @@ const App = () => {
                             onClick={(e) => {
                               e.preventDefault();
                               if (isVisible)
-                                setVisibleBoorus(
+                                updateVisibleBoorus(
                                   visibleBoorus.filter((url) => url !== acc.booruUrl),
                                 );
-                              else setVisibleBoorus([...visibleBoorus, acc.booruUrl]);
+                              else updateVisibleBoorus([...visibleBoorus, acc.booruUrl]);
                             }}
                             style={{ color: 'var(--app-text)' }}
                           >
