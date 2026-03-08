@@ -90,11 +90,11 @@
   color: white;
 }
 
-.philo-tag.tag-status {
-  border-color: #fbc531;
+.philo-tag.tag-generator {
+  border-color: #daab2b;
 }
-.philo-tag.tag-status .philo-tag-name {
-  background-color: #fbc531;
+.philo-tag.tag-generator .philo-tag-name {
+  background-color: #daab2b;
   color: white;
 }
 

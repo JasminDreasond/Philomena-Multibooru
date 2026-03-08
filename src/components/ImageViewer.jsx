@@ -21,7 +21,7 @@ const tags = [
 
   // Technical & Status
   { prefix: 'software:', className: 'software' },
-  { prefix: 'status:', className: 'status' },
+  { prefix: 'generator:', className: 'generator' },
   { prefix: 'meta:', className: 'meta' },
   { prefix: 'spoiler:', className: 'spoiler' },
   { prefix: 'warning:', className: 'warning' },
