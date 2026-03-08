@@ -38,9 +38,9 @@ const timeSince = (date) => {
 };
 
 /**
- * @param {{ booruUrl: string, username: string, onClose: () => void, onOpenImage: (img: ImageResult) => void }} props
+ * @param {{ booruUrl: string, userId: number, onClose: () => void, onOpenImage: (img: ImageResult) => void }} props
  */
-export const UserProfile = ({ booruUrl, username, onClose, onOpenImage }) => {
+export const UserProfile = ({ booruUrl, userId, onClose, onOpenImage }) => {
   /** @type {[UserProfileData|null, import('react').Dispatch<import('react').SetStateAction<UserProfileData|null>>]} */
   const [pf, setProfile] = useState(null);
 
@@ -62,7 +62,7 @@ export const UserProfile = ({ booruUrl, username, onClose, onOpenImage }) => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const userProfile = await fetchProfile(booruUrl, username);
+        const userProfile = await fetchProfile(booruUrl, userId);
         if (isMounted) setProfile(userProfile);
 
         if (userProfile) {
@@ -71,26 +71,22 @@ export const UserProfile = ({ booruUrl, username, onClose, onOpenImage }) => {
           const account = await getAccountBooru(booruUrl);
           const uploaderQuery = `uploader_id:${userProfile.id}`;
           const favedQuery = `faved_by_id:${userProfile.id}`;
-          // const authorQuery = `artist:${userProfile.name}`;
 
           await Promise.all([
             syncUserGalleryPages(uploaderQuery, 1, 4, account),
             syncUserGalleryPages(favedQuery, 1, 4, account),
-            // syncUserGalleryPages(authorQuery, 1, 4, account),
           ]);
 
-          const [uploadsRes, favesRes] = await Promise.all([
+          const [uploadsRes, favesRes, commentsRes] = await Promise.all([
             searchImages(uploaderQuery, 4, 1),
             searchImages(favedQuery, 4, 1),
-            //  searchImages(authorQuery, 4, 1),
+            fetchComments(booruUrl, account.apiKey, `user_id:${userId}`, 1)
           ]);
-
-          console.log(uploadsRes, favesRes);
 
           if (isMounted) {
             setRecentUploads(uploadsRes);
             setRecentFaves(favesRes);
-            // setRecentComments(commentsRes.comments.slice(0, 3));
+            setRecentComments(commentsRes.comments.slice(0, 3));
           }
         }
       } catch (err) {
@@ -104,7 +100,7 @@ export const UserProfile = ({ booruUrl, username, onClose, onOpenImage }) => {
     return () => {
       isMounted = false;
     };
-  }, [booruUrl, username]);
+  }, [booruUrl, userId]);
 
   if (isLoading) {
     return (
@@ -124,7 +120,7 @@ export const UserProfile = ({ booruUrl, username, onClose, onOpenImage }) => {
         <div className="alert alert-danger text-center shadow-sm">
           <h4 className="alert-heading">User not found</h4>
           <p>
-            We couldn't retrieve the profile for <strong>{username}</strong>. They might not exist
+            We couldn't retrieve the profile. They might not exist
             or the API is unavailable.
           </p>
         </div>
@@ -134,20 +130,6 @@ export const UserProfile = ({ booruUrl, username, onClose, onOpenImage }) => {
 
   /** @type {UserProfileData} */
   const profile = pf;
-
-  // Generate random heights for the decorative sparklines to mimic the screenshot
-  const generateSparkline = () =>
-    Array.from({ length: 45 }).map((_, i) => (
-      <div
-        key={i}
-        style={{
-          width: '4px',
-          height: `${Math.max(10, Math.floor(Math.random() * 100))}%`,
-          backgroundColor: '#7f8c8d',
-          opacity: Math.random() > 0.4 ? 0.8 : 0.2,
-        }}
-      ></div>
-    ));
 
   return (
     <div className="fade-in pb-5">
@@ -176,7 +158,7 @@ export const UserProfile = ({ booruUrl, username, onClose, onOpenImage }) => {
             style={{
               width: '120px',
               height: '120px',
-              backgroundImage: `url(${profile.avatarUrl || `https://ui-avatars.com/api/?name=${profile.name}&background=random`})`,
+              backgroundImage: `url(${profile.avatarUrl})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               flexShrink: 0,
@@ -308,7 +290,7 @@ export const UserProfile = ({ booruUrl, username, onClose, onOpenImage }) => {
               </div>
               <div className="philo-panel-body p-0">
                 <table
-                  className="table table-dark table-borderless table-sm m-0"
+                  className="table table-borderless table-sm m-0"
                   style={{ backgroundColor: 'transparent' }}
                 >
                   <tbody>
@@ -318,19 +300,11 @@ export const UserProfile = ({ booruUrl, username, onClose, onOpenImage }) => {
                       { label: 'Forum Posts', val: profile.postsCount },
                     ].map((stat, i) => (
                       <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td className="text-end text-muted pe-4 py-2" style={{ width: '150px' }}>
+                        <td className="text-end text-muted pe-4 py-2" style={{ width: '20%' }}>
                           {stat.label}
                         </td>
-                        <td className="fw-bold py-2" style={{ width: '100px' }}>
+                        <td className="fw-bold py-2 text-muted" style={{ width: '80%' }}>
                           {stat.val}
-                        </td>
-                        <td className="py-2 pe-3">
-                          <div
-                            className="d-flex align-items-end h-100 gap-1 w-100"
-                            style={{ height: '20px' }}
-                          >
-                            {generateSparkline()}
-                          </div>
                         </td>
                       </tr>
                     ))}

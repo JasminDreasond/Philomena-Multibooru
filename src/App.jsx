@@ -279,7 +279,7 @@ const App = () => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isDark, setIsDark] = useState(false);
 
-  /** @type {[{ booruUrl: string, username: string }|null, import('react').Dispatch<import('react').SetStateAction<{ booruUrl: string, username: string }|null>>]} */
+  /** @type {[{ booruUrl: string, id: number }|null, import('react').Dispatch<import('react').SetStateAction<{ booruUrl: string, username: string }|null>>]} */
   const [viewingProfile, setViewingProfile] = useState(null);
 
   /** @type {import('react').MutableRefObject<boolean>} */
@@ -506,9 +506,9 @@ const App = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleOpenProfile = (booruUrl, username) => {
+  const handleOpenProfile = (booruUrl, id) => {
     setViewingImage(null); // Fecha a imagem atual
-    setViewingProfile({ booruUrl, username });
+    setViewingProfile({ booruUrl, id });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -623,7 +623,7 @@ const App = () => {
       ) : viewingProfile ? (
         <UserProfile
           booruUrl={viewingProfile.booruUrl}
-          username={viewingProfile.username}
+          userId={viewingProfile.id}
           onClose={() => setViewingProfile(null)}
           onOpenImage={handleOpenImage}
         />

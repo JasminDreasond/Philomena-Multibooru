@@ -64,7 +64,7 @@ const formatBytes = (bytes) => {
 };
 
 /**
- * @param {{ image: ImageObj|null, onClose: () => void, onSearch: (query: string) => void, onOpenProfile: (booruUrl: string, username: string) => void }} props
+ * @param {{ image: ImageObj|null, onClose: () => void, onSearch: (query: string) => void, onOpenProfile: (booruUrl: string, username: string, id: number) => void }} props
  */
 export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
@@ -181,12 +181,12 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
   /**
    * @param {MouseEvent} e
    * @param {string} booruUrl
-   * @param {string} username
+   * @param {number} id
    */
-  const handleProfileClick = (e, booruUrl, username) => {
+  const handleProfileClick = (e, booruUrl, id) => {
     if (localStorage.getItem('app_inAppProfileViewer') === 'true') {
       e.preventDefault();
-      onOpenProfile(booruUrl, username);
+      onOpenProfile(booruUrl, id);
     }
   };
 
