@@ -334,6 +334,9 @@ a:hover {
   .badge-interaction {
     font-size: 9pt;
   }
+  .featured-images .badge-interaction {
+    font-size: 9pt;
+  }
 }
 
 .badge-interaction:hover {
