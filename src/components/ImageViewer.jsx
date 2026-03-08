@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
 import { fetchComments, fixBooruUrl, getAccountBooruApi } from '../services/api';
+import { CommentBody } from './CommentBody';
 
 /**
  * @typedef {import('../services/api').ImageObj} ImageObj
@@ -37,16 +37,6 @@ const formatBytes = (bytes) => {
   const sizes = ['Bytes', 'KiB', 'MiB', 'GiB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(0)) + ' ' + sizes[i];
-};
-
-/**
- * @param {string} text
- * @returns {string}
- */
-const preProcessPhilomenaTags = (text) => {
-  if (!text) return '';
-  // Converte >>123s para um formato que o ReactMarkdown consegue isolar e ler facilmente
-  return text.replace(/>>(\d+)([stp])/g, '[$1_$2](#philo-ref-$1-$2)');
 };
 
 /**
@@ -148,71 +138,9 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
   const bbcodeFull = `[img]${image.representations.full}[/img]\n[url=${fixBooruUrl(image.booruUrl)}/images/${image.id}]View on Booru[/url] - [url=${sources[0] || ''}]Original source[/url]`;
   const bbcodeThumb = `[url=${fixBooruUrl(image.booruUrl)}/images/${image.id}][img]${image.representations.thumb}[/img][/url]\n[url=${fixBooruUrl(image.booruUrl)}/images/${image.id}]View on Booru[/url] - [url=${sources[0] || ''}]Original source[/url]`;
 
-  const commentComponents = {
-    img: () => null, // Remove markdown de imagens tradicionais
-    a: ({ href, children }) => {
-      // Intercepta a sintaxe especial de imagens
-      if (href?.startsWith('#philo-ref-')) {
-        const match = href.match(/#philo-ref-(\d+)-([stp])/);
-        if (match) {
-          const refId = match[1];
-          const sizeType = match[2];
-
-          // Se a referência for da própria imagem atual, exibe a thumbnail solicitada
-          if (parseInt(refId, 10) === image.id) {
-            let targetThumb = image.representations.thumb_small;
-            if (sizeType === 't') targetThumb = image.representations.small;
-            if (sizeType === 'p') targetThumb = image.representations.medium;
-
-            return (
-              <a
-                href={`${fixBooruUrl(image.booruUrl)}/images/${refId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="d-inline-block mt-2 mb-2"
-              >
-                <img
-                  src={targetThumb}
-                  alt={`>>${refId}${sizeType}`}
-                  className="rounded shadow-sm"
-                  style={{ maxWidth: '100%' }}
-                />
-              </a>
-            );
-          }
-
-          // Se for de outra imagem, apenas renderiza um link normal sem carregar miniatura
-          return (
-            <a
-              href={`${fixBooruUrl(image.booruUrl)}/images/${refId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="fw-bold text-decoration-none"
-              style={{ color: 'var(--app-primary)' }}
-            >
-              &gt;&gt;{refId}
-              {sizeType}
-            </a>
-          );
-        }
-      }
-      // Processa links normais
-      return (
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: 'var(--app-primary)' }}
-        >
-          {children}
-        </a>
-      );
-    },
-  };
-
   return (
     <div className="fade-in pb-5">
-      {/* Top Toolbar (Replicating the dark action bar) */}
+      {/* Top Toolbar */}
       <div className="viewer-toolbar d-flex flex-wrap align-items-center px-3 py-1 gap-3">
         <button onClick={onClose} className="ms-auto btn-tool" title="Back to Gallery">
           &laquo; Back
@@ -274,6 +202,7 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
             controls
             autoPlay
             loop
+            muted
           />
         ) : (
           <img
@@ -296,9 +225,7 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
           <div className="philo-panel-header">📄 Description</div>
           <div className="philo-panel-body text-muted">
             {image.description ? (
-              <ReactMarkdown components={commentComponents}>
-                {preProcessPhilomenaTags(image.description)}
-              </ReactMarkdown>
+              <CommentBody body={image.description} image={image} />
             ) : (
               <i>No description provided.</i>
             )}
@@ -376,7 +303,7 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
           </button>
         </div>
 
-        {/* Share Panel (Tantabus Style) */}
+        {/* Share Panel */}
         {showShare && (
           <div
             className="philo-panel mb-4 shadow-sm"
@@ -527,11 +454,9 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
                   </div>
                   <div
                     className="mb-3"
-                    style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', fontSize: '0.95rem' }}
+                    style={{ fontSize: '0.95rem' }}
                   >
-                    <ReactMarkdown components={commentComponents}>
-                      {preProcessPhilomenaTags(comment.body)}
-                    </ReactMarkdown>
+                    <CommentBody body={comment.body} image={image} />
                   </div>
                   <div
                     className="d-flex justify-content-between text-muted"
