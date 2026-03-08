@@ -968,26 +968,95 @@ export const clearSpecificBooruCache = async (booruUrls) => {
 };
 
 /**
+ * @typedef {Object} FilterItem
+ * @property {string} description
+ * @property {string|null} hiddenComplex
+ * @property {number[]} hiddenTagIds
+ * @property {number} id
+ * @property {string} name
+ * @property {boolean} public
+ * @property {string|null} spoileredComplex
+ * @property {number[]} spoileredTagIds
+ * @property {boolean} system
+ * @property {number} userCount
+ * @property {number|null} userId
+ */
+
+/**
+ * @param {Record<string, any>} result
+ * @returns {{ filters: FilterItem[]; total: number; }}
+ */
+const parseFilterList = (result) => {
+  if (typeof result.total !== 'number')
+    throw new Error('Invalid philomena api result in "result.total".');
+  if (!Array.isArray(result.filters))
+    throw new Error('Invalid philomena api result in "result.filters".');
+  return {
+    total: result.total,
+    filters: result.filters.map((filter) => {
+      if (typeof filter.description !== 'string')
+        throw new Error('Invalid philomena api result in "filter.description".');
+      if (typeof filter.hidden_complex !== 'string' && filter.hidden_complex !== null)
+        throw new Error('Invalid philomena api result in "filter.hidden_complex".');
+      if (typeof filter.spoilered_complex !== 'string' && filter.spoilered_complex !== null)
+        throw new Error('Invalid philomena api result in "filter.spoilered_complex".');
+      if (
+        !Array.isArray(filter.hidden_tag_ids) ||
+        !filter.hidden_tag_ids.every((tagId) => typeof tagId === 'number')
+      )
+        throw new Error('Invalid philomena api result in "filter.hidden_tag_ids".');
+      if (
+        !Array.isArray(filter.spoilered_tag_ids) ||
+        !filter.spoilered_tag_ids.every((tagId) => typeof tagId === 'number')
+      )
+        throw new Error('Invalid philomena api result in "filter.spoilered_tag_ids".');
+      if (typeof filter.id !== 'number')
+        throw new Error('Invalid philomena api result in "filter.id".');
+      if (typeof filter.name !== 'string')
+        throw new Error('Invalid philomena api result in "filter.name".');
+      if (typeof filter.public !== 'boolean')
+        throw new Error('Invalid philomena api result in "filter.public".');
+      if (typeof filter.system !== 'boolean')
+        throw new Error('Invalid philomena api result in "filter.system".');
+      if (typeof filter.user_count !== 'number')
+        throw new Error('Invalid philomena api result in "filter.user_count".');
+      if (typeof filter.user_id !== 'number' && filter.user_id !== null)
+        throw new Error('Invalid philomena api result in "filter.user_id".');
+
+      return {
+        description: filter.description,
+        hiddenComplex: filter.hidden_complex,
+        hiddenTagIds: filter.hidden_tag_ids,
+        id: filter.id,
+        name: filter.name,
+        public: filter.public,
+        spoileredComplex: filter.spoilered_complex,
+        spoileredTagIds: filter.spoilered_tag_ids,
+        system: filter.system,
+        userCount: filter.user_count,
+        userId: filter.user_id,
+      };
+    }),
+  };
+};
+
+/**
  * @param {string} booruUrl
  * @param {number} [page=1]
- * @returns {Promise<any>}
  */
 export const fetchSystemFilters = async (booruUrl, page = 1) => {
-  const result = await fetchPhilomena(booruUrl, 'filters/system', '', { page });
-  console.log(result);
-  return result;
+  const data = await fetchPhilomena(booruUrl, 'filters/system', '', { page });
+  return parseFilterList(data);
 };
 
 /**
  * @param {string} booruUrl
  * @param {string} apiKey
  * @param {number} [page=1]
- * @returns {Promise<any>}
  */
 export const fetchUserFilters = async (booruUrl, apiKey, page = 1) => {
-  const result = await fetchPhilomena(booruUrl, 'filters/user', apiKey, { page });
-  console.log(result);
-  return result;
+  const data = await fetchPhilomena(booruUrl, 'filters/user', apiKey, { page });
+  return parseFilterList(data);
 };
 
 /**
