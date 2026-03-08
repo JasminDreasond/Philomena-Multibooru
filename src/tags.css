@@ -8,45 +8,45 @@
 }
 
 .philo-tag.tag-suggestive {
-  border-color: #f39c12;
+  border-color: #2980b9;
 }
 .philo-tag.tag-suggestive .philo-tag-name {
-  background-color: #f39c12;
+  background-color: #2980b9;
   color: white;
 }
 
 .philo-tag.tag-explicit,
 .philo-tag.tag-questionable {
-  border-color: #c0392b;
+  border-color: #2980b9;
 }
 .philo-tag.tag-explicit .philo-tag-name,
 .philo-tag.tag-questionable .philo-tag-name {
-  background-color: #c0392b;
+  background-color: #2980b9;
   color: white;
 }
 
 /* Artist and Prompter */
 .philo-tag.tag-artist {
-  border-color: #8e44ad;
+  border-color: #4834d4;
 }
 .philo-tag.tag-artist .philo-tag-name {
-  background-color: #8e44ad;
+  background-color: #4834d4;
   color: white;
 }
 
 .philo-tag.tag-prompter {
-  border-color: #16a085;
+  border-color: #4834d4;
 }
 .philo-tag.tag-prompter .philo-tag-name {
-  background-color: #16a085;
+  background-color: #4834d4;
   color: white;
 }
 
 .philo-tag.tag-editor {
-  border-color: #d35400;
+  border-color: #4834d4;
 }
 .philo-tag.tag-editor .philo-tag-name {
-  background-color: #d35400;
+  background-color: #4834d4;
   color: white;
 }
 
@@ -59,10 +59,10 @@
 }
 
 .philo-tag.tag-oc {
-  border-color: #6b9312;
+  border-color: #833471;
 }
 .philo-tag.tag-oc .philo-tag-name {
-  background-color: #6b9312;
+  background-color: #833471;
   color: white;
 }
 
@@ -75,26 +75,26 @@
 }
 
 .philo-tag.tag-anatomy {
-  border-color: #833471;
+  border-color: #e67e22;
 }
 .philo-tag.tag-anatomy .philo-tag-name {
-  background-color: #833471;
+  background-color: #e67e22;
   color: white;
 }
 
 .philo-tag.tag-software {
-  border-color: #576574;
+  border-color: #4834d4;
 }
 .philo-tag.tag-software .philo-tag-name {
-  background-color: #576574;
+  background-color: #4834d4;
   color: white;
 }
 
 .philo-tag.tag-generator {
-  border-color: #daab2b;
+  border-color: #4834d4;
 }
 .philo-tag.tag-generator .philo-tag-name {
-  background-color: #daab2b;
+  background-color: #4834d4;
   color: white;
 }
 
@@ -115,18 +115,18 @@
 }
 
 .philo-tag.tag-series {
-  border-color: #96281b;
+  border-color: #4834d4;
 }
 .philo-tag.tag-series .philo-tag-name {
-  background-color: #96281b;
+  background-color: #4834d4;
   color: white;
 }
 
 .philo-tag.tag-comic {
-  border-color: #e67e22;
+  border-color: #cc52af;
 }
 .philo-tag.tag-comic .philo-tag-name {
-  background-color: #e67e22;
+  background-color: #cc52af;
   color: white;
 }
 
