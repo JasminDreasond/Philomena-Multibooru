@@ -713,7 +713,7 @@ export const SettingsPanel = ({ isDark }) => {
               className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom"
               style={{ borderColor: 'var(--app-border)' }}
             >
-              <div className='pt-3'>
+              <div className="pt-3">
                 <h5 className="fw-bold mb-1">Global Content Filters</h5>
                 <p className="text-muted small m-0">
                   Select the active filter for each connected booru. This applies to all searches.

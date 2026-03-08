@@ -835,9 +835,7 @@ const App = () => {
 
                     {/* Trending Images */}
                     <div className="card shadow-sm border-0 mb-4">
-                      <div
-                        className="card-header fw-bold d-flex justify-content-between align-items-center"
-                      >
+                      <div className="card-header fw-bold d-flex justify-content-between align-items-center">
                         <span>Trending Images</span>
                         <button
                           onClick={() => handleSearchSubmit('first_seen_at.gt:3 days ago')}

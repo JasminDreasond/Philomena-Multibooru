@@ -113,7 +113,11 @@ a:hover {
 .list-group-item,
 .modal-content {
   background-color: var(--app-surface);
-  color: var(--app-text);
+  border: 1px solid var(--app-border);
+}
+
+.list-group-item.active {
+  background-color: var(--app-primary);
   border: 1px solid var(--app-border);
 }
 
@@ -131,7 +135,7 @@ a:hover {
 .featured-images .interaction-card,
 .featured-images .interaction-container,
 .featured-images .card-body {
-    border-radius: 0px;
+  border-radius: 0px;
 }
 
 .card:not(.no-anim),
@@ -151,7 +155,7 @@ a:hover {
 
 .card-header {
   border-bottom: 1px solid var(--app-border) !important;
-  color: var(--app-text) !important;
+  color: #fff !important;
 }
 
 /* =========================================
@@ -502,9 +506,11 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 6px;
+  color: #fff;
 }
 
-.philo-panel-header, .card-header {
+.philo-panel-header,
+.card-header {
   background-color: var(--app-navbar-bg);
 }
 
