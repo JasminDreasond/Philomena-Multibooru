@@ -487,6 +487,9 @@ body {
   gap: 6px;
 }
 
+/* =========================================
+   Classic Tags Styling with Hover Animation
+   ========================================= */
 .philo-tag {
   display: inline-flex;
   font-size: 0.8rem;
@@ -495,22 +498,65 @@ body {
   text-decoration: none;
   font-weight: 600;
   border: 1px solid rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  /* Smooth elastic transition */
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.philo-tag:hover {
+  /* Lift effect */
+  transform: translateY(-2px) scale(1.03);
+  filter: brightness(1.15);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+.philo-tag:active {
+  /* Pressed effect */
+  transform: translateY(0) scale(0.98);
+  filter: brightness(0.9);
 }
 
 .philo-tag-name {
   background-color: #2c3e50;
-  color: var(--app-text);
-  padding: 2px 6px;
+  color: #ecf0f1;
+  padding: 2px 8px;
+  transition: background-color 0.2s;
+}
+
+/* Specific Tag Colors (Enhanced) */
+.philo-tag-name.tag-safe {
+  background-color: #2980b9;
+  color: white;
+}
+.philo-tag-name.tag-suggestive {
+  background-color: #f39c12;
+  color: white;
+}
+.philo-tag-name.tag-explicit {
+  background-color: #c0392b;
+  color: white;
+}
+.philo-tag-name.tag-artist {
+  background-color: #8e44ad;
+  color: white;
+}
+.philo-tag-name.tag-prompter {
+  background-color: #16a085;
+  color: white;
+}
+.philo-tag-name.tag-editor {
+  background-color: #d35400;
+  color: white;
 }
 
 .philo-tag-count {
   background-color: rgba(0, 0, 0, 0.2);
-  color: var(--app-text);
+  color: #ffffff;
   padding: 2px 6px;
   opacity: 0.8;
 }
 
-[data-theme='light'] .philo-tag-name {
+[data-theme='light'] .philo-tag-name:not([class*='tag-']) {
   background-color: #e2e8f0;
   color: #334155;
 }
@@ -518,16 +564,4 @@ body {
 [data-theme='light'] .philo-tag-count {
   background-color: #cbd5e1;
   color: #1e293b;
-}
-
-/* Mocking specific tag colors like the screenshot for flavor */
-.philo-tag-name.tag-safe {
-  background-color: #2980b9;
-  color: white;
-}
-.philo-tag-name.tag-artist,
-.philo-tag-name.tag-prompter,
-.philo-tag-name.tag-editor {
-  background-color: #8e44ad;
-  color: white;
 }
