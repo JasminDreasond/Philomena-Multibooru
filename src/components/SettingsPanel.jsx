@@ -8,6 +8,7 @@ import {
   getSystemSettings,
   updateSystemSettings,
   fixBooruUrl,
+  clearSpecificBooruCache,
 } from '../services/api';
 
 /**
@@ -156,12 +157,20 @@ export const SettingsPanel = ({ isDark, onClose }) => {
   };
 
   /**
-   * @param {number} id
-   * @returns {Promise<void>}
+   * @param {number} accountId
+   * @param {string} booruUrl
    */
-  const handleRemoveAccount = async (id) => {
+  const handleRemoveAccount = async (accountId, booruUrl) => {
     setIsLoading(true);
-    await deleteAccount(id);
+    await deleteAccount(accountId);
+    await clearSpecificBooruCache([booruUrl]);
+
+    /** @type {Record<string, number>} */
+    const storedFilters = JSON.parse(localStorage.getItem('app_booruFilters') || '{}');
+    if (storedFilters[booruUrl]) {
+      delete storedFilters[booruUrl];
+      localStorage.setItem('app_booruFilters', JSON.stringify(storedFilters));
+    }
     await loadData();
   };
 
@@ -518,7 +527,7 @@ export const SettingsPanel = ({ isDark, onClose }) => {
                     </div>
                     <button
                       className="btn btn-sm btn-outline-danger"
-                      onClick={() => handleRemoveAccount(acc.id)}
+                      onClick={() => handleRemoveAccount(acc.id, acc.booruUrl)}
                       disabled={isLoading}
                     >
                       Remove

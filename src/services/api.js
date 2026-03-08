@@ -303,9 +303,15 @@ export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => 
  * @returns {Promise<{ total: number; interactions: any[]; images: any[] }>}
  */
 const searchImagesApi = async (booruUrl, apiKey, query, page, perPage) => {
+  /** @type {Record<string, any>} */
   const data = { q: query };
   if (typeof page === 'number') data.page = page;
   if (typeof perPage === 'number') data.per_page = perPage;
+
+  const filterId = await getBooruFilterId(booruUrl);
+  if (filterId) {
+    data.filter_id = filterId;
+  }
 
   const result = await fetchPhilomena(booruUrl, 'search/images', apiKey, data);
   if (typeof result.total !== 'number')
@@ -959,4 +965,69 @@ export const clearSpecificBooruCache = async (booruUrls) => {
   } catch (error) {
     console.error('Failed to clear specific booru cache:', error);
   }
+};
+
+/**
+ * @param {string} booruUrl
+ * @param {number} [page=1]
+ * @returns {Promise<any>}
+ */
+export const fetchSystemFilters = async (booruUrl, page = 1) => {
+  const result = await fetchPhilomena(booruUrl, 'filters/system', '', { page });
+  console.log(result);
+  return result;
+};
+
+/**
+ * @param {string} booruUrl
+ * @param {string} apiKey
+ * @param {number} [page=1]
+ * @returns {Promise<any>}
+ */
+export const fetchUserFilters = async (booruUrl, apiKey, page = 1) => {
+  const result = await fetchPhilomena(booruUrl, 'filters/user', apiKey, { page });
+  console.log(result);
+  return result;
+};
+
+/**
+ * @param {string} booruUrl
+ * @returns {Promise<number|null>}
+ */
+export const getBooruFilterId = async (booruUrl) => {
+  /** @type {Record<string, number>} */
+  const storedFilters = JSON.parse(localStorage.getItem('app_booruFilters') || '{}');
+
+  if (storedFilters[booruUrl]) {
+    return storedFilters[booruUrl];
+  }
+
+  // Auto-defines default system filter if none is set
+  try {
+    /** @type {any} */
+    const result = await fetchSystemFilters(booruUrl, 1);
+
+    if (result && Array.isArray(result.filters) && result.filters.length > 0) {
+      /** @type {number} */
+      const defaultFilterId = result.filters[0].id;
+      storedFilters[booruUrl] = defaultFilterId;
+      localStorage.setItem('app_booruFilters', JSON.stringify(storedFilters));
+      await clearImageCache();
+      return defaultFilterId;
+    }
+  } catch (error) {
+    console.error(`Failed to fetch default filter for ${booruUrl}:`, error);
+  }
+
+  return null;
+};
+
+/**
+ * Call this function when the user clicks "Save" in your new Filter Tab
+ * @param {Record<string, number>} newFiltersData
+ * @returns {Promise<void>}
+ */
+export const saveBooruFilters = async (newFiltersData) => {
+  localStorage.setItem('app_booruFilters', JSON.stringify(newFiltersData));
+  await clearImageCache();
 };
