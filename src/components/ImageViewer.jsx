@@ -321,7 +321,6 @@ export const ImageViewer = ({ image, onClose, onSearch }) => {
         {showShare && (
           <div
             className="philo-panel mb-4 shadow-sm"
-            style={{ backgroundColor: '#1a1a1a', color: '#ccc', borderColor: '#333' }}
           >
             <div className="philo-panel-body">
               <div className="mb-3 d-flex align-items-center">

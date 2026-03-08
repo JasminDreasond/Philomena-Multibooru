@@ -472,7 +472,7 @@ a:hover {
 }
 
 .philo-panel-header {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--app-surface);
   border-bottom: 1px solid var(--app-border);
   padding: 6px 12px;
   font-size: 0.85rem;
@@ -480,10 +480,6 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-[data-theme='dark'] .philo-panel-header {
-  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .philo-panel-body {
