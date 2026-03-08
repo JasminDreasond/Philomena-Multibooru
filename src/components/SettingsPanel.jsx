@@ -591,10 +591,10 @@ export const SettingsPanel = ({ isDark }) => {
               style={{ opacity: isLoading ? 0.6 : 1, pointerEvents: isLoading ? 'none' : 'auto' }}
             >
               <div className="col-md-6 mb-4">
-                <div className="card no-anim h-100 border-primary">
+                <div className="card no-anim h-100">
                   <div
                     className="card-header fw-bold"
-                    style={{ backgroundColor: 'var(--app-primary)', color: '#ffffff' }}
+                    style={{ backgroundColor: 'var(--app-primary)' }}
                   >
                     Add New API Account
                   </div>

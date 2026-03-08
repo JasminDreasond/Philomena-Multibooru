@@ -112,9 +112,9 @@ a:hover {
 .card,
 .list-group-item,
 .modal-content {
-  background-color: var(--app-surface) !important;
-  color: var(--app-text) !important;
-  border: 1px solid var(--app-border) !important;
+  background-color: var(--app-surface);
+  color: var(--app-text);
+  border: 1px solid var(--app-border);
 }
 
 .interaction-card {
