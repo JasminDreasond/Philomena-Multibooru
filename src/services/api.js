@@ -1,7 +1,19 @@
 import { dbConnection } from '../db/connection';
 
 /**
- * Reusable fetch function for Philomena endpoints
+ * Helper function to throw standardized and coherent API validation errors.
+ * @param {string} context
+ * @param {string} field
+ * @throws {Error}
+ */
+const throwApiError = (context, field) => {
+  throw new Error(
+    `Philomena API Error: Invalid or missing field "${field}" in the ${context} response.`,
+  );
+};
+
+/**
+ * Reusable fetch function for Philomena endpoints.
  * @param {string} booruUrl
  * @param {string} endpoint
  * @param {string} apiKey
@@ -12,12 +24,17 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
   const url = `${booruUrl}/api/v1/json/${endpoint}?${queryParams}`;
 
   const response = await fetch(url);
-  if (!response.ok) throw new Error(`Error fetching from ${booruUrl}: ${response.statusText}`);
+  if (!response.ok) {
+    throw new Error(
+      `Network Error: Failed to fetch data from ${booruUrl} (${endpoint}). Status: ${response.status} ${response.statusText}`,
+    );
+  }
 
   return response.json();
 };
 
 /**
+ * Represents a social or external link attached to a user's profile.
  * @typedef {Object} UserProfileLink
  * @property {string} state
  * @property {Date} createdAt
@@ -26,6 +43,7 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
  */
 
 /**
+ * Represents a badge or award given to a user.
  * @typedef {Object} UserProfileAward
  * @property {string} imageUrl
  * @property {Date} awardedOn
@@ -35,6 +53,7 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
  */
 
 /**
+ * Contains all parsed and formatted information about a booru user's profile.
  * @typedef {Object} UserProfileData
  * @property {number} id
  * @property {number} uploadsCount
@@ -52,6 +71,7 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
  */
 
 /**
+ * Fetches and parses a user's profile data from the specified booru.
  * @param {string} booruUrl
  * @param {number} userId
  * @returns {Promise<UserProfileData|null>}
@@ -62,45 +82,31 @@ export const fetchProfile = async (booruUrl, userId) => {
     if (!result) return null;
     const user = result.user;
 
-    if (typeof user.id !== 'number') throw new Error('Invalid philomena api user in "user.id".');
-
-    if (typeof user.uploads_count !== 'number')
-      throw new Error('Invalid philomena api user in "user.uploads_count".');
-    if (typeof user.comments_count !== 'number')
-      throw new Error('Invalid philomena api user in "user.comments_count".');
-    if (typeof user.posts_count !== 'number')
-      throw new Error('Invalid philomena api user in "user.posts_count".');
-    if (typeof user.topics_count !== 'number')
-      throw new Error('Invalid philomena api user in "user.topics_count".');
-
-    if (typeof user.name !== 'string')
-      throw new Error('Invalid philomena api user in "user.name".');
+    const ctx = 'User Profile';
+    if (typeof user.id !== 'number') throwApiError(ctx, 'user.id');
+    if (typeof user.uploads_count !== 'number') throwApiError(ctx, 'user.uploads_count');
+    if (typeof user.comments_count !== 'number') throwApiError(ctx, 'user.comments_count');
+    if (typeof user.posts_count !== 'number') throwApiError(ctx, 'user.posts_count');
+    if (typeof user.topics_count !== 'number') throwApiError(ctx, 'user.topics_count');
+    if (typeof user.name !== 'string') throwApiError(ctx, 'user.name');
     if (typeof user.description !== 'string' && user.description !== null)
-      throw new Error('Invalid philomena api user in "user.description".');
-    if (typeof user.role !== 'string')
-      throw new Error('Invalid philomena api user in "user.role".');
-    if (typeof user.slug !== 'string')
-      throw new Error('Invalid philomena api user in "user.slug".');
+      throwApiError(ctx, 'user.description');
+    if (typeof user.role !== 'string') throwApiError(ctx, 'user.role');
+    if (typeof user.slug !== 'string') throwApiError(ctx, 'user.slug');
     if (typeof user.avatar_url !== 'string' && user.avatar_url !== null)
-      throw new Error('Invalid philomena api user in "user.avatar_url".');
+      throwApiError(ctx, 'user.avatar_url');
+    if (typeof user.created_at !== 'string') throwApiError(ctx, 'user.created_at');
+    if (!Array.isArray(user.links)) throwApiError(ctx, 'user.links');
+    if (!Array.isArray(user.awards)) throwApiError(ctx, 'user.awards');
 
-    if (typeof user.created_at !== 'string')
-      throw new Error('Invalid philomena api user in "user.created_at".');
-
-    if (!Array.isArray(user.links)) throw new Error('Invalid philomena api user in "user.links".');
-    if (!Array.isArray(user.awards))
-      throw new Error('Invalid philomena api user in "user.awards".');
     user.created_at = new Date(user.created_at);
 
     user.links.forEach((link) => {
-      if (typeof link.state !== 'string')
-        throw new Error('Invalid philomena api user in "link.state".');
-      if (typeof link.created_at !== 'string')
-        throw new Error('Invalid philomena api user in "link.created_at	".');
-      if (typeof link.user_id !== 'number')
-        throw new Error('Invalid philomena api user in "link.user_id".');
-      if (typeof link.tag_id !== 'number')
-        throw new Error('Invalid philomena api user in "link.tag_id".');
+      if (typeof link.state !== 'string') throwApiError(ctx, 'link.state');
+      if (typeof link.created_at !== 'string') throwApiError(ctx, 'link.created_at');
+      if (typeof link.user_id !== 'number') throwApiError(ctx, 'link.user_id');
+      if (typeof link.tag_id !== 'number') throwApiError(ctx, 'link.tag_id');
+
       link.createdAt = new Date(link.created_at);
       delete link.created_at;
       link.userId = link.user_id;
@@ -110,16 +116,13 @@ export const fetchProfile = async (booruUrl, userId) => {
     });
 
     user.awards.forEach((award) => {
-      if (typeof award.awarded_on !== 'string')
-        throw new Error('Invalid philomena api user in "award.awarded_on".');
-      if (typeof award.image_url !== 'string')
-        throw new Error('Invalid philomena api user in "award.image_url".');
-      if (typeof award.title !== 'string')
-        throw new Error('Invalid philomena api user in "award.title".');
+      if (typeof award.awarded_on !== 'string') throwApiError(ctx, 'award.awarded_on');
+      if (typeof award.image_url !== 'string') throwApiError(ctx, 'award.image_url');
+      if (typeof award.title !== 'string') throwApiError(ctx, 'award.title');
       if (typeof award.label !== 'string' && award.label !== null)
-        throw new Error('Invalid philomena api user in "award.label".');
-      if (typeof award.id !== 'number')
-        throw new Error('Invalid philomena api user in "award.id".');
+        throwApiError(ctx, 'award.label');
+      if (typeof award.id !== 'number') throwApiError(ctx, 'award.id');
+
       award.awardedOn = new Date(award.awarded_on);
       delete award.awarded_on;
       award.imageUrl = award.image_url;
@@ -148,6 +151,7 @@ export const fetchProfile = async (booruUrl, userId) => {
 };
 
 /**
+ * Represents a single user comment retrieved from the booru.
  * @typedef {Object} CommentData
  * @property {string} author
  * @property {string} avatar
@@ -162,48 +166,43 @@ export const fetchProfile = async (booruUrl, userId) => {
  */
 
 /**
+ * A wrapper object containing a paginated list of comments and the total count.
  * @typedef {Object} CommentObj
  * @property {number} total
  * @property {CommentData[]} comments
  */
 
 /**
+ * Fetches and parses comments based on a specific query.
  * @param {string} booruUrl
  * @param {string} apiKey
  * @param {string} [query='*']
  * @param {number} [page=1]
- *
  * @returns {Promise<CommentObj>}
  */
 export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => {
   const result = await fetchPhilomena(booruUrl, 'search/comments', apiKey, { q: query, page });
-  if (typeof result.total !== 'number')
-    throw new Error('Invalid philomena api result in "result.total".');
-  if (!Array.isArray(result.comments))
-    throw new Error('Invalid philomena api result in "result.comments".');
+  const ctx = 'Comments Search';
+
+  if (typeof result.total !== 'number') throwApiError(ctx, 'result.total');
+  if (!Array.isArray(result.comments)) throwApiError(ctx, 'result.comments');
+
   return {
     total: result.total,
     comments: result.comments.map((comment) => {
-      if (typeof comment.author !== 'string')
-        throw new Error('Invalid philomena api result in "comment.author".');
-      if (typeof comment.avatar !== 'string')
-        throw new Error('Invalid philomena api result in "comment.avatar".');
-      if (typeof comment.body !== 'string')
-        throw new Error('Invalid philomena api result in "comment.body".');
-      if (typeof comment.created_at !== 'string')
-        throw new Error('Invalid philomena api result in "comment.created_at".');
+      if (typeof comment.author !== 'string') throwApiError(ctx, 'comment.author');
+      if (typeof comment.avatar !== 'string') throwApiError(ctx, 'comment.avatar');
+      if (typeof comment.body !== 'string') throwApiError(ctx, 'comment.body');
+      if (typeof comment.created_at !== 'string') throwApiError(ctx, 'comment.created_at');
       if (typeof comment.edit_reason !== 'string' && comment.edit_reason !== null)
-        throw new Error('Invalid philomena api result in "comment.edit_reason".');
+        throwApiError(ctx, 'comment.edit_reason');
       if (typeof comment.edited_at !== 'string' && comment.edited_at !== null)
-        throw new Error('Invalid philomena api result in "comment.edited_at".');
-      if (typeof comment.id !== 'number')
-        throw new Error('Invalid philomena api result in "comment.id".');
-      if (typeof comment.image_id !== 'number')
-        throw new Error('Invalid philomena api result in "comment.image_id".');
-      if (typeof comment.updated_at !== 'string')
-        throw new Error('Invalid philomena api result in "comment.updated_at".');
+        throwApiError(ctx, 'comment.edited_at');
+      if (typeof comment.id !== 'number') throwApiError(ctx, 'comment.id');
+      if (typeof comment.image_id !== 'number') throwApiError(ctx, 'comment.image_id');
+      if (typeof comment.updated_at !== 'string') throwApiError(ctx, 'comment.updated_at');
       if (typeof comment.user_id !== 'number' && comment.user_id !== null)
-        throw new Error('Invalid philomena api result in "comment.user_id".');
+        throwApiError(ctx, 'comment.user_id');
 
       return {
         author: comment.author,
@@ -222,10 +221,12 @@ export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => 
 };
 
 /**
+ * Represents the type of interaction a user had with an image.
  * @typedef {'faved'|'upVote'|'downVote'|null} InteractionValue
  */
 
 /**
+ * Represents a user's interaction record for a specific image on a specific booru.
  * @typedef {Object} InteractionObj
  * @property {string} id
  * @property {string} booruUrl
@@ -234,6 +235,7 @@ export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => 
  */
 
 /**
+ * Contains URLs for various sizes and formats of a processed image.
  * @typedef {Object} ImageRepresentations
  * @property {string} full
  * @property {string} small
@@ -246,6 +248,7 @@ export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => 
  */
 
 /**
+ * Represents the color or light intensity values for different quadrants of an image.
  * @typedef {Object} ImageIntensities
  * @property {number} ne
  * @property {number} nw
@@ -254,6 +257,7 @@ export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => 
  */
 
 /**
+ * Represents the comprehensive data of a single image parsed from the API.
  * @typedef {Object} ImageObj
  * @property {number} id
  * @property {string} booruUrl
@@ -290,16 +294,17 @@ export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => 
  */
 
 /**
+ * Extends the ImageObj to include the current user's interaction state with the image.
  * @typedef {ImageObj & { interaction: InteractionValue }} ImageResult
  */
 
 /**
+ * Fetches images from the booru API using a search query and automatically applies the user's selected filter.
  * @param {string} booruUrl
  * @param {string} apiKey
  * @param {string} query
  * @param {number} [page]
  * @param {number} [perPage]
- *
  * @returns {Promise<{ total: number; interactions: any[]; images: any[] }>}
  */
 const searchImagesApi = async (booruUrl, apiKey, query, page, perPage) => {
@@ -314,16 +319,17 @@ const searchImagesApi = async (booruUrl, apiKey, query, page, perPage) => {
   }
 
   const result = await fetchPhilomena(booruUrl, 'search/images', apiKey, data);
-  if (typeof result.total !== 'number')
-    throw new Error('Invalid philomena api result in "result.total".');
-  if (!Array.isArray(result.interactions))
-    throw new Error('Invalid philomena api result in "result.interactions".');
-  if (!Array.isArray(result.images))
-    throw new Error('Invalid philomena api result in "result.images".');
+  const ctx = 'Image Search';
+
+  if (typeof result.total !== 'number') throwApiError(ctx, 'result.total');
+  if (!Array.isArray(result.interactions)) throwApiError(ctx, 'result.interactions');
+  if (!Array.isArray(result.images)) throwApiError(ctx, 'result.images');
+
   return result;
 };
 
 /**
+ * Normalizes a query string by sorting tags alphabetically to ensure consistent caching.
  * @param {string} rawQuery
  * @returns {string}
  */
@@ -338,6 +344,7 @@ const normalizeQueryString = (rawQuery) => {
 };
 
 /**
+ * Represents the global application configuration stored in the local database.
  * @typedef {Object} SystemSettings
  * @property {number} id
  * @property {number} maxItems
@@ -345,6 +352,7 @@ const normalizeQueryString = (rawQuery) => {
  */
 
 /**
+ * Retrieves the global system settings from the local database.
  * @returns {Promise<SystemSettings>}
  */
 export const getSystemSettings = async () => {
@@ -359,6 +367,7 @@ export const getSystemSettings = async () => {
 };
 
 /**
+ * Updates the global system settings in the local database.
  * @param {number} maxItems
  * @param {number} persistentStorage
  * @returns {Promise<void>}
@@ -372,6 +381,7 @@ export const updateSystemSettings = async (maxItems, persistentStorage) => {
 };
 
 /**
+ * Enforces the local storage limit by deleting the oldest images if the max limit is exceeded.
  * @returns {Promise<void>}
  */
 const enforceStorageLimit = async () => {
@@ -414,6 +424,7 @@ const enforceStorageLimit = async () => {
 };
 
 /**
+ * Represents a cached search query linked to specific images in the database.
  * @typedef {Object} QueryItem
  * @property {string} id
  * @property {number} imageId
@@ -422,26 +433,34 @@ const enforceStorageLimit = async () => {
  */
 
 /**
+ * Utility function to validate arrays and their elements in API responses.
  * @param {any[]} item
  * @param {string} itemType
  */
 const checkArray = (item, itemType) => {
-  if (!Array.isArray(item)) throw new Error('Invalid array item in the sync gallery page!');
-  if (!item.every((i) => typeof i === itemType))
-    throw new Error('Invalid array item in the sync gallery page!');
+  if (!Array.isArray(item) || !item.every((i) => typeof i === itemType)) {
+    throw new Error(`Data Validation Error: Expected an array of type "${itemType}".`);
+  }
   return item;
 };
 
 /**
+ * Utility function to validate primitive items in API responses.
  * @param {any} item
  * @param {string} itemType
  */
 const checkItem = (item, itemType) => {
-  if (typeof item !== itemType) throw new Error('Invalid item in the sync gallery page!');
+  if (typeof item !== itemType) {
+    throw new Error(
+      `Data Validation Error: Expected item of type "${itemType}" but received "${typeof item}".`,
+    );
+  }
   return item;
 };
 
 /**
+ * Parses raw image data from the Philomena API into the format required by the local database.
+ * @param {string} booruUrl
  * @param {Record<string, any>} img
  */
 export const parseImageData = (booruUrl, img) => ({
@@ -498,6 +517,7 @@ export const parseImageData = (booruUrl, img) => ({
 });
 
 /**
+ * Normalizes an Image object restoring boolean fields.
  * @param {Record<string, any>} img
  */
 export const fixImageObj = (img) => {
@@ -513,7 +533,7 @@ export const fixImageObj = (img) => {
 const syncTimes = {};
 
 /**
- * Background task to sync pages into JsStore
+ * Downloads a page of images from the specified booru and inserts it into the local IndexedDB.
  * @param {string} booruUrl
  * @param {string} apiKey
  * @param {string} [query='*']
@@ -598,6 +618,7 @@ export const syncGalleryPage = async (
 };
 
 /**
+ * Queries the local IndexedDB for images that match a given search string.
  * @param {string} rawSearchString
  * @param {number} [limit=50]
  * @param {number} [page=1]
@@ -711,6 +732,7 @@ export const searchImages = async (
 };
 
 /**
+ * Returns the total count of images in the database for a specific query.
  * @param {string} rawSearchString
  * @param {string[]|null} [allowedBoorus=null]
  * @returns {Promise<number>}
@@ -734,6 +756,7 @@ export const countImages = async (rawSearchString = '*', allowedBoorus = null) =
 };
 
 /**
+ * Represents a connected booru account and its API credentials.
  * @typedef {Object} Account
  * @property {number} id
  * @property {string} booruUrl
@@ -742,6 +765,7 @@ export const countImages = async (rawSearchString = '*', allowedBoorus = null) =
  */
 
 /**
+ * Fetches all active accounts stored in the local database.
  * @returns {Promise<Account[]>}
  */
 export const getActiveAccounts = async () => {
@@ -754,6 +778,7 @@ export const getActiveAccounts = async () => {
 };
 
 /**
+ * Adds a new booru account to the local database.
  * @param {string} booruUrl
  * @param {string} apiKey
  * @returns {Promise<void>}
@@ -775,6 +800,7 @@ export const addAccount = async (booruUrl, apiKey) => {
 };
 
 /**
+ * Toggles the active status of an account in the local database.
  * @param {number} accountId
  * @param {number|boolean} isActive
  * @returns {Promise<void>}
@@ -792,12 +818,12 @@ export const toggleAccountStatus = async (accountId, isActive) => {
 };
 
 /**
- * Background task to sync pages into JsStore filtering by allowed Boorus
+ * Background task that syncs gallery pages for multiple connected accounts.
  * @param {string} [query='*']
  * @param {number} [page=1]
  * @param {string[]|null} [allowedBoorus=null]
  * @param {number} [perPage]
- * @param {Account} [apiKey]
+ * @param {Account} [account]
  */
 export const syncUserGalleryPages = async (
   query = '*',
@@ -838,6 +864,7 @@ export const syncUserGalleryPages = async (
 };
 
 /**
+ * Fetches all registered accounts from the database, including inactive ones.
  * @returns {Promise<Account[]>}
  */
 export const getAllAccounts = async () => {
@@ -847,6 +874,8 @@ export const getAllAccounts = async () => {
 };
 
 /**
+ * Fetches the API key for a specific booru URL.
+ * @param {string} booruUrl
  * @returns {Promise<string|null>}
  */
 export const getAccountBooruApi = async (booruUrl) => {
@@ -860,6 +889,8 @@ export const getAccountBooruApi = async (booruUrl) => {
 };
 
 /**
+ * Fetches the complete account details for a specific booru URL.
+ * @param {string} booruUrl
  * @returns {Promise<Account|null>}
  */
 export const getAccountBooru = async (booruUrl) => {
@@ -873,6 +904,7 @@ export const getAccountBooru = async (booruUrl) => {
 };
 
 /**
+ * Permanently deletes an account from the local database.
  * @param {number} accountId
  * @returns {Promise<void>}
  */
@@ -886,6 +918,7 @@ export const deleteAccount = async (accountId) => {
 };
 
 /**
+ * Clears all registered accounts from the database.
  * @returns {Promise<void>}
  */
 export const deleteAllAccounts = async () => {
@@ -893,6 +926,7 @@ export const deleteAllAccounts = async () => {
 };
 
 /**
+ * Completely drops the local IndexedDB database.
  * @returns {Promise<void>}
  */
 export const factoryResetDatabase = async () => {
@@ -900,6 +934,7 @@ export const factoryResetDatabase = async () => {
 };
 
 /**
+ * Fetches the featured image payload for the given booru URL.
  * @param {string} booruUrl
  * @returns {Promise<ImageObj | null>}
  */
@@ -916,12 +951,14 @@ export const getFeaturedImage = async (booruUrl) => {
 };
 
 /**
+ * Normalizes booru URLs by stripping trailing slashes.
  * @param {string} url
  * @returns {string}
  */
 export const fixBooruUrl = (url) => (url.endsWith('/') ? url.substring(0, url.length - 1) : url);
 
 /**
+ * Wipes out all cached images, queries, and interaction data.
  * @returns {Promise<void>}
  */
 export const clearImageCache = async () => {
@@ -968,6 +1005,7 @@ export const clearSpecificBooruCache = async (booruUrls) => {
 };
 
 /**
+ * Represents a content filter configuration from the Philomena API.
  * @typedef {Object} FilterItem
  * @property {string} description
  * @property {string|null} hiddenComplex
@@ -983,49 +1021,50 @@ export const clearSpecificBooruCache = async (booruUrls) => {
  */
 
 /**
+ * A wrapper object containing a paginated list of filters and the total count.
  * @typedef {{ filters: FilterItem[]; total: number; }} FilterObj
  */
 
 /**
+ * Parses raw JSON responses containing lists of Philomena filters.
  * @param {Record<string, any>} result
  * @returns {FilterObj}
  */
 const parseFilterList = (result) => {
-  if (typeof result.total !== 'number')
-    throw new Error('Invalid philomena api result in "result.total".');
-  if (!Array.isArray(result.filters))
-    throw new Error('Invalid philomena api result in "result.filters".');
+  const ctx = 'Filter List';
+  if (typeof result.total !== 'number') throwApiError(ctx, 'result.total');
+  if (!Array.isArray(result.filters)) throwApiError(ctx, 'result.filters');
+
   return {
     total: result.total,
     filters: result.filters.map((filter) => {
-      if (typeof filter.description !== 'string')
-        throw new Error('Invalid philomena api result in "filter.description".');
+      if (typeof filter.description !== 'string') throwApiError(ctx, 'filter.description');
       if (typeof filter.hidden_complex !== 'string' && filter.hidden_complex !== null)
-        throw new Error('Invalid philomena api result in "filter.hidden_complex".');
+        throwApiError(ctx, 'filter.hidden_complex');
       if (typeof filter.spoilered_complex !== 'string' && filter.spoilered_complex !== null)
-        throw new Error('Invalid philomena api result in "filter.spoilered_complex".');
+        throwApiError(ctx, 'filter.spoilered_complex');
+
       if (
         !Array.isArray(filter.hidden_tag_ids) ||
         !filter.hidden_tag_ids.every((tagId) => typeof tagId === 'number')
-      )
-        throw new Error('Invalid philomena api result in "filter.hidden_tag_ids".');
+      ) {
+        throwApiError(ctx, 'filter.hidden_tag_ids');
+      }
+
       if (
         !Array.isArray(filter.spoilered_tag_ids) ||
         !filter.spoilered_tag_ids.every((tagId) => typeof tagId === 'number')
-      )
-        throw new Error('Invalid philomena api result in "filter.spoilered_tag_ids".');
-      if (typeof filter.id !== 'number')
-        throw new Error('Invalid philomena api result in "filter.id".');
-      if (typeof filter.name !== 'string')
-        throw new Error('Invalid philomena api result in "filter.name".');
-      if (typeof filter.public !== 'boolean')
-        throw new Error('Invalid philomena api result in "filter.public".');
-      if (typeof filter.system !== 'boolean')
-        throw new Error('Invalid philomena api result in "filter.system".');
-      if (typeof filter.user_count !== 'number')
-        throw new Error('Invalid philomena api result in "filter.user_count".');
+      ) {
+        throwApiError(ctx, 'filter.spoilered_tag_ids');
+      }
+
+      if (typeof filter.id !== 'number') throwApiError(ctx, 'filter.id');
+      if (typeof filter.name !== 'string') throwApiError(ctx, 'filter.name');
+      if (typeof filter.public !== 'boolean') throwApiError(ctx, 'filter.public');
+      if (typeof filter.system !== 'boolean') throwApiError(ctx, 'filter.system');
+      if (typeof filter.user_count !== 'number') throwApiError(ctx, 'filter.user_count');
       if (typeof filter.user_id !== 'number' && filter.user_id !== null)
-        throw new Error('Invalid philomena api result in "filter.user_id".');
+        throwApiError(ctx, 'filter.user_id');
 
       return {
         description: filter.description,
@@ -1045,8 +1084,10 @@ const parseFilterList = (result) => {
 };
 
 /**
+ * Fetches the system-wide filters natively available on the specific booru.
  * @param {string} booruUrl
  * @param {number} [page=1]
+ * @returns {Promise<FilterObj>}
  */
 export const fetchSystemFilters = async (booruUrl, page = 1) => {
   const data = await fetchPhilomena(booruUrl, 'filters/system', '', { page });
@@ -1054,9 +1095,11 @@ export const fetchSystemFilters = async (booruUrl, page = 1) => {
 };
 
 /**
+ * Fetches the customized filters tied to the given user's API key.
  * @param {string} booruUrl
  * @param {string} apiKey
  * @param {number} [page=1]
+ * @returns {Promise<FilterObj>}
  */
 export const fetchUserFilters = async (booruUrl, apiKey, page = 1) => {
   const data = await fetchPhilomena(booruUrl, 'filters/user', apiKey, { page });
@@ -1064,6 +1107,7 @@ export const fetchUserFilters = async (booruUrl, apiKey, page = 1) => {
 };
 
 /**
+ * Retrieves the currently selected filter ID for the given booru from local storage, auto-assigning one if empty.
  * @param {string} booruUrl
  * @returns {Promise<number|null>}
  */
@@ -1077,7 +1121,7 @@ export const getBooruFilterId = async (booruUrl) => {
 
   // Auto-defines default system filter if none is set
   try {
-    /** @type {any} */
+    /** @type {FilterObj} */
     const result = await fetchSystemFilters(booruUrl, 1);
 
     if (result && Array.isArray(result.filters) && result.filters.length > 0) {
@@ -1096,7 +1140,7 @@ export const getBooruFilterId = async (booruUrl) => {
 };
 
 /**
- * Call this function when the user clicks "Save" in your new Filter Tab
+ * Saves filter preferences for boorus to local storage and flushes the image cache.
  * @param {Record<string, number>} newFiltersData
  * @returns {Promise<void>}
  */
