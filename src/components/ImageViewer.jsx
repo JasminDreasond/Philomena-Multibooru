@@ -28,7 +28,7 @@ const tags = [
 ];
 
 /**
- * @typedef {import('../services/api').ImageObj} ImageObj
+ * @typedef {import('../services/api').ImageResult} ImageResult
  * @typedef {import('../services/api').CommentData} CommentData
  */
 
@@ -65,7 +65,7 @@ const formatBytes = (bytes) => {
 };
 
 /**
- * @param {{ image: ImageObj|null, onClose: () => void, onSearch: (query: string) => void, onOpenProfile: (booruUrl: string, username: string, id: number) => void }} props
+ * @param {{ image: ImageResult|null, onClose: () => void, onSearch: (query: string) => void, onOpenProfile: (booruUrl: string, username: string, id: number) => void }} props
  */
 export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
@@ -227,6 +227,10 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
   const bbcodeFull = `[img]${image.representations.full}[/img]\n[url=${image.booruUrl}/images/${image.id}]View on Booru[/url] - [url=${sources[0] || ''}]Original source[/url]`;
   const bbcodeThumb = `[url=${image.booruUrl}/images/${image.id}][img]${image.representations.thumb}[/img][/url]\n[url=${image.booruUrl}/images/${image.id}]View on Booru[/url] - [url=${sources[0] || ''}]Original source[/url]`;
 
+  const isFav = image.interaction === 'faved';
+  const isUp = isFav || image.interaction === 'upVote';
+  const isDown = !isFav && image.interaction === 'downVote';
+
   return (
     <div className="fade-in">
       {/* Top Toolbar */}
@@ -235,10 +239,25 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
           &laquo; Back
         </button>
         <div className="d-flex align-items-center gap-3 ms-1 fw-bold">
-          <span className="active-fave">★ {image.faves}</span>
-          <span className="active-up">↑ {image.upvotes}</span>
+          <span
+            className={`active-fave${isFav ? ' px-2 rounded' : ''}`}
+            style={isFav ? { backgroundColor: 'var(--fave-color)', color: '#fff' } : null}
+          >
+            ★ {image.faves}
+          </span>
+          <span
+            className={`active-up${isUp ? ' px-2 rounded' : ''}`}
+            style={isUp ? { backgroundColor: 'var(--upvote-color)', color: '#fff' } : null}
+          >
+            ↑ {image.upvotes}
+          </span>
           <span>{image.upvotes - image.downvotes}</span>
-          <span className="active-down">↓ {image.downvotes}</span>
+          <span
+            className={`active-down${isDown ? ' px-2 rounded' : ''}`}
+            style={isDown ? { backgroundColor: 'var(--downvote-color)', color: '#fff' } : null}
+          >
+            ↓ {image.downvotes}
+          </span>
           <span>💬 {image.commentCount || comments.length}</span>
         </div>
 

@@ -259,7 +259,7 @@ const App = () => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isHomepage, setIsHomepage] = useState(true);
 
-  /** @type {[ImageObj|null, import('react').Dispatch<import('react').SetStateAction<ImageObj|null>>]} */
+  /** @type {[ImageResult|null, import('react').Dispatch<import('react').SetStateAction<ImageResult|null>>]} */
   const [viewingImage, setViewingImage] = useState(null);
 
   /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
@@ -586,7 +586,7 @@ const App = () => {
   };
 
   /**
-   * @param {ImageObj} img
+   * @param {ImageResult} img
    */
   const handleOpenImage = (img) => {
     setViewingProfile(null);
