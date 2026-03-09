@@ -175,13 +175,32 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
   }
 
   /**
+   * @param {string} url
+   * @returns {string}
+   */
+  const getDownloadUrl = (url) => {
+    /** @type {string} */
+    const VIEW_PATH = '/img/view/';
+    /** @type {string} */
+    const DOWNLOAD_PATH = '/img/download/';
+
+    return url.replace(VIEW_PATH, DOWNLOAD_PATH);
+  };
+
+  /**
    * @returns {void}
    */
   const handleDownload = () => {
+    /** @type {string} */
+    const downloadUrl = getDownloadUrl(image.representations.full);
+
+    /** @type {HTMLAnchorElement} */
     const link = document.createElement('a');
-    link.href = image.representations.full;
+
+    link.href = downloadUrl;
     link.download = fileName;
     link.target = '_blank';
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -268,7 +287,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
             rel="noopener noreferrer"
             className="btn-tool"
           >
-            👁 View
+            👁 View on Booru
           </a>
           <button onClick={handleDownload} className="btn-tool">
             ⬇ Download
