@@ -1,5 +1,5 @@
 import ReactMarkdown from 'react-markdown';
-import { fetchSingleImage, fetchProfile, getAccountBooruApi } from '../services/api';
+import { openImageLink } from '../utils';
 
 /**
  * @param {string} text
@@ -13,57 +13,11 @@ const preProcessPhilomenaTags = (text) => {
 };
 
 /**
- * @param {{ body: string, image: import('../services/api').ImageObj, setIsLoading: (isLoading: boolean) => void, onOpenImageLink?: (img: import('../services/api').ImageResult) => void, onOpenProfileLink?: (booruUrl: string, username: string, id: number) => void }} props
+ * @param {{ body: string, image: import('../services/api').ImageObj, setIsLoading: import('../utils').SetIsLoading, onOpenImageLink?: import('../utils').OnOpenImageLink, onOpenProfileLink?: import('../utils').OnOpenProfileLink }} props
  */
 export const CommentBody = ({ body, image, onOpenImageLink, onOpenProfileLink, setIsLoading }) => {
   const openImagesInApp = localStorage.getItem('app_inAppViewer') === 'true';
   const openProfileInApp = localStorage.getItem('app_inAppProfileViewer') === 'true';
-
-  /**
-   * @param {string} refId
-   */
-  const openImageLink = async (refId) => {
-    if (!onOpenImageLink) return;
-    setIsLoading(true);
-    try {
-      const apiKey = await getAccountBooruApi(image.booruUrl);
-      const imgData = await fetchSingleImage(image.booruUrl, apiKey || '', refId);
-
-      setIsLoading(false);
-      if (imgData) {
-        onOpenImageLink(imgData);
-      } else {
-        alert('Image not found or could not be loaded.');
-      }
-    } catch (err) {
-      setIsLoading(false);
-      console.error('Error fetching image link:', err);
-      alert('Error fetching image data.');
-    }
-  };
-
-  /**
-   * @param {string} matchTarget
-   */
-  // eslint-disable-next-line no-unused-vars
-  const openProfileLink = async (matchTarget) => {
-    if (!onOpenProfileLink) return;
-    setIsLoading(true);
-    try {
-      const profileData = await fetchProfile(image.booruUrl, matchTarget);
-
-      setIsLoading(false);
-      if (profileData) {
-        onOpenProfileLink(image.booruUrl, profileData.name, profileData.id);
-      } else {
-        alert('Profile not found or could not be loaded.');
-      }
-    } catch (err) {
-      setIsLoading(false);
-      console.error('Error fetching profile link:', err);
-      alert('Error fetching profile data.');
-    }
-  };
 
   return (
     <ReactMarkdown
@@ -81,7 +35,7 @@ export const CommentBody = ({ body, image, onOpenImageLink, onOpenProfileLink, s
               const handleRefClick = (e) => {
                 if (openImagesInApp && onOpenImageLink) {
                   e.preventDefault();
-                  openImageLink(refId);
+                  openImageLink(image, onOpenImageLink, setIsLoading, refId);
                 }
               };
 
@@ -152,10 +106,10 @@ export const CommentBody = ({ body, image, onOpenImageLink, onOpenProfileLink, s
           const handleNormalClick = (e) => {
             if (openImagesInApp && isImageLink && onOpenImageLink) {
               e.preventDefault();
-              openImageLink(matchTarget);
+              openImageLink(image, onOpenImageLink, setIsLoading, matchTarget);
             } else if (openProfileInApp && isProfileLink && onOpenProfileLink) {
               // e.preventDefault();
-              // openProfileLink(matchTarget);
+              // openProfileLink(image, onOpenProfileLink, setIsLoading, matchTarget);
             }
           };
 
