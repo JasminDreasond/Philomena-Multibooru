@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import Plyr from 'plyr';
 import { fetchComments, getAccountBooruApi } from '../services/api';
 import { CommentBody } from './CommentBody';
 
@@ -82,6 +83,11 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
   /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  /** @type {import('react').MutableRefObject<HTMLElement>} */
+  const videoRef = useRef(null);
+  /** @type {[HTMLElement|null, import('react').Dispatch<import('react').SetStateAction<HTMLElement>>]} */
+  const [, setPlayer] = useState(null);
+
   const isVideo = image && image.mimeType && image.mimeType.startsWith('video/');
   const imageSrc = image
     ? isZoomed
@@ -109,6 +115,25 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
     const onRefresh = () => setRefreshTrigger((prev) => prev + 1);
     window.addEventListener('appFocusRefresh', onRefresh);
     return () => window.removeEventListener('appFocusRefresh', onRefresh);
+  }, []);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      const p = new Plyr(videoRef.current, {
+        autoplay: true,
+        muted: true,
+        loop: { active: true },
+        hideControls: true,
+        fullscreen: {
+          enabled: true,
+          fallback: true,
+          iosNative: true,
+          container: null,
+        },
+        storage: { enabled: false, key: 'plyr' },
+      });
+      setPlayer(p);
+    }
   }, []);
 
   useEffect(() => {
@@ -268,9 +293,9 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
       >
         {isVideo ? (
           <video
-            src={image.representations.full || image.sourceUrl}
-            className="img-fluid"
-            style={{ maxHeight: '85vh', objectFit: 'contain' }}
+            ref={videoRef}
+            src={image.representations.full}
+            className="booru-video-player"
             controls
             autoPlay
             loop
