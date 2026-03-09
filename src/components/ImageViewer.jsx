@@ -118,7 +118,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
   }, []);
 
   useEffect(() => {
-    if (videoRef.current) {
+    if (videoRef.current && isVideo) {
       const p = new Plyr(videoRef.current, {
         autoplay: true,
         muted: true,
