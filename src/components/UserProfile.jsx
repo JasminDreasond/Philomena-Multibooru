@@ -9,6 +9,7 @@ import {
 } from '../services/api';
 import { Image } from './ImageGallery';
 import { CommentBody } from './CommentBody';
+import { openImageLink } from '../utils';
 
 /**
  * @typedef {import('../services/api').UserProfileData} UserProfileData
@@ -500,6 +501,16 @@ export const UserProfile = ({
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-muted text-decoration-none"
+                                onClick={(e) => {
+                                  if (localStorage.getItem('app_inAppViewer') !== 'true') return;
+                                  e.preventDefault();
+                                  openImageLink(
+                                    booruUrl,
+                                    onOpenImage,
+                                    setIsLoading,
+                                    comment.imageId,
+                                  );
+                                }}
                               >
                                 🔗 Link
                               </a>
