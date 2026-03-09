@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
   fetchProfile,
@@ -65,6 +65,9 @@ export const UserProfile = ({
   /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  /** @type {import('react').MutableRefObject<{ url: string|null, id: number|null, trigger: number|null, isMounted: number|null }>} */
+  const lastFetched = useRef({ url: null, id: null, trigger: null, isMounted: null });
+
   // Smart Auto Refresh Listener
   useEffect(() => {
     const onRefresh = () => setRefreshTrigger((prev) => prev + 1);
@@ -73,13 +76,19 @@ export const UserProfile = ({
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
+    const loadCache = { isMounted: true, url: booruUrl, id: userId, trigger: refreshTrigger };
+    // Prevent duplicate firing in React Strict Mode
+    const isTheSame =
+      lastFetched.current.url === booruUrl &&
+      lastFetched.current.id === userId &&
+      lastFetched.current.trigger === refreshTrigger;
+    if (!isTheSame) lastFetched.current = loadCache;
 
     const loadData = async () => {
       setIsLoading(true);
       try {
         const userProfile = await fetchProfile(booruUrl, userId);
-        if (isMounted) setProfile(userProfile);
+        if (loadCache.isMounted) setProfile(userProfile);
 
         if (userProfile) {
           // Fetch secondary data concurrently to populate the profile panels
@@ -99,7 +108,7 @@ export const UserProfile = ({
             fetchComments(booruUrl, account.apiKey, `user_id:${userId}`, 1),
           ]);
 
-          if (isMounted) {
+          if (loadCache.isMounted) {
             setRecentUploads(uploadsRes);
             setRecentFaves(favesRes);
             setRecentComments(commentsRes.comments.slice(0, 3));
@@ -108,13 +117,14 @@ export const UserProfile = ({
       } catch (err) {
         console.error('Error loading profile data:', err);
       } finally {
-        if (isMounted) setIsLoading(false);
+        if (loadCache.isMounted) setIsLoading(false);
       }
     };
 
-    loadData();
+    if (!isTheSame) loadData();
+    else lastFetched.current.isMounted = true;
     return () => {
-      isMounted = false;
+      loadCache.isMounted = false;
     };
   }, [booruUrl, userId, refreshTrigger]);
 
