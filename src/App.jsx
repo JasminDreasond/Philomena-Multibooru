@@ -326,6 +326,25 @@ const App = () => {
     setIsSearching(true);
     await clearImageCache(); // Cleans old images
     lastSyncedBoorus.current = newBoorus;
+
+    // Selects a new Featured Image and fixes Link Account if the current one was hidden
+    if (connectedAccounts && connectedAccounts.length > 0) {
+      const activeAccounts = connectedAccounts.filter((a) => newBoorus.includes(a.booruUrl));
+
+      if (activeAccounts.length > 0) {
+        const randomAcc = activeAccounts[TinySimpleDice.rollArrayIndex(activeAccounts)];
+        const feat = await getFeaturedImage(randomAcc.booruUrl);
+        setFeaturedImage(feat ? { account: randomAcc, image: feat } : null);
+
+        if (!selectedLinkAccount || !newBoorus.includes(selectedLinkAccount.booruUrl)) {
+          setSelectedLinkAccount(randomAcc);
+        }
+      } else {
+        setFeaturedImage(null);
+        setSelectedLinkAccount(null);
+      }
+    }
+
     await executeBackgroundSync(newBoorus);
     setIsSearching(false);
   };
