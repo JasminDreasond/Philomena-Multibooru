@@ -175,6 +175,22 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
   }
 
   /**
+   * Formats tags according to Philomena's URL standards.
+   * @param {string[]} tags
+   * @returns {string}
+   */
+  const formatPhilomenaTags = (tags) => {
+    return tags
+      .map((tag) => {
+        /** @type {string} */
+        const sanitized = tag.toLowerCase().trim().replace(/\s+/g, '+').replace(/:/g, '-colon-');
+
+        return sanitized;
+      })
+      .join('_');
+  };
+
+  /**
    * @param {string} url
    * @returns {string}
    */
@@ -188,12 +204,43 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
   };
 
   /**
+   * Generates a full download URL with ID and tags.
+   * @param {string} url
+   * @param {string[]} tags
+   * @returns {string}
+   */
+  const getFullDownloadUrl = (url, tags) => {
+    /** @type {string} */
+    const baseSwapped = getDownloadUrl(url);
+
+    // Separate the extension from the path
+    /** @type {number} */
+    const lastDotIndex = baseSwapped.lastIndexOf('.');
+    /** @type {string} */
+    const extension = baseSwapped.substring(lastDotIndex);
+    /** @type {string} */
+    const pathWithoutExt = baseSwapped.substring(0, lastDotIndex);
+
+    // Isolate the ID
+    /** @type {string[]} */
+    const pathParts = pathWithoutExt.split('/');
+    /** @type {string} */
+    const id = pathParts.pop();
+    /** @type {string} */
+    const baseUrl = pathParts.join('/');
+
+    /** @type {string} */
+    const slug = formatPhilomenaTags(tags);
+
+    // Pattern: {base}/{id}__{tags}.{ext}
+    return `${baseUrl}/${id}__${slug}${extension}`;
+  };
+
+  /**
+   * @param {string} downloadUrl
    * @returns {void}
    */
-  const handleDownload = () => {
-    /** @type {string} */
-    const downloadUrl = getDownloadUrl(image.representations.full);
-
+  const handleDownloadTemplate = (downloadUrl) => {
     /** @type {HTMLAnchorElement} */
     const link = document.createElement('a');
 
@@ -204,6 +251,20 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  /**
+   * @returns {void}
+   */
+  const handleDownloadWithTags = () => {
+    handleDownloadTemplate(getFullDownloadUrl(image.representations.full, image.tags));
+  };
+
+  /**
+   * @returns {void}
+   */
+  const handleDownload = () => {
+    handleDownloadTemplate(getDownloadUrl(image.representations.full));
   };
 
   /**
@@ -289,8 +350,21 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
           >
             👁 View on Booru
           </a>
-          <button onClick={handleDownload} className="btn-tool">
+          <button
+            onClick={handleDownloadWithTags}
+            rel="nofollow"
+            title="Download (tags in filename)"
+            className="btn-tool"
+          >
             ⬇ Download
+          </button>
+          <button
+            onClick={handleDownload}
+            rel="nofollow"
+            title="View (no tags in filename)"
+            className="btn-tool"
+          >
+            ⬇ DS
           </button>
         </div>
       </div>
