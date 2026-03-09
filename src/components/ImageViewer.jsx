@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import Plyr from 'plyr';
 import { fetchComments, getAccountBooruApi } from '../services/api';
 import { CommentBody } from './CommentBody';
+import { Loading } from './Loading';
 
 const tags = [
   // Roles
@@ -68,6 +69,9 @@ const formatBytes = (bytes) => {
  * @param {{ image: ImageResult|null, onClose: () => void, onSearch: (query: string) => void, onOpenImage: (img: ImageResult) => void, onOpenProfile: (booruUrl: string, username: string, id: number) => void }} props
  */
 export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenImage }) => {
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isLoading, setIsLoading] = useState(false);
+
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isZoomed, setIsZoomed] = useState(false);
 
@@ -293,6 +297,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
   /**
    * @param {MouseEvent} e
    * @param {string} booruUrl
+   * @param {string} username
    * @param {number} id
    */
   const handleProfileClick = (e, booruUrl, username, id) => {
@@ -312,7 +317,10 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
   const isDown = !isFav && image.interaction === 'downVote';
 
   return (
-    <div className="fade-in">
+    <div className="fade-in position-relative">
+      {/* Global Loading Overlay */}
+      {isLoading && <Loading />}
+
       {/* Top Toolbar */}
       <div className="viewer-toolbar d-flex flex-wrap align-items-center px-3 py-1 gap-3">
         <button onClick={onClose} className="ms-auto btn-tool" title="Back to Gallery">
@@ -439,6 +447,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
                 image={image}
                 onOpenProfileLink={onOpenProfile}
                 onOpenImageLink={onOpenImage}
+                setIsLoading={setIsLoading}
               />
             ) : (
               <i>No description provided.</i>
@@ -681,6 +690,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
                       image={image}
                       onOpenProfileLink={onOpenProfile}
                       onOpenImageLink={onOpenImage}
+                      setIsLoading={setIsLoading}
                     />
                   </div>
                   <div

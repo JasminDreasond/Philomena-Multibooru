@@ -816,6 +816,7 @@ const App = () => {
           onClose={() => setViewingImage(null)}
           onSearch={handleSearchSubmit}
           onOpenProfile={handleOpenProfile}
+          onOpenImage={handleOpenImage}
         />
       ) : (
         <div className="container-fluid px-4 mt-4">
