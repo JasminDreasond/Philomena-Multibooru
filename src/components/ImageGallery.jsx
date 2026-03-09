@@ -136,7 +136,11 @@ export const Image = ({ img, className, onOpenImage }) => {
                   >
                     ▲
                   </td>
-                  <td className={`badge-interaction badge-inactive`}>{score}</td>
+                  <td
+                    className={`badge-interaction ${isUp ? 'active-up' : isDown ? 'active-down' : 'badge-inactive'}`}
+                  >
+                    {score}
+                  </td>
                   <td
                     className={`badge-interaction text-start ${isDown ? 'active-down' : 'badge-inactive'}`}
                   >
