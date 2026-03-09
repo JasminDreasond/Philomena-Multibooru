@@ -168,7 +168,7 @@ export const Image = ({ img, className, onOpenImage }) => {
  */
 export const ImageGallery = ({
   imagesList,
-  gridClass = 'row-cols-1 row-cols-sm-2 row-cols-md-4 row-cols-lg-4 row-cols-xl-4 row-cols-xxl-6 g-3',
+  gridClass = 'row-cols-1 row-cols-sm-2 row-cols-md-4 row-cols-lg-4 row-cols-xl-4 row-cols-xxl-6 g-2',
   onOpenImage,
 }) => {
   const hasImages = imagesList.length > 0;

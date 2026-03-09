@@ -938,7 +938,11 @@ const App = () => {
                         onPageChange={changePage}
                       />
 
-                      <ImageGallery imagesList={currentImages} onOpenImage={handleOpenImage} />
+                      <ImageGallery
+                        gridClass={`row-cols-1 row-cols-sm-2 row-cols-md-4 row-cols-lg-4 row-cols-xl-6 g-2`}
+                        imagesList={currentImages}
+                        onOpenImage={handleOpenImage}
+                      />
 
                       <PaginationBar
                         currentPage={currentPage}
@@ -974,7 +978,11 @@ const App = () => {
                       totalPages={Math.ceil(watchedImages.length / pageLimit) || 1}
                       onPageChange={() => handleSearchSubmit('my:watched')}
                     />
-                    <ImageGallery imagesList={watchedImages} onOpenImage={handleOpenImage} />
+                    <ImageGallery
+                      gridClass="row-cols-1 row-cols-sm-2 row-cols-md-6 row-cols-lg-7 g-2"
+                      imagesList={watchedImages}
+                      onOpenImage={handleOpenImage}
+                    />
                   </div>
                 </div>
               )}
