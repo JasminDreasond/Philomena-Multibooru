@@ -535,6 +535,45 @@ export const fixImageObj = (img) => {
 const syncTimes = {};
 
 /**
+ * @param {{ total: number; interactions: any[]; images: any[] }} data
+ * @returns {InteractionObj[]}
+ */
+const getInteractions = (booruUrl, data) => {
+  /** @type {InteractionObj[]} */
+  const formattedInteractions = [];
+
+  /** @type {InteractionObj[]} */
+  data.interactions.forEach((int) => {
+    const value =
+      int.interaction_type === 'faved'
+        ? 'faved'
+        : int.interaction_type === 'voted'
+          ? int.value === 'up'
+            ? 'upVote'
+            : int.value === 'down'
+              ? 'downVote'
+              : null
+          : null;
+
+    const id = `${booruUrl}_${int.image_id}`;
+    const oldInteraction = formattedInteractions.find((int2) => int2.id === id);
+    if (oldInteraction) {
+      if (value === 'faved') oldInteraction.value = value;
+      return;
+    }
+
+    formattedInteractions.push({
+      id,
+      booruUrl,
+      imageId: int.image_id,
+      value,
+    });
+  });
+
+  return formattedInteractions;
+};
+
+/**
  * Downloads a page of images from the specified booru and inserts it into the local IndexedDB.
  * @param {string} booruUrl
  * @param {string} apiKey
@@ -559,37 +598,7 @@ export const syncGalleryPage = async (
 
     /** @type {ImageObj} */
     const formattedImages = data.images.map((img) => parseImageData(booruUrl, img));
-
-    /** @type {InteractionObj[]} */
-    const formattedInteractions = [];
-
-    /** @type {InteractionObj[]} */
-    data.interactions.forEach((int) => {
-      const value =
-        int.interaction_type === 'faved'
-          ? 'faved'
-          : int.interaction_type === 'voted'
-            ? int.value === 'up'
-              ? 'upVote'
-              : int.value === 'down'
-                ? 'downVote'
-                : null
-            : null;
-
-      const id = `${booruUrl}_${int.image_id}`;
-      const oldInteraction = formattedInteractions.find((int2) => int2.id === id);
-      if (oldInteraction) {
-        if (value === 'faved') oldInteraction.value = value;
-        return;
-      }
-
-      formattedInteractions.push({
-        id,
-        booruUrl,
-        imageId: int.image_id,
-        value,
-      });
-    });
+    const formattedInteractions = getInteractions(booruUrl, data);
 
     await dbConnection.insert({ into: 'Images', values: formattedImages, upsert: true });
     await dbConnection.insert({
@@ -1149,4 +1158,34 @@ export const getBooruFilterId = async (booruUrl) => {
 export const saveBooruFilters = async (newFiltersData) => {
   localStorage.setItem('app_booruFilters', JSON.stringify(newFiltersData));
   await clearImageCache();
+};
+
+/**
+ * Fetches a single image by its ID, parses it, caches it in the local database, and returns the formatted data.
+ * @param {string} booruUrl
+ * @param {string} apiKey
+ * @param {number|string} imageId
+ * @returns {Promise<ImageResult|null>}
+ */
+export const fetchSingleImage = async (booruUrl, apiKey, imageId) => {
+  try {
+    const result = await fetchPhilomena(booruUrl, `images/${imageId}`, apiKey);
+    const ctx = 'Single Image Fetch';
+
+    if (!result.image) throwApiError(ctx, 'image');
+
+    /** @type {ImageObj} */
+    const formattedImage = parseImageData(booruUrl, result.image);
+    const formattedInteractions = getInteractions(booruUrl, result);
+
+    /** @type {ImageResult} */
+    const imageResult = { ...formattedImage };
+    imageResult.interaction = formattedInteractions.value ?? null;
+
+    // Restores boolean fields for the React components
+    return fixImageObj(imageResult);
+  } catch (error) {
+    console.error(`Failed to fetch single image ${imageId} from ${booruUrl}:`, error);
+    return null;
+  }
 };

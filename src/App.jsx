@@ -807,6 +807,7 @@ const App = () => {
           username={viewingProfile.username}
           onClose={() => setViewingProfile(null)}
           onOpenImage={handleOpenImage}
+          onOpenProfile={handleOpenProfile}
           handleSearchSubmit={handleSearchSubmit}
         />
       ) : viewingImage ? (

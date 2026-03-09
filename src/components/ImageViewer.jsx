@@ -65,9 +65,9 @@ const formatBytes = (bytes) => {
 };
 
 /**
- * @param {{ image: ImageResult|null, onClose: () => void, onSearch: (query: string) => void, onOpenProfile: (booruUrl: string, username: string, id: number) => void }} props
+ * @param {{ image: ImageResult|null, onClose: () => void, onSearch: (query: string) => void, onOpenImage: (img: ImageResult) => void, onOpenProfile: (booruUrl: string, username: string, id: number) => void }} props
  */
-export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
+export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenImage }) => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isZoomed, setIsZoomed] = useState(false);
 
@@ -434,7 +434,12 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
           <div className="philo-panel-header">📄 Description</div>
           <div className="philo-panel-body text-muted p-2">
             {image.description ? (
-              <CommentBody body={image.description} image={image} />
+              <CommentBody
+                body={image.description}
+                image={image}
+                onOpenProfileLink={onOpenProfile}
+                onOpenImageLink={onOpenImage}
+              />
             ) : (
               <i>No description provided.</i>
             )}
@@ -671,7 +676,12 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile }) => {
                     </span>
                   </div>
                   <div className="mb-3" style={{ fontSize: '0.95rem' }}>
-                    <CommentBody body={comment.body} image={image} />
+                    <CommentBody
+                      body={comment.body}
+                      image={image}
+                      onOpenProfileLink={onOpenProfile}
+                      onOpenImageLink={onOpenImage}
+                    />
                   </div>
                   <div
                     className="d-flex justify-content-between text-muted"

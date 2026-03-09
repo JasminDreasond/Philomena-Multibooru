@@ -37,7 +37,7 @@ const timeSince = (date) => {
 };
 
 /**
- * @param {{ booruUrl: string, username: string, userId: number, handleSearchSubmit: (query: string) => void, onClose: () => void, onOpenImage: (img: ImageResult) => void }} props
+ * @param {{ booruUrl: string, username: string, userId: number, handleSearchSubmit: (query: string) => void, onClose: () => void, onOpenImage: (img: ImageResult) => void, handleOpenProfile: (booruUrl: string, username: string, id: number) => void }} props
  */
 export const UserProfile = ({
   booruUrl,
@@ -45,6 +45,7 @@ export const UserProfile = ({
   username,
   onClose,
   onOpenImage,
+  handleOpenProfile,
   handleSearchSubmit,
 }) => {
   /** @type {[UserProfileData|null, import('react').Dispatch<import('react').SetStateAction<UserProfileData|null>>]} */
@@ -486,6 +487,8 @@ export const UserProfile = ({
                             <CommentBody
                               body={comment.body}
                               image={{ id: comment.imageId, booruUrl }}
+                              onOpenImageLink={onOpenImage}
+                              onOpenProfileLink={handleOpenProfile}
                             />
                           </div>
                           <div className="d-flex justify-content-between small text-muted">
