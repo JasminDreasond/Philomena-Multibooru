@@ -290,7 +290,7 @@ export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => 
  * @property {number} height
  * @property {number} width
  * @property {string} sourceUrl
- * @property {ImageIntensities} intensities
+ * @property {ImageIntensities|null} intensities
  */
 
 /**
@@ -491,12 +491,14 @@ export const parseImageData = (booruUrl, img) => ({
     large: checkItem(img.representations.large, 'string'),
     tall: checkItem(img.representations.tall, 'string'),
   },
-  intensities: {
-    ne: checkItem(img.intensities.ne, 'number'),
-    nw: checkItem(img.intensities.nw, 'number'),
-    se: checkItem(img.intensities.se, 'number'),
-    sw: checkItem(img.intensities.sw, 'number'),
-  },
+  intensities: img.intensities
+    ? {
+        ne: checkItem(img.intensities.ne, 'number'),
+        nw: checkItem(img.intensities.nw, 'number'),
+        se: checkItem(img.intensities.se, 'number'),
+        sw: checkItem(img.intensities.sw, 'number'),
+      }
+    : null,
   updatedAt: new Date(img.updated_at).valueOf(),
   createdAt: new Date(img.created_at).valueOf(),
   firstSeenAt: new Date(img.first_seen_at).valueOf(),
