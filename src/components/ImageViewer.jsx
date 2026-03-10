@@ -250,7 +250,6 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
 
     link.href = downloadUrl;
     link.download = fileName;
-    link.target = '_blank';
 
     document.body.appendChild(link);
     link.click();

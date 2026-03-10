@@ -42,6 +42,8 @@ export const Image = ({ img, className, onOpenImage }) => {
   const isProcessing = !img.processed || !img.thumbnailsGenerated ? true : false;
   const isBlurry = img.spoilered && !unspoileredIds.has(img.id) ? true : false;
 
+  const title = `${img.booruUrl} - ${img.tags.join(', ')}`;
+
   return (
     <div
       className="card h-100 shadow-sm border-0 interaction-card"
@@ -101,6 +103,7 @@ export const Image = ({ img, className, onOpenImage }) => {
           >
             {isVideo ? (
               <video
+                title={title}
                 src={img.representations.full || img.sourceUrl}
                 className="w-100 h-100"
                 style={{ objectFit: 'contain' }}
@@ -111,6 +114,7 @@ export const Image = ({ img, className, onOpenImage }) => {
               />
             ) : (
               <img
+                title={title}
                 src={img.representations.thumb || img.sourceUrl}
                 className="w-100 h-100"
                 alt={img.tags?.join(', ') || ''}
