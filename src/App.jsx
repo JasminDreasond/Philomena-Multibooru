@@ -342,6 +342,27 @@ const App = () => {
     }
   }, [showSettings, viewingProfile, viewingImage, isHomepage, searchQuery, isDbReady]);
 
+  // Synchronizes document <title> with the active view
+  useEffect(() => {
+    const baseTitle = 'Philomena Multi-Booru';
+
+    if (showSettings) {
+      document.title = `Settings - ${baseTitle}`;
+    } else if (viewingProfile) {
+      document.title = `${viewingProfile.username}'s Profile - ${baseTitle}`;
+    } else if (viewingImage) {
+      const tagSnippet =
+        viewingImage.tags && viewingImage.tags.length > 0
+          ? ` - ${viewingImage.tags.slice(0, 3).join(', ')}`
+          : '';
+      document.title = `Image #${viewingImage.id}${tagSnippet} - ${baseTitle}`;
+    } else if (!isHomepage && searchQuery && searchQuery !== '*') {
+      document.title = `Search: ${searchQuery} - ${baseTitle}`;
+    } else {
+      document.title = baseTitle;
+    }
+  }, [showSettings, viewingProfile, viewingImage, isHomepage, searchQuery]);
+
   // Handle Forward/Back button navigation internally
   useEffect(() => {
     const handlePopState = async () => {
