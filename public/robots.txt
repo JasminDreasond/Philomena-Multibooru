@@ -1,0 +1,7 @@
+User-agent: *
+
+Disallow: /profiles/
+Disallow: /images/
+Disallow: /settings
+
+Allow: /
