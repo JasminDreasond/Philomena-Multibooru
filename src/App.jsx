@@ -987,7 +987,7 @@ const App = () => {
       <nav className="navbar navbar-expand-lg custom-navbar sticky-top shadow-sm">
         <div className="container-fluid px-4 d-flex align-items-center">
           <a
-            href="/"
+            href="./"
             onClick={(e) => {
               e.preventDefault();
               goToHome();
@@ -1221,7 +1221,7 @@ const App = () => {
                       <div className="card-header fw-bold d-flex justify-content-between align-items-center">
                         <span>Trending Images</span>
                         <a
-                          href={`${selectedLinkAccount.booruUrl}/search?q=first_seen_at.gt:3%20days%20ago&sf=wilson_score&sd=desc`}
+                          href={`./search?q=first_seen_at.gt%3A3+days+ago&sf=score`}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) =>
@@ -1278,7 +1278,7 @@ const App = () => {
                           </select>
                         </div>
                         <a
-                          href={`${selectedLinkAccount.booruUrl}/search?q=*&sf=score&sd=desc`}
+                          href={`./search?sf=score&sd=desc`}
                           onClick={(e) => handleQuickLinkClick(e, '*', 'score', 'desc')}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -1295,7 +1295,7 @@ const App = () => {
                           💬 Recent Comments
                         </a>
                         <a
-                          href={`${selectedLinkAccount.booruUrl}/search?q=first_seen_at.gt:3%20days%20ago&sf=comment_count&sd=desc`}
+                          href={`./search?q=first_seen_at.gt%3A3+days+ago&sf=comments&sd=desc`}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) =>
@@ -1377,16 +1377,15 @@ const App = () => {
                       style={{ borderColor: 'var(--app-border)' }}
                     >
                       <h3 className="mb-0">Watched Images</h3>
-                      <button
+                      <a
+                        href={`./search?q=my%3Awatched`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="btn btn-outline-secondary btn-sm fw-bold"
-                        onClick={() => {
-                          setSortField('created_at');
-                          setSortDirection('desc');
-                          handleSearchSubmit('my:watched');
-                        }}
+                        onClick={(e) => handleQuickLinkClick(e, 'my:watched', 'created_at', 'desc')}
                       >
                         Browse Watched Images
-                      </button>
+                      </a>
                     </div>
 
                     <ImageGallery
