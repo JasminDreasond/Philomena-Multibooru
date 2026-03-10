@@ -578,11 +578,13 @@ const App = () => {
           const params = new URLSearchParams(window.location.search);
           let initialQuery = searchQuery.trim() === '' ? '*' : searchQuery;
           let isDeepLinkSpecial = false;
+          let skipMainSync = false; // Lock to prevent unnecessary API calls at boot
 
           if (isFirstLoad.current) {
             if (path.startsWith('/settings')) {
               setShowSettings(true);
               isDeepLinkSpecial = true;
+              skipMainSync = true;
             } else if (path.startsWith('/search')) {
               const q = params.get('q') || '*';
               setSearchQuery(q);
@@ -600,6 +602,7 @@ const App = () => {
                 if (acc) {
                   setIsHomepage(false);
                   isDeepLinkSpecial = true;
+                  skipMainSync = true;
 
                   if (imgMatch) {
                     const imgData = await fetchSingleImage(acc.booruUrl, acc.apiKey, imgMatch[2]);
@@ -619,50 +622,60 @@ const App = () => {
             }
           }
 
-          const isSpecialSearch = initialQuery !== '*';
-          const syncPromises = [
-            syncUserGalleryPages({
-              query: initialQuery,
-              page: currentPage,
-              allowedBoorus: activeUrls,
-            }),
-          ];
-
-          if (!isSpecialSearch && isHomepage && !isDeepLinkSpecial) {
-            syncPromises.push(
+          // If we have an active deep link, we skip the massive fetch of the Homepage here!
+          if (!skipMainSync) {
+            const isSpecialSearch = initialQuery !== '*';
+            const syncPromises = [
               syncUserGalleryPages({
-                query: 'first_seen_at.gt:3 days ago',
+                query: initialQuery,
+                page: currentPage,
                 allowedBoorus: activeUrls,
-                perPage: 4,
               }),
-            );
-            syncPromises.push(
-              syncUserGalleryPages({ query: 'my:watched', allowedBoorus: activeUrls }),
-            );
-          }
+            ];
 
-          const results = await Promise.all(syncPromises);
-          const mainSync = results[0];
-
-          setPageLimit(mainSync.syncLimit);
-          setTotalPages(Math.max(1, Math.ceil(mainSync.totalCount / mainSync.syncLimit)));
-
-          if (!isSpecialSearch && isHomepage && !isDeepLinkSpecial && activeUrls.length > 0) {
-            /** @type {Account[]} */
-            const filteredAccounts = accounts.filter((a) => activeUrls.includes(a.booruUrl));
-            if (filteredAccounts.length > 0) {
-              const acc = filteredAccounts[TinySimpleDice.rollArrayIndex(filteredAccounts)];
-              const feat = await getFeaturedImage(acc.booruUrl);
-              setFeaturedImage(feat ? { account: acc, image: feat } : null);
-
-              if (!selectedLinkAccount) setSelectedLinkAccount(acc);
+            if (!isSpecialSearch && isHomepage && !isDeepLinkSpecial) {
+              syncPromises.push(
+                syncUserGalleryPages({
+                  query: 'first_seen_at.gt:3 days ago',
+                  allowedBoorus: activeUrls,
+                  perPage: 4,
+                }),
+              );
+              syncPromises.push(
+                syncUserGalleryPages({ query: 'my:watched', allowedBoorus: activeUrls }),
+              );
             }
+
+            const results = await Promise.all(syncPromises);
+            const mainSync = results[0];
+
+            if (mainSync) {
+              setPageLimit(mainSync.syncLimit);
+              setTotalPages(Math.max(1, Math.ceil(mainSync.totalCount / mainSync.syncLimit)));
+            }
+
+            if (!isSpecialSearch && isHomepage && !isDeepLinkSpecial && activeUrls.length > 0) {
+              /** @type {Account[]} */
+              const filteredAccounts = accounts.filter((a) => activeUrls.includes(a.booruUrl));
+              if (filteredAccounts.length > 0) {
+                const acc = filteredAccounts[TinySimpleDice.rollArrayIndex(filteredAccounts)];
+                const feat = await getFeaturedImage(acc.booruUrl);
+                setFeaturedImage(feat ? { account: acc, image: feat } : null);
+
+                if (!selectedLinkAccount) setSelectedLinkAccount(acc);
+              }
+            }
+
+            await loadLocalData(
+              mainSync ? mainSync.syncLimit : 50,
+              currentPage,
+              initialQuery,
+              activeUrls,
+            );
           }
 
-          lastSyncedBoorus.current = activeUrls; // Register initial sync
+          lastSyncedBoorus.current = activeUrls;
           latestVisibleBoorus.current = activeUrls;
-
-          await loadLocalData(mainSync.syncLimit, currentPage, initialQuery, activeUrls);
           isFirstLoad.current = false;
         } finally {
           setIsSearching(false);
@@ -671,7 +684,7 @@ const App = () => {
     };
 
     setupEnvironment();
-  }, [isDbReady, showSettings, currentPage, searchQuery]);
+  }, [isDbReady, showSettings, currentPage, searchQuery, isHomepage]);
 
   useEffect(() => {
     const applyThemeScript = () => {
