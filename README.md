@@ -62,6 +62,10 @@ yarn dev
 * [Plyr](https://plyr.io/)
 * [Bootstrap](https://getbootstrap.com/)
 
+### Available tasks in the project
+
+- Arts to replace AI Images in the project.
+
 ---
 
 Enjoy your unified browsing experience! If you run into any issues or have feature requests (that the API allows!), feel free to open an issue.
