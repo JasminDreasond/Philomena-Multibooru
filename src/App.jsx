@@ -18,6 +18,7 @@ import { ImageGallery, Image } from './components/ImageGallery';
 import { SettingsPanel } from './components/SettingsPanel';
 import { ImageViewer } from './components/ImageViewer';
 import { UserProfile } from './components/UserProfile';
+import { Welcome } from './components/Welcome';
 
 /** @typedef {import('./services/api').ImageResult} ImageResult */
 /** @typedef {import('./services/api').ImageObj} ImageObj */
@@ -1325,25 +1326,13 @@ const App = () => {
               </div>
             </div>
           ) : connectedAccounts && connectedAccounts.length === 0 ? (
-            <>
-              <div className="alert alert-warning mt-3" role="alert">
-                You need to add at least one Philomena API account to start syncing data! Click on
-                "Settings".
-              </div>
-              <center>
-                <img src="/icon/512.png" height={256} alt="icon" />
-                <div>Welcome to Philomena MultiBooru!</div>
-                <button
-                  className="mt-2 btn btn-sm btn-outline-light"
-                  onClick={() => {
-                    if (!showSettings) hasSynced.current = false;
-                    setShowSettings(!showSettings);
-                  }}
-                >
-                  {'Start Now!'}
-                </button>
-              </center>
-            </>
+            <Welcome
+              onClick={() => {
+                if (!showSettings) hasSynced.current = false;
+                setShowSettings(!showSettings);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
           ) : (
             <>
               <div className="row g-4">
