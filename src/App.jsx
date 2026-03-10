@@ -394,6 +394,7 @@ const App = () => {
       if (searchQuery && searchQuery !== '*') searchParams.set('q', searchQuery);
       if (sortField !== 'created_at') searchParams.set('sf', sortField);
       if (sortDirection !== 'desc') searchParams.set('sd', sortDirection);
+      if (currentPage > 1) searchParams.set('page', currentPage.toString());
 
       const searchStr = searchParams.toString();
       if (searchStr) newSearch = `?${searchStr}`;
@@ -415,6 +416,7 @@ const App = () => {
     isDbReady,
     sortField,
     sortDirection,
+    currentPage,
   ]);
 
   // Synchronizes document <title> with the active view
@@ -452,6 +454,7 @@ const App = () => {
         setSearchQuery('');
         setSortField('created_at');
         setSortDirection('desc');
+        setCurrentPage(1);
         hasSynced.current = false; // Force recharge the main gallery if necessary
       } else if (path.startsWith('/settings')) {
         setShowSettings(true);
@@ -459,9 +462,12 @@ const App = () => {
         const q = params.get('q') || '*';
         const sfParam = params.get('sf') || 'created_at';
         const sdParam = params.get('sd') || 'desc';
+        const pParam = parseInt(params.get('page') || '1', 10);
+
         setSearchQuery(q);
         setSortField(sfParam);
         setSortDirection(sdParam);
+        setCurrentPage(pParam);
         setIsHomepage(false);
         setViewingImage(null);
         setViewingProfile(null);
@@ -684,6 +690,7 @@ const App = () => {
       if (!hasInitialized.current) {
         hasInitialized.current = true;
         await initDatabase();
+        await clearImageCache(); // Clean cache at startup!
         setIsDbReady(true);
       }
 
@@ -711,6 +718,7 @@ const App = () => {
 
           let initialSf = sortField;
           let initialSd = sortDirection;
+          let initialPage = currentPage;
 
           if (isFirstLoad.current) {
             if (path.startsWith('/settings')) {
@@ -721,10 +729,12 @@ const App = () => {
               const q = params.get('q') || '*';
               initialSf = params.get('sf') || 'created_at';
               initialSd = params.get('sd') || 'desc';
+              initialPage = parseInt(params.get('page') || '1', 10);
 
               setSearchQuery(q);
               setSortField(initialSf);
               setSortDirection(initialSd);
+              setCurrentPage(initialPage);
               initialQuery = q;
               setIsHomepage(false);
               isDeepLinkSpecial = true;
@@ -765,7 +775,7 @@ const App = () => {
             const syncPromises = [
               syncUserGalleryPages({
                 query: initialQuery,
-                page: currentPage,
+                page: initialPage,
                 allowedBoorus: activeUrls,
                 sd: initialSd,
                 sf: initialSf,
@@ -809,7 +819,7 @@ const App = () => {
 
             await loadLocalData(
               mainSync ? mainSync.syncLimit : 50,
-              currentPage,
+              initialPage,
               initialQuery,
               activeUrls,
               initialSd,
@@ -944,6 +954,7 @@ const App = () => {
     e.preventDefault();
     setSortField(sf);
     setSortDirection(sd);
+    setCurrentPage(1);
     handleSearchSubmit(query);
   };
 
