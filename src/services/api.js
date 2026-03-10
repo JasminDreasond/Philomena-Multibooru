@@ -290,6 +290,7 @@ export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => 
  * @property {number} height
  * @property {number} width
  * @property {string} sourceUrl
+ * @property {number} wilsonScore
  * @property {ImageIntensities|null} intensities
  */
 

@@ -236,6 +236,61 @@ const PaginationBar = ({ currentPage, isHomepage, totalPages, onPageChange }) =>
   );
 };
 
+/**
+ * @param {{ sf: string, sd: string, onSortChange: (sf: string, sd: string) => void }} props
+ */
+const SearchControls = ({ sf, sd, onSortChange }) => {
+  return (
+    <div
+      className="d-flex flex-wrap gap-2 align-items-center px-2 rounded shadow-sm border"
+      style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
+    >
+      <span className="fw-bold small ms-2" style={{ color: 'var(--app-text-muted)' }}>
+        Sort by:
+      </span>
+      <select
+        className="form-select form-select-sm w-auto fw-semibold"
+        value={sf}
+        onChange={(e) => onSortChange(e.target.value, sd)}
+        style={{
+          backgroundColor: 'var(--app-input-bg)',
+          color: 'var(--app-input-text)',
+          borderColor: 'var(--app-border)',
+        }}
+      >
+        <option value="created_at">Created</option>
+        <option value="updated_at">Updated</option>
+        <option value="first_seen_at">First Seen</option>
+        <option value="score">Score</option>
+        <option value="upvotes">Upvotes</option>
+        <option value="downvotes">Downvotes</option>
+        <option value="faves">Faves</option>
+        <option value="comments">Comments</option>
+        <option value="size">File Size</option>
+        <option value="width">Image Width</option>
+        <option value="height">Image Height</option>
+      </select>
+
+      <span className="fw-bold small ms-2" style={{ color: 'var(--app-text-muted)' }}>
+        Order:
+      </span>
+      <select
+        className="form-select form-select-sm w-auto fw-semibold"
+        value={sd}
+        onChange={(e) => onSortChange(sf, e.target.value)}
+        style={{
+          backgroundColor: 'var(--app-input-bg)',
+          color: 'var(--app-input-text)',
+          borderColor: 'var(--app-border)',
+        }}
+      >
+        <option value="desc">Descending</option>
+        <option value="asc">Ascending</option>
+      </select>
+    </div>
+  );
+};
+
 const App = () => {
   /** @type {[ImageResult[], import('react').Dispatch<import('react').SetStateAction<ImageResult[]>>]} */
   const [currentImages, setCurrentImages] = useState([]);
@@ -294,6 +349,12 @@ const App = () => {
   /** @type {[Account|null, import('react').Dispatch<import('react').SetStateAction<Account|null>>]} */
   const [selectedLinkAccount, setSelectedLinkAccount] = useState(null);
 
+  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  const [sortField, setSortField] = useState('created_at');
+
+  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  const [sortDirection, setSortDirection] = useState('desc');
+
   /** @type {import('react').MutableRefObject<boolean>} */
   const hasInitialized = useRef(false);
 
@@ -328,9 +389,13 @@ const App = () => {
       newPath = `/${host}/images/${viewingImage.id}`;
     } else if (!isHomepage) {
       newPath = '/search';
-      if (searchQuery && searchQuery !== '*') {
-        newSearch = `?q=${encodeURIComponent(searchQuery)}`;
-      }
+      const searchParams = new URLSearchParams();
+      if (searchQuery && searchQuery !== '*') searchParams.set('q', searchQuery);
+      if (sortField !== 'created_at') searchParams.set('sf', sortField);
+      if (sortDirection !== 'desc') searchParams.set('sd', sortDirection);
+
+      const searchStr = searchParams.toString();
+      if (searchStr) newSearch = `?${searchStr}`;
     }
 
     const targetUrl = newPath + newSearch;
@@ -340,7 +405,16 @@ const App = () => {
     if (currentUrl !== targetUrl) {
       window.history.pushState(null, '', targetUrl);
     }
-  }, [showSettings, viewingProfile, viewingImage, isHomepage, searchQuery, isDbReady]);
+  }, [
+    showSettings,
+    viewingProfile,
+    viewingImage,
+    isHomepage,
+    searchQuery,
+    isDbReady,
+    sortField,
+    sortDirection,
+  ]);
 
   // Synchronizes document <title> with the active view
   useEffect(() => {
@@ -380,7 +454,11 @@ const App = () => {
         setShowSettings(true);
       } else if (path.startsWith('/search')) {
         const q = params.get('q') || '*';
+        const sfParam = params.get('sf') || 'created_at';
+        const sdParam = params.get('sd') || 'desc';
         setSearchQuery(q);
+        setSortField(sfParam);
+        setSortDirection(sdParam);
         setIsHomepage(false);
         setViewingImage(null);
         setViewingProfile(null);
@@ -493,15 +571,19 @@ const App = () => {
    * @param {number} pageToUse
    * @param {string} queryToUse
    * @param {string[]} boorusToUse
+   * @param {string} sd
+   * @param {string} sf
    * @returns {Promise<void>}
    */
-  const loadLocalData = async (limitToUse, pageToUse, queryToUse, boorusToUse) => {
+  const loadLocalData = async (limitToUse, pageToUse, queryToUse, boorusToUse, sd, sf) => {
     /** @type {ImageResult[]} */
     const mainResults = await searchImages({
       query: queryToUse,
       limit: limitToUse,
       page: pageToUse,
       allowedBoorus: boorusToUse,
+      sd,
+      sf,
     });
     setCurrentImages(mainResults);
 
@@ -515,6 +597,8 @@ const App = () => {
         query: 'first_seen_at.gt:3 days ago',
         limit: 4,
         allowedBoorus: boorusToUse,
+        sf: 'score',
+        sd: 'desc',
       });
       setTrendingImages(trendingResults);
 
@@ -540,7 +624,13 @@ const App = () => {
       const isSpecialSearch = queryToUse !== '*';
 
       const syncPromises = [
-        syncUserGalleryPages({ query: queryToUse, page: currentPage, allowedBoorus: boorusToUse }),
+        syncUserGalleryPages({
+          query: queryToUse,
+          page: currentPage,
+          allowedBoorus: boorusToUse,
+          sd: sortDirection,
+          sf: sortField,
+        }),
       ];
 
       if (!isSpecialSearch && isHomepage) {
@@ -549,6 +639,8 @@ const App = () => {
             query: 'first_seen_at.gt:3 days ago',
             allowedBoorus: boorusToUse,
             perPage: 4,
+            sf: 'score',
+            sd: 'desc',
           }),
         );
         syncPromises.push(
@@ -562,7 +654,14 @@ const App = () => {
       setPageLimit(mainSync.syncLimit);
       setTotalPages(Math.max(1, Math.ceil(mainSync.totalCount / mainSync.syncLimit)));
 
-      await loadLocalData(mainSync.syncLimit, currentPage, queryToUse, boorusToUse);
+      await loadLocalData(
+        mainSync.syncLimit,
+        currentPage,
+        queryToUse,
+        boorusToUse,
+        sortDirection,
+        sortField,
+      );
     } catch (err) {
       console.error('Error on background sync:', err);
     }
@@ -601,6 +700,9 @@ const App = () => {
           let isDeepLinkSpecial = false;
           let skipMainSync = false; // Lock to prevent unnecessary API calls at boot
 
+          let initialSf = sortField;
+          let initialSd = sortDirection;
+
           if (isFirstLoad.current) {
             if (path.startsWith('/settings')) {
               setShowSettings(true);
@@ -608,7 +710,12 @@ const App = () => {
               skipMainSync = true;
             } else if (path.startsWith('/search')) {
               const q = params.get('q') || '*';
+              initialSf = params.get('sf') || 'created_at';
+              initialSd = params.get('sd') || 'desc';
+
               setSearchQuery(q);
+              setSortField(initialSf);
+              setSortDirection(initialSd);
               initialQuery = q;
               setIsHomepage(false);
               isDeepLinkSpecial = true;
@@ -651,6 +758,8 @@ const App = () => {
                 query: initialQuery,
                 page: currentPage,
                 allowedBoorus: activeUrls,
+                sd: initialSd,
+                sf: initialSf,
               }),
             ];
 
@@ -660,6 +769,8 @@ const App = () => {
                   query: 'first_seen_at.gt:3 days ago',
                   allowedBoorus: activeUrls,
                   perPage: 4,
+                  sf: 'score',
+                  sd: 'desc',
                 }),
               );
               syncPromises.push(
@@ -692,6 +803,8 @@ const App = () => {
               currentPage,
               initialQuery,
               activeUrls,
+              initialSd,
+              initialSf,
             );
           }
 
@@ -705,7 +818,7 @@ const App = () => {
     };
 
     setupEnvironment();
-  }, [isDbReady, showSettings, currentPage, searchQuery, isHomepage]);
+  }, [isDbReady, showSettings, currentPage, searchQuery, isHomepage, sortField, sortDirection]);
 
   useEffect(() => {
     const applyThemeScript = () => {
@@ -765,6 +878,8 @@ const App = () => {
     viewingProfile,
     viewingImage,
     visibleBoorus,
+    sortField,
+    sortDirection,
   ]);
 
   /**
@@ -800,11 +915,24 @@ const App = () => {
   };
 
   /**
+   * @param {string} newSf
+   * @param {string} newSd
+   */
+  const handleSortChange = (newSf, newSd) => {
+    setSortField(newSf);
+    setSortDirection(newSd);
+    setCurrentPage(1);
+    hasSynced.current = false;
+  };
+
+  /**
    * @returns {void}
    */
   const goToHome = () => {
     setIsHomepage(true);
     setSearchQuery('');
+    setSortField('created_at');
+    setSortDirection('desc');
     setCurrentPage(1);
     setViewingImage(null);
     setViewingProfile(null);
@@ -1150,6 +1278,14 @@ const App = () => {
 
                 {/* Main Content Area */}
                 <div className="col-12 col-lg" style={{ minWidth: 0, minHeight: '80vh' }}>
+                  {!isHomepage && (
+                    <SearchControls
+                      sf={sortField}
+                      sd={sortDirection}
+                      onSortChange={handleSortChange}
+                    />
+                  )}
+
                   {isSearching ? (
                     <div className="text-center mt-5">
                       <div className="spinner-border text-primary" role="status">
@@ -1180,6 +1316,14 @@ const App = () => {
                         totalPages={totalPages}
                         onPageChange={changePage}
                       />
+
+                      {!isHomepage && (
+                        <SearchControls
+                          sf={sortField}
+                          sd={sortDirection}
+                          onSortChange={handleSortChange}
+                        />
+                      )}
                     </>
                   )}
                 </div>

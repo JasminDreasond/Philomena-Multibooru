@@ -44,6 +44,7 @@ export const initDatabase = async () => {
       height: { dataType: 'number', notNull: true },
       width: { dataType: 'number', notNull: true },
       sourceUrl: { dataType: 'string', notNull: true },
+      wilsonScore: { dataType: 'number', notNull: true },
     },
   };
 
