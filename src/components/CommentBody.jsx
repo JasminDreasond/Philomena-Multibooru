@@ -13,12 +13,14 @@ const preProcessPhilomenaTags = (text) => {
 };
 
 /**
- * @param {{ body: string, urlBack: string, image: import('../services/api').ImageObj, setIsLoading: import('../utils').SetIsLoading, onOpenImageLink?: import('../utils').OnOpenImageLink, onOpenProfileLink?: import('../utils').OnOpenProfileLink }} props
+ * @param {{ body: string, booruUrl: string, imageId?: number, urlBack: string, imageReps?: import('../services/api').ImageRepresentations, setIsLoading: import('../utils').SetIsLoading, onOpenImageLink?: import('../utils').OnOpenImageLink, onOpenProfileLink?: import('../utils').OnOpenProfileLink }} props
  */
 export const CommentBody = ({
   urlBack,
   body,
-  image,
+  imageReps,
+  imageId,
+  booruUrl,
   onOpenImageLink,
   /** onOpenProfileLink, */ setIsLoading,
 }) => {
@@ -41,21 +43,21 @@ export const CommentBody = ({
               const handleRefClick = (e) => {
                 if (openImagesInApp) {
                   e.preventDefault();
-                  openImageLink(image.booruUrl, onOpenImageLink, setIsLoading, refId);
+                  openImageLink(booruUrl, onOpenImageLink, setIsLoading, refId);
                 }
               };
 
-              if (parseInt(refId, 10) === image.id) {
-                let targetThumb = image.representations.thumb_small;
-                if (sizeType === 't') targetThumb = image.representations.small;
-                if (sizeType === 'p') targetThumb = image.representations.medium;
+              if (imageReps && parseInt(refId, 10) === imageId) {
+                let targetThumb = imageReps.thumb_small;
+                if (sizeType === 't') targetThumb = imageReps.small;
+                if (sizeType === 'p') targetThumb = imageReps.medium;
 
                 return (
                   <a
                     href={
                       openImagesInApp
-                        ? `${urlBack}${new URL(image.booruUrl).hostname}/images/${refId}`
-                        : `${image.booruUrl}/images/${refId}`
+                        ? `${urlBack}${new URL(booruUrl).hostname}/images/${refId}`
+                        : `${booruUrl}/images/${refId}`
                     }
                     target={openImagesInApp ? '_self' : '_blank'}
                     rel="noopener noreferrer"
@@ -76,8 +78,8 @@ export const CommentBody = ({
                 <a
                   href={
                     openImagesInApp
-                      ? `${urlBack}${new URL(image.booruUrl).hostname}/images/${refId}`
-                      : `${image.booruUrl}/images/${refId}`
+                      ? `${urlBack}${new URL(booruUrl).hostname}/images/${refId}`
+                      : `${booruUrl}/images/${refId}`
                   }
                   target={openImagesInApp ? '_self' : '_blank'}
                   rel="noopener noreferrer"
@@ -96,20 +98,20 @@ export const CommentBody = ({
           const safeHref = href || '';
 
           const fullHref = isLocal
-            ? `${image.booruUrl}${safeHref.replace(/^(\.\/|\.\.\/)+/, '/')}`
+            ? `${booruUrl}${safeHref.replace(/^(\.\/|\.\.\/)+/, '/')}`
             : safeHref;
 
           let isImageLink = false;
           let isProfileLink = false;
           let matchTarget = null;
 
-          if (fullHref.startsWith(`${image.booruUrl}/images/`)) {
+          if (fullHref.startsWith(`${booruUrl}/images/`)) {
             const match = fullHref.match(/\/images\/(\d+)/);
             if (match) {
               isImageLink = true;
               matchTarget = match[1];
             }
-          } else if (fullHref.startsWith(`${image.booruUrl}/profiles/`)) {
+          } else if (fullHref.startsWith(`${booruUrl}/profiles/`)) {
             const match = fullHref.match(/\/profiles\/([^/]+)/);
             if (match) {
               isProfileLink = true;
@@ -120,10 +122,10 @@ export const CommentBody = ({
           const handleNormalClick = (e) => {
             if (openImagesInApp && isImageLink) {
               e.preventDefault();
-              openImageLink(image.booruUrl, onOpenImageLink, setIsLoading, matchTarget);
+              openImageLink(booruUrl, onOpenImageLink, setIsLoading, matchTarget);
             } else if (openProfileInApp && isProfileLink) {
               // e.preventDefault();
-              // openProfileLink(image.booruUrl, onOpenProfileLink, setIsLoading, matchTarget);
+              // openProfileLink(booruUrl, onOpenProfileLink, setIsLoading, matchTarget);
             }
           };
 
@@ -131,7 +133,7 @@ export const CommentBody = ({
             <a
               href={
                 (isProfileLink && openProfileInApp) || (isImageLink && openImagesInApp)
-                  ? `${urlBack}${new URL(image.booruUrl).hostname}/${isImageLink ? 'images' : isProfileLink ? 'profiles' : 'null'}/${matchTarget}`
+                  ? `${urlBack}${new URL(booruUrl).hostname}/${isImageLink ? 'images' : isProfileLink ? 'profiles' : 'null'}/${matchTarget}`
                   : fullHref
               }
               target={

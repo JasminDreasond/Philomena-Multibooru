@@ -456,7 +456,9 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
               <CommentBody
                 urlBack={'../../'}
                 body={image.description}
-                image={image}
+                booruUrl={image.booruUrl}
+                imageId={image.id}
+                imageReps={image.representations}
                 onOpenProfileLink={onOpenProfile}
                 onOpenImageLink={onOpenImage}
                 setIsLoading={setIsLoading}
@@ -704,7 +706,9 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
                     <CommentBody
                       urlBack={'../../'}
                       body={comment.body}
-                      image={image}
+                      booruUrl={image.booruUrl}
+                      imageId={image.id}
+                      imageReps={image.representations}
                       onOpenProfileLink={onOpenProfile}
                       onOpenImageLink={onOpenImage}
                       setIsLoading={setIsLoading}

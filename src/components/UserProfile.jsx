@@ -367,7 +367,14 @@ export const UserProfile = ({
                 style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
               >
                 {profile.description ? (
-                  <ReactMarkdown>{profile.description.replace(/\n/g, '  \n')}</ReactMarkdown>
+                  <CommentBody
+                    urlBack={'../../'}
+                    body={profile.description}
+                    booruUrl={booruUrl}
+                    onOpenImageLink={onOpenImage}
+                    onOpenProfileLink={onOpenProfile}
+                    setIsLoading={setIsLoading}
+                  />
                 ) : (
                   <i>User has not written a description.</i>
                 )}
@@ -529,7 +536,8 @@ export const UserProfile = ({
                             <CommentBody
                               urlBack={'../../'}
                               body={comment.body}
-                              image={{ id: comment.imageId, booruUrl }}
+                              booruUrl={booruUrl}
+                              imageId={comment.imageId}
                               onOpenImageLink={onOpenImage}
                               onOpenProfileLink={onOpenProfile}
                               setIsLoading={setIsLoading}
