@@ -49,9 +49,9 @@ export const Welcome = ({ onClick }) => {
       <div className="position-relative mb-4">
         <img
           src="/icon/icon.png"
-          height={220}
+          height={350}
           alt="Magical icon"
-          className="magical-float img-fluid"
+          className="magical-float"
           style={{ zIndex: 2, position: 'relative' }}
         />
       </div>
