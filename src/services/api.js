@@ -889,13 +889,13 @@ export const toggleAccountStatus = async (accountId, isActive) => {
 /**
  * Background task that syncs gallery pages for multiple connected accounts.
  * @param {Object} [config]
- * @param {string} [query='*']
- * @param {number} [page=1]
- * @param {string[]|null} [allowedBoorus=null]
- * @param {number} [perPage]
- * @param {Account} [account]
- * @param {string} [sd]
- * @param {string} [sf]
+ * @param {string} [config.query='*']
+ * @param {number} [config.page=1]
+ * @param {string[]|null} [config.allowedBoorus=null]
+ * @param {number} [config.perPage]
+ * @param {Account} [config.account]
+ * @param {string} [config.sd='desc']
+ * @param {string} [config.sf='created_at']
  */
 export const syncUserGalleryPages = async ({
   query = '*',
@@ -903,8 +903,8 @@ export const syncUserGalleryPages = async ({
   allowedBoorus = null,
   perPage,
   account,
-  sd,
-  sf,
+  sd = 'desc',
+  sf = 'created_at',
 } = {}) => {
   const allAccounts = !account ? await getActiveAccounts() : [account];
 

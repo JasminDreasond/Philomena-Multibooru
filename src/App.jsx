@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import TinySimpleDice from 'tiny-essentials/libs/TinySimpleDice';
+import { shuffleArray } from 'tiny-essentials/basics';
 import { initDatabase } from './db/connection';
 import {
   syncUserGalleryPages,
@@ -449,6 +450,8 @@ const App = () => {
         setViewingImage(null);
         setViewingProfile(null);
         setSearchQuery('');
+        setSortField('created_at');
+        setSortDirection('desc');
         hasSynced.current = false; // Force recharge the main gallery if necessary
       } else if (path.startsWith('/settings')) {
         setShowSettings(true);
@@ -595,12 +598,13 @@ const App = () => {
       /** @type {ImageResult[]} */
       const trendingResults = await searchImages({
         query: 'first_seen_at.gt:3 days ago',
-        limit: 4,
+        limit: 20,
         allowedBoorus: boorusToUse,
         sf: 'score',
         sd: 'desc',
       });
-      setTrendingImages(trendingResults);
+
+      setTrendingImages(shuffleArray(trendingResults).slice(0, 4));
 
       /** @type {ImageResult[]} */
       const watchedResults = await searchImages({
@@ -638,7 +642,7 @@ const App = () => {
           syncUserGalleryPages({
             query: 'first_seen_at.gt:3 days ago',
             allowedBoorus: boorusToUse,
-            perPage: 4,
+            perPage: 20,
             sf: 'score',
             sd: 'desc',
           }),
@@ -773,7 +777,7 @@ const App = () => {
                 syncUserGalleryPages({
                   query: 'first_seen_at.gt:3 days ago',
                   allowedBoorus: activeUrls,
-                  perPage: 4,
+                  perPage: 20,
                   sf: 'score',
                   sd: 'desc',
                 }),
@@ -928,6 +932,22 @@ const App = () => {
   };
 
   /**
+   * Opens the link search query inside the application, unless it's a middle/ctrl click.
+   * @param {import('react').MouseEvent<HTMLAnchorElement, MouseEvent>} e
+   * @param {string} query
+   * @param {string} sf
+   * @param {string} sd
+   */
+  const handleQuickLinkClick = (e, query, sf, sd) => {
+    if (e.ctrlKey || e.metaKey || e.button === 1) return;
+
+    e.preventDefault();
+    setSortField(sf);
+    setSortDirection(sd);
+    handleSearchSubmit(query);
+  };
+
+  /**
    * @returns {void}
    */
   const goToHome = () => {
@@ -941,7 +961,6 @@ const App = () => {
     hasSynced.current = false;
     window.scrollTo({ top: 0, behavior: 'smooth' });
     handleCloseSettings();
-    refreshHomepage();
   };
 
   /**
@@ -968,7 +987,7 @@ const App = () => {
       <nav className="navbar navbar-expand-lg custom-navbar sticky-top shadow-sm">
         <div className="container-fluid px-4 d-flex align-items-center">
           <a
-            href="#"
+            href="/"
             onClick={(e) => {
               e.preventDefault();
               goToHome();
@@ -1201,12 +1220,17 @@ const App = () => {
                     <div className="card shadow-sm border-0 mb-4">
                       <div className="card-header fw-bold d-flex justify-content-between align-items-center">
                         <span>Trending Images</span>
-                        <button
-                          onClick={() => handleSearchSubmit('first_seen_at.gt:3 days ago')}
+                        <a
+                          href={`${selectedLinkAccount.booruUrl}/search?q=first_seen_at.gt:3%20days%20ago&sf=wilson_score&sd=desc`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) =>
+                            handleQuickLinkClick(e, 'first_seen_at.gt:3 days ago', 'score', 'desc')
+                          }
                           className="btn btn-link text-white text-decoration-none small p-0 align-baseline"
                         >
-                          View All
-                        </button>
+                          View all
+                        </a>
                       </div>
                       <div className="card-body p-3">
                         <ImageGallery
@@ -1255,6 +1279,7 @@ const App = () => {
                         </div>
                         <a
                           href={`${selectedLinkAccount.booruUrl}/search?q=*&sf=score&sd=desc`}
+                          onClick={(e) => handleQuickLinkClick(e, '*', 'score', 'desc')}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="list-group-item list-group-item-action fw-semibold"
@@ -1273,6 +1298,14 @@ const App = () => {
                           href={`${selectedLinkAccount.booruUrl}/search?q=first_seen_at.gt:3%20days%20ago&sf=comment_count&sd=desc`}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={(e) =>
+                            handleQuickLinkClick(
+                              e,
+                              'first_seen_at.gt:3 days ago',
+                              'comments',
+                              'desc',
+                            )
+                          }
                           className="list-group-item list-group-item-action fw-semibold"
                         >
                           🔥 Most Commented-on
@@ -1346,18 +1379,16 @@ const App = () => {
                       <h3 className="mb-0">Watched Images</h3>
                       <button
                         className="btn btn-outline-secondary btn-sm fw-bold"
-                        onClick={() => handleSearchSubmit('my:watched')}
+                        onClick={() => {
+                          setSortField('created_at');
+                          setSortDirection('desc');
+                          handleSearchSubmit('my:watched');
+                        }}
                       >
                         Browse Watched Images
                       </button>
                     </div>
 
-                    <PaginationBar
-                      currentPage={1}
-                      isHomepage={isHomepage}
-                      totalPages={Math.ceil(watchedImages.length / pageLimit) || 1}
-                      onPageChange={() => handleSearchSubmit('my:watched')}
-                    />
                     <ImageGallery
                       gridClass="row-cols-1 row-cols-sm-2 row-cols-md-6 row-cols-lg-7 g-2"
                       imagesList={watchedImages}
