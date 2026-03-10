@@ -523,9 +523,11 @@ const App = () => {
               }
             }
           } else {
+            setIsHomepage(false);
             setIs404(true);
           }
         } else {
+          setIsHomepage(false);
           setIs404(true);
         }
       }
@@ -703,6 +705,19 @@ const App = () => {
 
   const refreshHomepage = () => {
     setIsSearching(true);
+
+    // Failsafe: Ensures we fetch a Featured Image if missing during a soft refresh
+    if (!featuredImage && connectedAccounts && connectedAccounts.length > 0) {
+      const activeAccounts = connectedAccounts.filter((a) => visibleBoorus.includes(a.booruUrl));
+      if (activeAccounts.length > 0) {
+        const acc = activeAccounts[TinySimpleDice.rollArrayIndex(activeAccounts)];
+        getFeaturedImage(acc.booruUrl).then((feat) => {
+          setFeaturedImage(feat ? { account: acc, image: feat } : null);
+          if (!selectedLinkAccount) setSelectedLinkAccount(acc);
+        });
+      }
+    }
+
     executeBackgroundSync(visibleBoorus).finally(() => setIsSearching(false));
   };
 
@@ -781,7 +796,9 @@ const App = () => {
                   if (imgMatch) {
                     const imgData = await fetchSingleImage(acc.booruUrl, acc.apiKey, imgMatch[2]);
                     if (imgData) setViewingImage(imgData);
-                    else setIs404(true);
+                    else {
+                      setIs404(true);
+                    }
                   } else if (profMatch) {
                     const profileData = await fetchProfile(acc.booruUrl, profMatch[2]);
                     if (profileData) {
@@ -790,14 +807,18 @@ const App = () => {
                         username: profileData.name,
                         id: profileData.id,
                       });
-                    } else setIs404(true);
+                    } else {
+                      setIs404(true);
+                    }
                   }
                 } else {
+                  setIsHomepage(false);
                   setIs404(true);
                   skipMainSync = true;
                   isDeepLinkSpecial = true;
                 }
               } else {
+                setIsHomepage(false);
                 setIs404(true);
                 skipMainSync = true;
                 isDeepLinkSpecial = true;
@@ -874,7 +895,16 @@ const App = () => {
     };
 
     setupEnvironment();
-  }, [isDbReady, showSettings, currentPage, searchQuery, isHomepage, sortField, sortDirection]);
+  }, [
+    isDbReady,
+    showSettings,
+    currentPage,
+    searchQuery,
+    isHomepage,
+    sortField,
+    sortDirection,
+    is404,
+  ]);
 
   useEffect(() => {
     const applyThemeScript = () => {
