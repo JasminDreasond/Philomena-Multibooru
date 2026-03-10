@@ -74,6 +74,19 @@ export const SettingsPanel = ({ isDark }) => {
     localStorage.getItem('app_inAppViewer') === 'true',
   );
 
+  /* Plyr Settings */
+  const [plyrAutoplay, setPlyrAutoplay] = useState(
+    localStorage.getItem('app_plyrAutoplay') !== 'false',
+  );
+  const [plyrMuted, setPlyrMuted] = useState(localStorage.getItem('app_plyrMuted') !== 'false');
+  const [plyrLoop, setPlyrLoop] = useState(localStorage.getItem('app_plyrLoop') !== 'false');
+  const [plyrHideControls, setPlyrHideControls] = useState(
+    localStorage.getItem('app_plyrHideControls') !== 'false',
+  );
+  const [plyrStorage, setPlyrStorage] = useState(
+    localStorage.getItem('app_plyrStorage') === 'true',
+  );
+
   /* Global Colors */
   const [customPrimary, setCustomPrimary] = useState(localStorage.getItem('app_primary') || '');
   const [customBg, setCustomBg] = useState(localStorage.getItem('app_bg') || '');
@@ -256,6 +269,16 @@ export const SettingsPanel = ({ isDark }) => {
     const isChecked = e.target.checked;
     setAutoRefreshEnabled(isChecked);
     localStorage.setItem('app_autoRefreshEnabled', isChecked ? 'true' : 'false');
+  };
+
+  /**
+   * @param {string} key
+   * @param {import('react').Dispatch<import('react').SetStateAction<boolean>>} setter
+   * @param {boolean} value
+   */
+  const handlePlyrSettingChange = (key, setter, value) => {
+    setter(value);
+    localStorage.setItem(key, value ? 'true' : 'false');
   };
 
   /**
@@ -1044,6 +1067,97 @@ export const SettingsPanel = ({ isDark }) => {
                     If enabled, the app will automatically fetch new images when you return to the
                     tab after 60 seconds of inactivity.
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card no-anim mt-4">
+              <div className="card-header fw-bold">Video Player (Plyr) Settings</div>
+              <div className="card-body">
+                <div className="form-check form-switch mb-2">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    role="switch"
+                    id="plyrAutoplaySwitch"
+                    checked={plyrAutoplay}
+                    onChange={(e) =>
+                      handlePlyrSettingChange('app_plyrAutoplay', setPlyrAutoplay, e.target.checked)
+                    }
+                  />
+                  <label className="form-check-label fw-semibold" htmlFor="plyrAutoplaySwitch">
+                    Autoplay videos
+                  </label>
+                </div>
+                <div className="form-check form-switch mb-2">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    role="switch"
+                    id="plyrMutedSwitch"
+                    checked={plyrMuted}
+                    onChange={(e) =>
+                      handlePlyrSettingChange('app_plyrMuted', setPlyrMuted, e.target.checked)
+                    }
+                  />
+                  <label className="form-check-label fw-semibold" htmlFor="plyrMutedSwitch">
+                    Start muted
+                  </label>
+                </div>
+                <div className="form-check form-switch mb-2">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    role="switch"
+                    id="plyrLoopSwitch"
+                    checked={plyrLoop}
+                    onChange={(e) =>
+                      handlePlyrSettingChange('app_plyrLoop', setPlyrLoop, e.target.checked)
+                    }
+                  />
+                  <label className="form-check-label fw-semibold" htmlFor="plyrLoopSwitch">
+                    Loop videos
+                  </label>
+                </div>
+                <div className="form-check form-switch mb-2">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    role="switch"
+                    id="plyrHideControlsSwitch"
+                    checked={plyrHideControls}
+                    onChange={(e) =>
+                      handlePlyrSettingChange(
+                        'app_plyrHideControls',
+                        setPlyrHideControls,
+                        e.target.checked,
+                      )
+                    }
+                  />
+                  <label className="form-check-label fw-semibold" htmlFor="plyrHideControlsSwitch">
+                    Hide controls automatically
+                  </label>
+                </div>
+                <div
+                  className="form-check form-switch mt-3 pt-3 border-top"
+                  style={{ borderColor: 'var(--app-border)' }}
+                >
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    role="switch"
+                    id="plyrStorageSwitch"
+                    checked={plyrStorage}
+                    onChange={(e) =>
+                      handlePlyrSettingChange('app_plyrStorage', setPlyrStorage, e.target.checked)
+                    }
+                  />
+                  <label
+                    className="form-check-label fw-semibold text-primary"
+                    htmlFor="plyrStorageSwitch"
+                  >
+                    Enable Plyr Local Storage (Remembers volume and player settings)
+                  </label>
                 </div>
               </div>
             </div>

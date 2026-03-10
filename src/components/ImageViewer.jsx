@@ -114,6 +114,12 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
   const uploadDate = image ? image.createdAt : new Date();
   const uploaderName = image ? (image.uploader ?? 'Background Pony') : '';
 
+  const plyrAutoplay = localStorage.getItem('app_plyrAutoplay') !== 'false';
+  const plyrMuted = localStorage.getItem('app_plyrMuted') !== 'false';
+  const plyrLoop = localStorage.getItem('app_plyrLoop') !== 'false';
+  const plyrHideControls = localStorage.getItem('app_plyrHideControls') !== 'false';
+  const plyrStorage = localStorage.getItem('app_plyrStorage') === 'true';
+
   // Smart Auto Refresh Listener
   useEffect(() => {
     const onRefresh = () => setRefreshTrigger((prev) => prev + 1);
@@ -124,17 +130,17 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
   useEffect(() => {
     if (videoRef.current && isVideo) {
       const p = new Plyr(videoRef.current, {
-        autoplay: true,
-        muted: true,
-        loop: { active: true },
-        hideControls: true,
+        autoplay: plyrAutoplay,
+        muted: plyrMuted,
+        loop: { active: plyrLoop },
+        hideControls: plyrHideControls,
         fullscreen: {
           enabled: true,
           fallback: true,
           iosNative: true,
           container: null,
         },
-        storage: { enabled: false, key: 'plyr' },
+        storage: { enabled: plyrStorage, key: 'plyr' },
       });
       setPlayer(p);
     }
@@ -422,9 +428,9 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
             src={image.representations.full}
             className="booru-video-player"
             controls
-            autoPlay
-            loop
-            muted
+            autoPlay={plyrAutoplay}
+            loop={plyrLoop}
+            muted={plyrMuted}
           />
         ) : (
           <img
