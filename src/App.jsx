@@ -176,8 +176,6 @@ const PaginationBar = ({ currentPage, isHomepage, totalPages, onPageChange }) =>
   /** @type {(number|string)[]} */
   const pages = getPageNumbers(totalPages, currentPage);
 
-  if (totalPages <= 1) return null;
-
   return (
     <div className="d-flex flex-column flex-md-row justify-content-center align-items-center my-4">
       <ul className="pagination mb-0 me-md-3">
