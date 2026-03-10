@@ -8,6 +8,8 @@ import {
   fixImageObj,
   getActiveAccounts,
   clearImageCache,
+  fetchSingleImage,
+  fetchProfile,
 } from './services/api';
 
 import { SearchBar } from './components/SearchBar';
@@ -280,7 +282,7 @@ const App = () => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isDark, setIsDark] = useState(false);
 
-  /** @type {[{ booruUrl: string, username: string, id: number }|null, import('react').Dispatch<import('react').SetStateAction<{ booruUrl: string, username: string }|null>>]} */
+  /** @type {[{ booruUrl: string, username: string, id: number }|null, import('react').Dispatch<import('react').SetStateAction<{ booruUrl: string, username: string, id: number }|null>>]} */
   const [viewingProfile, setViewingProfile] = useState(null);
 
   /** @type {[string[], import('react').Dispatch<import('react').SetStateAction<string[]>>]} */
@@ -305,6 +307,102 @@ const App = () => {
   const booruDropdownRef = useRef(null);
   const lastSyncedBoorus = useRef(visibleBoorus);
   const latestVisibleBoorus = useRef(visibleBoorus);
+
+  // Synchronizes internal App State outbound to the URL bar
+  useEffect(() => {
+    // The isFirstLoad.current lock ensures that the application does not delete the URL
+    // original user before processing the deep link!
+    if (!isDbReady || isFirstLoad.current) return;
+
+    let newPath = '/';
+    let newSearch = '';
+
+    if (showSettings) {
+      newPath = '/settings';
+      if (window.location.search.includes('tab=')) newSearch = window.location.search;
+    } else if (viewingProfile) {
+      const host = new URL(viewingProfile.booruUrl).hostname;
+      newPath = `/${host}/profiles/${viewingProfile.id}`;
+    } else if (viewingImage) {
+      const host = new URL(viewingImage.booruUrl).hostname;
+      newPath = `/${host}/images/${viewingImage.id}`;
+    } else if (!isHomepage) {
+      newPath = '/search';
+      if (searchQuery && searchQuery !== '*') {
+        newSearch = `?q=${encodeURIComponent(searchQuery)}`;
+      }
+    }
+
+    const targetUrl = newPath + newSearch;
+    const currentUrl = window.location.pathname + window.location.search;
+
+    // Push state only if it differs from the current active route
+    if (currentUrl !== targetUrl) {
+      window.history.pushState(null, '', targetUrl);
+    }
+  }, [showSettings, viewingProfile, viewingImage, isHomepage, searchQuery, isDbReady]);
+
+  // Handle Forward/Back button navigation internally
+  useEffect(() => {
+    const handlePopState = async () => {
+      const path = window.location.pathname;
+      const params = new URLSearchParams(window.location.search);
+
+      if (path === '/' || path === '') {
+        setIsHomepage(true);
+        setShowSettings(false);
+        setViewingImage(null);
+        setViewingProfile(null);
+        setSearchQuery('');
+        hasSynced.current = false; // Force recharge the main gallery if necessary
+      } else if (path.startsWith('/settings')) {
+        setShowSettings(true);
+      } else if (path.startsWith('/search')) {
+        const q = params.get('q') || '*';
+        setSearchQuery(q);
+        setIsHomepage(false);
+        setViewingImage(null);
+        setViewingProfile(null);
+        setShowSettings(false);
+        hasSynced.current = false; // Force reload the search
+      } else {
+        const imgMatch = path.match(/^\/([^/]+)\/images\/(\d+)/);
+        const profMatch = path.match(/^\/([^/]+)\/profiles\/([^/]+)/);
+
+        if (imgMatch || profMatch) {
+          const accounts = await getActiveAccounts();
+          const host = (imgMatch || profMatch)[1];
+          const acc = accounts.find((a) => new URL(a.booruUrl).hostname === host);
+
+          if (acc) {
+            setIsHomepage(false);
+            setShowSettings(false);
+
+            if (imgMatch) {
+              const imgData = await fetchSingleImage(acc.booruUrl, acc.apiKey, imgMatch[2]);
+              if (imgData) {
+                setViewingProfile(null);
+                setViewingImage(imgData);
+              }
+            } else if (profMatch) {
+              const profileData = await fetchProfile(acc.booruUrl, profMatch[2]);
+              if (profileData) {
+                setViewingImage(null);
+                setViewingProfile({
+                  booruUrl: acc.booruUrl,
+                  username: profileData.name,
+                  id: profileData.id,
+                });
+              }
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Updates references and localStorage visual without causing immediate side-effects
   useEffect(() => {
@@ -475,20 +573,62 @@ const App = () => {
             setVisibleBoorus(activeUrls);
           }
 
-          /** @type {string} */
-          const queryToUse = searchQuery.trim() === '' ? '*' : searchQuery;
-          /** @type {boolean} */
-          const isSpecialSearch = queryToUse !== '*';
+          // === DEEP LINK PARSING ON INITIAL LOAD ===
+          const path = window.location.pathname;
+          const params = new URLSearchParams(window.location.search);
+          let initialQuery = searchQuery.trim() === '' ? '*' : searchQuery;
+          let isDeepLinkSpecial = false;
 
+          if (isFirstLoad.current) {
+            if (path.startsWith('/settings')) {
+              setShowSettings(true);
+              isDeepLinkSpecial = true;
+            } else if (path.startsWith('/search')) {
+              const q = params.get('q') || '*';
+              setSearchQuery(q);
+              initialQuery = q;
+              setIsHomepage(false);
+              isDeepLinkSpecial = true;
+            } else if (path !== '/' && path !== '') {
+              const imgMatch = path.match(/^\/([^/]+)\/images\/(\d+)/);
+              const profMatch = path.match(/^\/([^/]+)\/profiles\/([^/]+)/);
+
+              if (imgMatch || profMatch) {
+                const host = (imgMatch || profMatch)[1];
+                const acc = accounts.find((a) => new URL(a.booruUrl).hostname === host);
+
+                if (acc) {
+                  setIsHomepage(false);
+                  isDeepLinkSpecial = true;
+
+                  if (imgMatch) {
+                    const imgData = await fetchSingleImage(acc.booruUrl, acc.apiKey, imgMatch[2]);
+                    if (imgData) setViewingImage(imgData);
+                  } else if (profMatch) {
+                    const profileData = await fetchProfile(acc.booruUrl, profMatch[2]);
+                    if (profileData) {
+                      setViewingProfile({
+                        booruUrl: acc.booruUrl,
+                        username: profileData.name,
+                        id: profileData.id,
+                      });
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          const isSpecialSearch = initialQuery !== '*';
           const syncPromises = [
             syncUserGalleryPages({
-              query: queryToUse,
+              query: initialQuery,
               page: currentPage,
               allowedBoorus: activeUrls,
             }),
           ];
 
-          if (!isSpecialSearch && isHomepage) {
+          if (!isSpecialSearch && isHomepage && !isDeepLinkSpecial) {
             syncPromises.push(
               syncUserGalleryPages({
                 query: 'first_seen_at.gt:3 days ago',
@@ -507,7 +647,7 @@ const App = () => {
           setPageLimit(mainSync.syncLimit);
           setTotalPages(Math.max(1, Math.ceil(mainSync.totalCount / mainSync.syncLimit)));
 
-          if (!isSpecialSearch && isHomepage && activeUrls.length > 0) {
+          if (!isSpecialSearch && isHomepage && !isDeepLinkSpecial && activeUrls.length > 0) {
             /** @type {Account[]} */
             const filteredAccounts = accounts.filter((a) => activeUrls.includes(a.booruUrl));
             if (filteredAccounts.length > 0) {
@@ -522,7 +662,7 @@ const App = () => {
           lastSyncedBoorus.current = activeUrls; // Register initial sync
           latestVisibleBoorus.current = activeUrls;
 
-          await loadLocalData(mainSync.syncLimit, currentPage, queryToUse, activeUrls);
+          await loadLocalData(mainSync.syncLimit, currentPage, initialQuery, activeUrls);
           isFirstLoad.current = false;
         } finally {
           setIsSearching(false);
@@ -571,7 +711,7 @@ const App = () => {
           // Dispatches a global event that ImageViewer and UserProfile can listen to
           window.dispatchEvent(new CustomEvent('appFocusRefresh'));
 
-          // Only syncs the main feed if we are not actively looking at a modal component
+          // Dispatches a global event that ImageViewer and UserProfile can listen to
           if (!viewingProfile && !viewingImage) {
             setIsSearching(true);
             executeBackgroundSync(visibleBoorus).finally(() => setIsSearching(false));
@@ -763,7 +903,7 @@ const App = () => {
                         onClick={() => {
                           const allAccounts = connectedAccounts.map((a) => a.booruUrl);
                           setVisibleBoorus(allAccounts);
-                          applyBooruChanges(allAccounts); // Apply immediately!
+                          applyBooruChanges(allAccounts);
                         }}
                       >
                         Select All
@@ -774,7 +914,7 @@ const App = () => {
                         className="dropdown-item fw-bold text-danger"
                         onClick={() => {
                           setVisibleBoorus([]);
-                          applyBooruChanges([]); // Apply immediately!
+                          applyBooruChanges([]);
                         }}
                       >
                         Deselect All
