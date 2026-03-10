@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "bootstrap": "^5.3.8",
+    "buffer": "^6.0.3",
     "jsstore": "^4.9.0",
     "plyr": "^3.8.4",
     "react": "^19.2.0",
