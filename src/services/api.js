@@ -663,8 +663,17 @@ export const searchImages = async ({
   const fixedLimit = limit > 1000 ? 1000 : limit;
   /** @type {string} */
   const normalizedQuery = normalizeQueryString(query);
+
+  // Calculate total cached items to adjust pagination gracefully when deep-linking
+  const totalCached = await countImages(query, allowedBoorus);
+
   /** @type {number} */
-  const skipCount = (page - 1) * fixedLimit;
+  let skipCount = (page - 1) * fixedLimit;
+
+  // Clamps the skip count to the maximum available items if user jumped to a far page
+  if (totalCached > 0 && skipCount >= totalCached) {
+    skipCount = Math.max(0, Math.floor((totalCached - 1) / fixedLimit) * fixedLimit);
+  }
 
   /** @type {string} */
   let sortField = 'createdAt';
