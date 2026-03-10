@@ -3,9 +3,9 @@ import { dbConnection } from '../db/connection';
 
 /**
  * Helper function to throw standardized and coherent API validation errors.
- * @param {string} context
- * @param {string} field
- * @throws {Error}
+ * @param {string} context The area or entity where the error occurred.
+ * @param {string} field The specific field that failed validation.
+ * @throws {Error} Throws a formatted Philomena API error.
  */
 const throwApiError = (context, field) => {
   throw new Error(
@@ -15,10 +15,11 @@ const throwApiError = (context, field) => {
 
 /**
  * Reusable fetch function for Philomena endpoints.
- * @param {string} booruUrl
- * @param {string} endpoint
- * @param {string} apiKey
- * @param {Record<string, any>} params
+ * @param {string} booruUrl The base URL of the booru instance.
+ * @param {string} endpoint The specific API endpoint to call.
+ * @param {string} apiKey The user's authentication key.
+ * @param {Record<string, any>} params Additional query parameters for the request.
+ * @returns {Promise<any>} The parsed JSON response from the server.
  */
 export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) => {
   const queryParams = new URLSearchParams({ ...params, key: apiKey }).toString();
@@ -37,45 +38,45 @@ export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) =>
 /**
  * Represents a social or external link attached to a user's profile.
  * @typedef {Object} UserProfileLink
- * @property {string} state
- * @property {Date} createdAt
- * @property {number} userId
- * @property {number} tagId
+ * @property {string} state The verification state of the link.
+ * @property {Date} createdAt The timestamp when the link was created.
+ * @property {number} userId The ID of the user who owns the link.
+ * @property {number} tagId The ID of the associated tag for this link.
  */
 
 /**
  * Represents a badge or award given to a user.
  * @typedef {Object} UserProfileAward
- * @property {string} imageUrl
- * @property {Date} awardedOn
- * @property {string} title
- * @property {string|null} label
- * @property {number} id
+ * @property {string} imageUrl The URL to the badge icon.
+ * @property {Date} awardedOn The date the award was granted.
+ * @property {string} title The display title of the award.
+ * @property {string|null} label An optional label or description for the award.
+ * @property {number} id The unique identifier of the award instance.
  */
 
 /**
  * Contains all parsed and formatted information about a booru user's profile.
  * @typedef {Object} UserProfileData
- * @property {number} id
- * @property {number} uploadsCount
- * @property {number} commentsCount
- * @property {number} postsCount
- * @property {number} topicsCount
- * @property {string} name
- * @property {string|null} description
- * @property {string} role
- * @property {string} slug
- * @property {string|null} avatarUrl
- * @property {Date} createdAt
- * @property {UserProfileLink[]} links
- * @property {UserProfileAward[]} awards
+ * @property {number} id Unique user identifier.
+ * @property {number} uploadsCount Total number of images uploaded by the user.
+ * @property {number} commentsCount Total number of comments posted.
+ * @property {number} postsCount Total number of forum posts.
+ * @property {number} topicsCount Total number of forum topics created.
+ * @property {string} name The display name of the user.
+ * @property {string|null} description The user's profile biography.
+ * @property {string} role The administrative or user role level.
+ * @property {string} slug The URL-friendly version of the username.
+ * @property {string|null} avatarUrl URL to the user's profile picture.
+ * @property {Date} createdAt Date when the account was registered.
+ * @property {UserProfileLink[]} links List of external social connections.
+ * @property {UserProfileAward[]} awards List of badges earned by the user.
  */
 
 /**
  * Fetches and parses a user's profile data from the specified booru.
- * @param {string} booruUrl
- * @param {number} userId
- * @returns {Promise<UserProfileData|null>}
+ * @param {string} booruUrl The base URL of the booru.
+ * @param {number} userId The ID of the user to retrieve.
+ * @returns {Promise<UserProfileData|null>} The formatted profile data or null on failure.
  */
 export const fetchProfile = async (booruUrl, userId) => {
   try {
@@ -154,32 +155,32 @@ export const fetchProfile = async (booruUrl, userId) => {
 /**
  * Represents a single user comment retrieved from the booru.
  * @typedef {Object} CommentData
- * @property {string} author
- * @property {string} avatar
- * @property {string} body
- * @property {Date} createdAt
- * @property {string|null} editReason
- * @property {Date|null} editedAt
- * @property {number} id
- * @property {number} imageId
- * @property {Date} updatedAt
- * @property {number|null} userId
+ * @property {string} author The username of the commenter.
+ * @property {string} avatar The URL to the commenter's avatar.
+ * @property {string} body The markdown content of the comment.
+ * @property {Date} createdAt The timestamp of creation.
+ * @property {string|null} editReason The reason provided for the last edit.
+ * @property {Date|null} editedAt The timestamp of the last edit, if any.
+ * @property {number} id Unique identifier for the comment.
+ * @property {number} imageId The ID of the image this comment belongs to.
+ * @property {Date} updatedAt The timestamp of the last update.
+ * @property {number|null} userId The ID of the user who posted the comment.
  */
 
 /**
  * A wrapper object containing a paginated list of comments and the total count.
  * @typedef {Object} CommentObj
- * @property {number} total
- * @property {CommentData[]} comments
+ * @property {number} total The total number of comments matching the query.
+ * @property {CommentData[]} comments The list of comment data objects.
  */
 
 /**
  * Fetches and parses comments based on a specific query.
- * @param {string} booruUrl
- * @param {string} apiKey
- * @param {string} [query='*']
- * @param {number} [page=1]
- * @returns {Promise<CommentObj>}
+ * @param {string} booruUrl Base URL of the booru.
+ * @param {string} apiKey User API key.
+ * @param {string} [query='*'] Search query for comments.
+ * @param {number} [page=1] Page number for pagination.
+ * @returns {Promise<CommentObj>} Parsed comments and metadata.
  */
 export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => {
   const result = await fetchPhilomena(booruUrl, 'search/comments', apiKey, { q: query, page });
@@ -223,76 +224,76 @@ export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => 
 
 /**
  * Represents the type of interaction a user had with an image.
- * @typedef {'faved'|'upVote'|'downVote'|null} InteractionValue
+ * @typedef {'faved'|'upVote'|null} InteractionValue
  */
 
 /**
  * Represents a user's interaction record for a specific image on a specific booru.
  * @typedef {Object} InteractionObj
- * @property {string} id
- * @property {string} booruUrl
- * @property {number} imageId
- * @property {InteractionValue} value
+ * @property {string} id Unique composite key for the interaction.
+ * @property {string} booruUrl The source booru URL.
+ * @property {number} imageId The ID of the image.
+ * @property {InteractionValue} value The type of interaction performed.
  */
 
 /**
  * Contains URLs for various sizes and formats of a processed image.
  * @typedef {Object} ImageRepresentations
- * @property {string} full
- * @property {string} small
- * @property {string} thumb_tiny
- * @property {string} thumb_small
- * @property {string} thumb
- * @property {string} medium
- * @property {string} large
- * @property {string} tall
+ * @property {string} full Original full-size image URL.
+ * @property {string} small Small version URL.
+ * @property {string} thumb_tiny Tiny thumbnail URL.
+ * @property {string} thumb_small Small thumbnail URL.
+ * @property {string} thumb Standard thumbnail URL.
+ * @property {string} medium Medium size URL.
+ * @property {string} large Large size URL.
+ * @property {string} tall Tall version URL.
  */
 
 /**
  * Represents the color or light intensity values for different quadrants of an image.
  * @typedef {Object} ImageIntensities
- * @property {number} ne
- * @property {number} nw
- * @property {number} se
- * @property {number} sw
+ * @property {number} ne Northeast quadrant intensity.
+ * @property {number} nw Northwest quadrant intensity.
+ * @property {number} se Southeast quadrant intensity.
+ * @property {number} sw Southwest quadrant intensity.
  */
 
 /**
  * Represents the comprehensive data of a single image parsed from the API.
  * @typedef {Object} ImageObj
- * @property {number} id
- * @property {string} booruUrl
- * @property {string} name
- * @property {string[]} tags
- * @property {string[]} sourceUrls
- * @property {number} faves
- * @property {number} size
- * @property {number|null} uploaderId
- * @property {string} description
- * @property {string} mimeType
- * @property {number} downvotes
- * @property {number} upvotes
- * @property {number} origSize
- * @property {ImageRepresentations} representations
- * @property {number} updatedAt
- * @property {number} createdAt
- * @property {number} firstSeenAt
- * @property {string|null} sha512Hash
- * @property {string|null} uploader
- * @property {string|null} origSha512Hash
- * @property {number} hiddenFromUsers
- * @property {number} spoilered
- * @property {number} processed
- * @property {number} thumbnailsGenerated
- * @property {number} animated
- * @property {number} aspectRatio
- * @property {number|null} duplicateOf
- * @property {string|null} deletionReason
- * @property {number} height
- * @property {number} width
- * @property {string} sourceUrl
- * @property {number} wilsonScore
- * @property {ImageIntensities|null} intensities
+ * @property {number} id The image's unique ID.
+ * @property {string} booruUrl The source booru URL.
+ * @property {string} name The filename or title.
+ * @property {string[]} tags List of tags associated with the image.
+ * @property {string[]} sourceUrls List of source links.
+ * @property {number} faves Number of favorites.
+ * @property {number} size File size in bytes.
+ * @property {number|null} uploaderId ID of the uploader.
+ * @property {string} description Image description markdown.
+ * @property {string} mimeType The file MIME type.
+ * @property {number} downvotes Number of downvotes.
+ * @property {number} upvotes Number of upvotes.
+ * @property {number} origSize Original file size before processing.
+ * @property {ImageRepresentations} representations Object containing different image sizes.
+ * @property {number} updatedAt Unix timestamp of the last update.
+ * @property {number} createdAt Unix timestamp of creation.
+ * @property {number} firstSeenAt Unix timestamp of when the image was first indexed.
+ * @property {string|null} sha512Hash SHA512 hash of the file.
+ * @property {string|null} uploader Username of the uploader.
+ * @property {string|null} origSha512Hash Original SHA512 hash.
+ * @property {number} hiddenFromUsers Binary flag (0/1) for hidden status.
+ * @property {number} spoilered Binary flag (0/1) for spoiler status.
+ * @property {number} processed Binary flag (0/1) for processing status.
+ * @property {number} thumbnailsGenerated Binary flag (0/1) for thumbnail status.
+ * @property {number} animated Binary flag (0/1) for animation status.
+ * @property {number} aspectRatio The width/height ratio.
+ * @property {number|null} duplicateOf ID of the original image if this is a duplicate.
+ * @property {string|null} deletionReason Reason for deletion if applicable.
+ * @property {number} height Pixel height.
+ * @property {number} width Pixel width.
+ * @property {string} sourceUrl Primary source URL.
+ * @property {number} wilsonScore Calculated popularity score.
+ * @property {ImageIntensities|null} intensities Brightness data for the image.
  */
 
 /**
@@ -302,14 +303,14 @@ export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => 
 
 /**
  * Fetches images from the booru API using a search query and automatically applies the user's selected filter.
- * @param {string} booruUrl
- * @param {string} apiKey
- * @param {string} query
- * @param {number} [page]
- * @param {number} [perPage]
- * @param {string} [sd]
- * @param {string} [sf]
- * @returns {Promise<{ total: number; interactions: any[]; images: any[] }>}
+ * @param {string} booruUrl The source booru.
+ * @param {string} apiKey Authentication key.
+ * @param {string} query Search query string.
+ * @param {number} [page] Page number.
+ * @param {number} [perPage] Items per page.
+ * @param {string} [sd] Sort direction ('asc' or 'desc').
+ * @param {string} [sf] Sort field (e.g., 'created_at').
+ * @returns {Promise<{ total: number; interactions: any[]; images: any[] }>} Raw API response data.
  */
 const searchImagesApi = async (booruUrl, apiKey, query, page, perPage, sd, sf) => {
   /** @type {Record<string, any>} */
@@ -337,8 +338,8 @@ const searchImagesApi = async (booruUrl, apiKey, query, page, perPage, sd, sf) =
 
 /**
  * Normalizes a query string by sorting tags alphabetically to ensure consistent caching.
- * @param {string} rawQuery
- * @returns {string}
+ * @param {string} rawQuery The original query string.
+ * @returns {string} The normalized query string.
  */
 const normalizeQueryString = (rawQuery) => {
   if (rawQuery === '*' || rawQuery.trim() === '') return '*';
@@ -353,14 +354,14 @@ const normalizeQueryString = (rawQuery) => {
 /**
  * Represents the global application configuration stored in the local database.
  * @typedef {Object} SystemSettings
- * @property {number} id
- * @property {number} maxItems
- * @property {number} persistentStorage
+ * @property {number} id Fixed ID (usually 1) for the settings record.
+ * @property {number} maxItems Maximum number of images to keep in local storage.
+ * @property {number} persistentStorage Flag (0/1) indicating if cache cleaning should be skipped.
  */
 
 /**
  * Retrieves the global system settings from the local database.
- * @returns {Promise<SystemSettings>}
+ * @returns {Promise<SystemSettings>} The current system settings.
  */
 export const getSystemSettings = async () => {
   /** @type {SystemSettings[]} */
@@ -375,8 +376,8 @@ export const getSystemSettings = async () => {
 
 /**
  * Updates the global system settings in the local database.
- * @param {number} maxItems
- * @param {number} persistentStorage
+ * @param {number} maxItems New limit for stored images.
+ * @param {number} persistentStorage New persistence state (0/1).
  * @returns {Promise<void>}
  */
 export const updateSystemSettings = async (maxItems, persistentStorage) => {
@@ -388,12 +389,13 @@ export const updateSystemSettings = async (maxItems, persistentStorage) => {
 };
 
 /**
+ * Internal tracking for total images per query to manage pagination.
  * @typedef {Object} TotalImagesCounter
- * @property {string} id
- * @property {string} booruUrl
- * @property {string} query
- * @property {number} total
- * @property {number} updatedAt
+ * @property {string} id Unique identifier for the counter (booru + query).
+ * @property {string} booruUrl The associated booru URL.
+ * @property {string} query The normalized search query.
+ * @property {number} total The total count reported by the API.
+ * @property {number} updatedAt Timestamp of the last update.
  */
 
 /**
@@ -465,16 +467,17 @@ const enforceStorageLimit = async () => {
 /**
  * Represents a cached search query linked to specific images in the database.
  * @typedef {Object} QueryItem
- * @property {string} id
- * @property {number} imageId
- * @property {number} createdAt
- * @property {string} query
+ * @property {string} id Unique key for the query-image relationship.
+ * @property {number} imageId The ID of the associated image.
+ * @property {number} createdAt The timestamp when the image was created (for sorting).
+ * @property {string} query The normalized query string.
  */
 
 /**
  * Utility function to validate arrays and their elements in API responses.
- * @param {any[]} item
- * @param {string} itemType
+ * @param {any[]} item The array to check.
+ * @param {string} itemType The expected type of each element.
+ * @returns {any[]} The validated array.
  */
 const checkArray = (item, itemType) => {
   if (!Array.isArray(item) || !item.every((i) => typeof i === itemType)) {
@@ -485,8 +488,9 @@ const checkArray = (item, itemType) => {
 
 /**
  * Utility function to validate primitive items in API responses.
- * @param {any} item
- * @param {string} itemType
+ * @param {any} item The item to check.
+ * @param {string} itemType The expected type.
+ * @returns {any} The validated item.
  */
 const checkItem = (item, itemType) => {
   if (typeof item !== itemType) {
@@ -499,8 +503,9 @@ const checkItem = (item, itemType) => {
 
 /**
  * Parses raw image data from the Philomena API into the format required by the local database.
- * @param {string} booruUrl
- * @param {Record<string, any>} img
+ * @param {string} booruUrl The source booru URL.
+ * @param {Record<string, any>} img Raw image object from API.
+ * @returns {ImageObj} Formatted and validated image object.
  */
 export const parseImageData = (booruUrl, img) => ({
   id: img.id,
@@ -559,7 +564,8 @@ export const parseImageData = (booruUrl, img) => ({
 
 /**
  * Normalizes an Image object restoring boolean fields.
- * @param {Record<string, any>} img
+ * @param {Record<string, any>} img The database image record (using 0/1).
+ * @returns {Record<string, any>} The object with restored boolean types.
  */
 export const fixImageObj = (img) => {
   img.animated = img.animated ? true : false;
@@ -570,12 +576,14 @@ export const fixImageObj = (img) => {
   return img;
 };
 
-/** @type {Record<string, number>} */
+/** @type {Record<string, number>} Internal counter for sync operations per booru. */
 const syncTimes = {};
 
 /**
- * @param {{ total: number; interactions: any[]; images: any[] }} data
- * @returns {InteractionObj[]}
+ * Formats interaction data from an API response into local InteractionObj records.
+ * @param {string} booruUrl The source booru URL.
+ * @param {{ total: number; interactions: any[]; images: any[] }} data The API response data.
+ * @returns {InteractionObj[]} List of formatted interactions.
  */
 const getInteractions = (booruUrl, data) => {
   /** @type {InteractionObj[]} */
@@ -614,13 +622,14 @@ const getInteractions = (booruUrl, data) => {
 
 /**
  * Downloads a page of images from the specified booru and inserts it into the local IndexedDB.
- * @param {string} booruUrl
- * @param {string} apiKey
- * @param {string} [query='*']
- * @param {number} [page=1]
- * @param {number} [perPage]
- * @param {string} [sd]
- * @param {string} [sf]
+ * @param {string} booruUrl The booru instance URL.
+ * @param {string} apiKey The user's API key.
+ * @param {string} [query='*'] The search query.
+ * @param {number} [page=1] The page number to fetch.
+ * @param {number} [perPage] Results per page.
+ * @param {string} [sd] Sort direction.
+ * @param {string} [sf] Sort field.
+ * @returns {Promise<any>} The raw data returned by the API.
  */
 const syncGalleryPage = async (
   booruUrl,
@@ -687,14 +696,14 @@ const syncGalleryPage = async (
 
 /**
  * Queries the local IndexedDB for images that match a given search string.
- * @param {Object} config
- * @param {string} [config.query='*']
- * @param {number} [config.limit=50]
- * @param {number} [config.page=1]
- * @param {string[]|null} [config.allowedBoorus=null]
- * @param {string} [config.sd='desc']
- * @param {string} [config.sf='created_at']
- * @returns {Promise<ImageResult[]>}
+ * @param {Object} config Configuration object.
+ * @param {string} [config.query='*'] Filter query.
+ * @param {number} [config.limit=50] Result limit.
+ * @param {number} [config.page=1] Page number.
+ * @param {string[]|null} [config.allowedBoorus=null] List of boorus to include.
+ * @param {string} [config.sd='desc'] Sort direction.
+ * @param {string} [config.sf='created_at'] Sort field.
+ * @returns {Promise<ImageResult[]>} The list of matching images from local DB.
  */
 export const searchImages = async ({
   query = '*',
@@ -858,9 +867,9 @@ export const searchImages = async ({
 
 /**
  * Returns the total count of images in the database for a specific query.
- * @param {string} query
- * @param {string[]|null} [allowedBoorus=null]
- * @returns {Promise<number>}
+ * @param {string} query Search query to count.
+ * @param {string[]|null} [allowedBoorus=null] Optional booru whitelist.
+ * @returns {Promise<number>} Total items count.
  */
 export const countImages = async (query = '*', allowedBoorus = null) => {
   /** @type {string} */
@@ -883,15 +892,15 @@ export const countImages = async (query = '*', allowedBoorus = null) => {
 /**
  * Represents a connected booru account and its API credentials.
  * @typedef {Object} Account
- * @property {number} id
- * @property {string} booruUrl
- * @property {string} apiKey
- * @property {number} isActive
+ * @property {number} id Internal database ID.
+ * @property {string} booruUrl The booru instance URL.
+ * @property {string} apiKey User's API key for this booru.
+ * @property {number} isActive Flag (0/1) for account enabled status.
  */
 
 /**
  * Fetches all active accounts stored in the local database.
- * @returns {Promise<Account[]>}
+ * @returns {Promise<Account[]>} List of active accounts.
  */
 export const getActiveAccounts = async () => {
   return await dbConnection.select({
@@ -904,8 +913,8 @@ export const getActiveAccounts = async () => {
 
 /**
  * Adds a new booru account to the local database.
- * @param {string} booruUrl
- * @param {string} apiKey
+ * @param {string} booruUrl URL of the booru.
+ * @param {string} apiKey API key for authentication.
  * @returns {Promise<void>}
  */
 export const addAccount = async (booruUrl, apiKey) => {
@@ -926,8 +935,8 @@ export const addAccount = async (booruUrl, apiKey) => {
 
 /**
  * Toggles the active status of an account in the local database.
- * @param {number} accountId
- * @param {number|boolean} isActive
+ * @param {number} accountId ID of the account.
+ * @param {number|boolean} isActive New active state.
  * @returns {Promise<void>}
  */
 export const toggleAccountStatus = async (accountId, isActive) => {
@@ -944,14 +953,15 @@ export const toggleAccountStatus = async (accountId, isActive) => {
 
 /**
  * Background task that syncs gallery pages for multiple connected accounts.
- * @param {Object} [config]
- * @param {string} [config.query='*']
- * @param {number} [config.page=1]
- * @param {string[]|null} [config.allowedBoorus=null]
- * @param {number} [config.perPage=50]
- * @param {Account} [config.account]
- * @param {string} [config.sd='desc']
- * @param {string} [config.sf='created_at']
+ * @param {Object} [config] Configuration object.
+ * @param {string} [config.query='*'] Search query.
+ * @param {number} [config.page=1] Page number.
+ * @param {string[]|null} [config.allowedBoorus=null] Boorus to sync.
+ * @param {number} [config.perPage=50] Limit per booru.
+ * @param {Account} [config.account] Specific account to sync.
+ * @param {string} [config.sd='desc'] Sort direction.
+ * @param {string} [config.sf='created_at'] Sort field.
+ * @returns {Promise<{ accounts: Account[]; syncLimit: number; totalCount: number; }>} Sync operation summary.
  */
 export const syncUserGalleryPages = async ({
   query = '*',
@@ -990,7 +1000,7 @@ export const syncUserGalleryPages = async ({
 
 /**
  * Fetches all registered accounts from the database, including inactive ones.
- * @returns {Promise<Account[]>}
+ * @returns {Promise<Account[]>} All accounts in DB.
  */
 export const getAllAccounts = async () => {
   return await dbConnection.select({
@@ -1000,8 +1010,8 @@ export const getAllAccounts = async () => {
 
 /**
  * Fetches the API key for a specific booru URL.
- * @param {string} booruUrl
- * @returns {Promise<string|null>}
+ * @param {string} booruUrl Target booru URL.
+ * @returns {Promise<string|null>} The API key or null if not found.
  */
 export const getAccountBooruApi = async (booruUrl) => {
   const accounts = await dbConnection.select({
@@ -1015,8 +1025,8 @@ export const getAccountBooruApi = async (booruUrl) => {
 
 /**
  * Fetches the complete account details for a specific booru URL.
- * @param {string} booruUrl
- * @returns {Promise<Account|null>}
+ * @param {string} booruUrl Target booru URL.
+ * @returns {Promise<Account|null>} The account object or null if not found.
  */
 export const getAccountBooru = async (booruUrl) => {
   const accounts = await dbConnection.select({
@@ -1030,7 +1040,7 @@ export const getAccountBooru = async (booruUrl) => {
 
 /**
  * Permanently deletes an account from the local database.
- * @param {number} accountId
+ * @param {number} accountId ID of the account to remove.
  * @returns {Promise<void>}
  */
 export const deleteAccount = async (accountId) => {
@@ -1060,8 +1070,8 @@ export const factoryResetDatabase = async () => {
 
 /**
  * Fetches the featured image payload for the given booru URL.
- * @param {string} booruUrl
- * @returns {Promise<ImageObj | null>}
+ * @param {string} booruUrl The booru instance URL.
+ * @returns {Promise<ImageObj | null>} Formatted featured image data.
  */
 export const getFeaturedImage = async (booruUrl) => {
   try {
@@ -1077,8 +1087,8 @@ export const getFeaturedImage = async (booruUrl) => {
 
 /**
  * Normalizes booru URLs by stripping trailing slashes.
- * @param {string} url
- * @returns {string}
+ * @param {string} url The raw URL string.
+ * @returns {string} The URL without a trailing slash.
  */
 export const fixBooruUrl = (url) => (url.endsWith('/') ? url.substring(0, url.length - 1) : url);
 
@@ -1104,7 +1114,7 @@ export const clearImageCache = async () => {
 
 /**
  * Clears cache for specific booru URLs from Images, Queries, and Interactions tables.
- * @param {string[]} booruUrls
+ * @param {string[]} booruUrls Array of URLs to target for removal.
  * @returns {Promise<void>}
  */
 export const clearSpecificBooruCache = async (booruUrls) => {
@@ -1134,28 +1144,30 @@ export const clearSpecificBooruCache = async (booruUrls) => {
 /**
  * Represents a content filter configuration from the Philomena API.
  * @typedef {Object} FilterItem
- * @property {string} description
- * @property {string|null} hiddenComplex
- * @property {number[]} hiddenTagIds
- * @property {number} id
- * @property {string} name
- * @property {boolean} public
- * @property {string|null} spoileredComplex
- * @property {number[]} spoileredTagIds
- * @property {boolean} system
- * @property {number} userCount
- * @property {number|null} userId
+ * @property {string} description Markdown description of the filter.
+ * @property {string|null} hiddenComplex Complex search string for hidden content.
+ * @property {number[]} hiddenTagIds List of tag IDs to hide.
+ * @property {number} id Unique identifier for the filter.
+ * @property {string} name Display name of the filter.
+ * @property {boolean} public Whether the filter is visible to all.
+ * @property {string|null} spoileredComplex Search string for content to spoiler.
+ * @property {number[]} spoileredTagIds List of tag IDs to spoiler.
+ * @property {boolean} system Whether it's a built-in booru filter.
+ * @property {number} userCount Number of users using this filter.
+ * @property {number|null} userId ID of the filter creator.
  */
 
 /**
  * A wrapper object containing a paginated list of filters and the total count.
- * @typedef {{ filters: FilterItem[]; total: number; }} FilterObj
+ * @typedef {Object} FilterObj
+ * @property {FilterItem[]} filters List of filters.
+ * @property {number} total Total available filters.
  */
 
 /**
  * Parses raw JSON responses containing lists of Philomena filters.
- * @param {Record<string, any>} result
- * @returns {FilterObj}
+ * @param {Record<string, any>} result The raw API response.
+ * @returns {FilterObj} Formatted and validated filter list.
  */
 const parseFilterList = (result) => {
   const ctx = 'Filter List';
@@ -1212,9 +1224,9 @@ const parseFilterList = (result) => {
 
 /**
  * Fetches the system-wide filters natively available on the specific booru.
- * @param {string} booruUrl
- * @param {number} [page=1]
- * @returns {Promise<FilterObj>}
+ * @param {string} booruUrl Target booru URL.
+ * @param {number} [page=1] Page number.
+ * @returns {Promise<FilterObj>} List of system filters.
  */
 export const fetchSystemFilters = async (booruUrl, page = 1) => {
   const data = await fetchPhilomena(booruUrl, 'filters/system', '', { page });
@@ -1223,10 +1235,10 @@ export const fetchSystemFilters = async (booruUrl, page = 1) => {
 
 /**
  * Fetches the customized filters tied to the given user's API key.
- * @param {string} booruUrl
- * @param {string} apiKey
- * @param {number} [page=1]
- * @returns {Promise<FilterObj>}
+ * @param {string} booruUrl Target booru URL.
+ * @param {string} apiKey User authentication key.
+ * @param {number} [page=1] Page number.
+ * @returns {Promise<FilterObj>} List of user filters.
  */
 export const fetchUserFilters = async (booruUrl, apiKey, page = 1) => {
   const data = await fetchPhilomena(booruUrl, 'filters/user', apiKey, { page });
@@ -1235,8 +1247,8 @@ export const fetchUserFilters = async (booruUrl, apiKey, page = 1) => {
 
 /**
  * Retrieves the currently selected filter ID for the given booru from local storage, auto-assigning one if empty.
- * @param {string} booruUrl
- * @returns {Promise<number|null>}
+ * @param {string} booruUrl Target booru URL.
+ * @returns {Promise<number|null>} The active filter ID.
  */
 export const getBooruFilterId = async (booruUrl) => {
   /** @type {Record<string, number>} */
@@ -1268,7 +1280,7 @@ export const getBooruFilterId = async (booruUrl) => {
 
 /**
  * Saves filter preferences for boorus to local storage and flushes the image cache.
- * @param {Record<string, number>} newFiltersData
+ * @param {Record<string, number>} newFiltersData Map of booru URLs to filter IDs.
  * @returns {Promise<void>}
  */
 export const saveBooruFilters = async (newFiltersData) => {
@@ -1278,10 +1290,10 @@ export const saveBooruFilters = async (newFiltersData) => {
 
 /**
  * Fetches a single image by its ID, parses it, caches it in the local database, and returns the formatted data.
- * @param {string} booruUrl
- * @param {string} apiKey
- * @param {number|string} imageId
- * @returns {Promise<ImageResult|null>}
+ * @param {string} booruUrl Source booru URL.
+ * @param {string} apiKey User API key.
+ * @param {number|string} imageId The target image ID.
+ * @returns {Promise<ImageResult|null>} Formatted image data with interaction status.
  */
 export const fetchSingleImage = async (booruUrl, apiKey, imageId) => {
   try {
@@ -1307,9 +1319,10 @@ export const fetchSingleImage = async (booruUrl, apiKey, imageId) => {
 };
 
 /**
- * @param {Account[]} accounts
- * @param {string} query
- * @returns {Promise<ImageResult|null>}
+ * Picks a random image from active boorus matching the query, utilizing remote totals for true randomness.
+ * @param {Account[]} accounts List of accounts to choose from.
+ * @param {string} [query='*'] Filter query for randomness.
+ * @returns {Promise<ImageResult|null>} A randomly selected image object.
  */
 export const randomImage = async (accounts, query = '*') => {
   const allAccounts = !accounts ? await getActiveAccounts() : accounts;
