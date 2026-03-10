@@ -168,6 +168,7 @@ export const UserProfile = ({
   /** @type {UserProfileData} */
   const profile = pf;
   const openImagesInApp = localStorage.getItem('app_inAppViewer') === 'true';
+  const openProfileInApp = localStorage.getItem('app_inAppProfileViewer') === 'true';
 
   return (
     <div className="fade-in">
@@ -178,7 +179,7 @@ export const UserProfile = ({
         </button>
         <div className="ms-auto d-flex flex-wrap gap-1">
           <a
-            href={`${booruUrl}/profiles/${profile.slug}`}
+            href={`${booruUrl}/profiles/${profile.name}`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-tool"
@@ -368,7 +369,6 @@ export const UserProfile = ({
               >
                 {profile.description ? (
                   <CommentBody
-                    urlBack={'../../'}
                     body={profile.description}
                     booruUrl={booruUrl}
                     onOpenImageLink={onOpenImage}
@@ -419,11 +419,11 @@ export const UserProfile = ({
               <div className="philo-panel-header justify-content-between">
                 <span>Recent Uploads</span>
                 <a
-                  href={`../../search?q=uploader%3A${profile.slug}`}
+                  href={`/search?q=uploader%3A${profile.name}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) =>
-                    handleQuickLinkClick(e, `uploader:${profile.slug}`, 'created_at', 'desc')
+                    handleQuickLinkClick(e, `uploader:${profile.name}`, 'created_at', 'desc')
                   }
                   className="btn btn-link text-white text-decoration-none small p-0 align-baseline"
                 >
@@ -435,7 +435,7 @@ export const UserProfile = ({
                   <div className="row row-cols-2 row-cols-md-4 g-2">
                     {recentUploads.map((img) => (
                       <div className="col" key={img.id}>
-                        <Image urlBack="../../" img={img} onOpenImage={onOpenImage} />
+                        <Image img={img} onOpenImage={onOpenImage} />
                       </div>
                     ))}
                   </div>
@@ -450,11 +450,11 @@ export const UserProfile = ({
               <div className="philo-panel-header justify-content-between">
                 <span>Recent Favorites</span>
                 <a
-                  href={`../../search?q=uploader%3A${profile.slug}&sf=score`}
+                  href={`/search?q=uploader%3A${profile.name}&sf=score`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) =>
-                    handleQuickLinkClick(e, `faved_by:${profile.slug}`, 'created_at', 'desc')
+                    handleQuickLinkClick(e, `faved_by:${profile.name}`, 'created_at', 'desc')
                   }
                   className="btn btn-link text-white text-decoration-none small p-0 align-baseline"
                 >
@@ -466,7 +466,7 @@ export const UserProfile = ({
                   <div className="row row-cols-2 row-cols-md-4 g-2">
                     {recentFaves.map((img) => (
                       <div className="col" key={img.id}>
-                        <Image urlBack="../../" img={img} onOpenImage={onOpenImage} />
+                        <Image img={img} onOpenImage={onOpenImage} />
                       </div>
                     ))}
                   </div>
@@ -481,7 +481,7 @@ export const UserProfile = ({
               <div className="philo-panel-header justify-content-between">
                 <span>Recent Comments</span>
                 <a
-                  href={`${booruUrl}/comments?q=author:${profile.slug}`}
+                  href={`${booruUrl}/comments?q=author:${profile.name}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-decoration-none text-light fw-bold"
@@ -516,7 +516,11 @@ export const UserProfile = ({
                               <a
                                 rel="noopener noreferrer"
                                 target="_blank"
-                                href={`${booruUrl}/profiles/${comment.author}`}
+                                href={
+                                  openProfileInApp
+                                    ? `/${new URL(booruUrl).hostname}/profiles/${comment.userId}`
+                                    : `${booruUrl}/profiles/${comment.author}`
+                                }
                                 onClick={(e) => {
                                   if (localStorage.getItem('app_inAppProfileViewer') !== 'true')
                                     return;
@@ -534,7 +538,6 @@ export const UserProfile = ({
                           </div>
                           <div className="text-muted mb-2 small" style={{ fontSize: '0.85rem' }}>
                             <CommentBody
-                              urlBack={'../../'}
                               body={comment.body}
                               booruUrl={booruUrl}
                               imageId={comment.imageId}
@@ -549,7 +552,7 @@ export const UserProfile = ({
                               <a
                                 href={
                                   openImagesInApp
-                                    ? `../../${new URL(booruUrl).hostname}/images/${comment.imageId}#comment_${comment.id}`
+                                    ? `/${new URL(booruUrl).hostname}/images/${comment.imageId}#comment_${comment.id}`
                                     : `${booruUrl}/images/${comment.imageId}#comment_${comment.id}`
                                 }
                                 target="_blank"

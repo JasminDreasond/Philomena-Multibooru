@@ -1039,7 +1039,7 @@ const App = () => {
       <nav className="navbar navbar-expand-lg custom-navbar sticky-top shadow-sm">
         <div className="container-fluid px-4 d-flex align-items-center">
           <a
-            href="./"
+            href="/"
             onClick={(e) => {
               e.preventDefault();
               goToHome();
@@ -1047,7 +1047,7 @@ const App = () => {
             className="navbar-brand mb-0 fw-bold d-flex align-items-center text-decoration-none"
             style={{ color: 'var(--app-navbar-text)' }}
           >
-            <img src="./icon/512.png" alt="Logo" className="app-logo" />
+            <img src="/icon/512.png" alt="Logo" className="app-logo" />
             Philomena Multi-Booru
           </a>
 
@@ -1257,7 +1257,6 @@ const App = () => {
                           <span>Featured Image</span>
                         </div>
                         <Image
-                          urlBack="./"
                           className="rounded-0"
                           img={fixImageObj(featuredImage.image)}
                           onOpenImage={handleOpenImage}
@@ -1270,7 +1269,7 @@ const App = () => {
                       <div className="card-header fw-bold d-flex justify-content-between align-items-center">
                         <span>Trending Images</span>
                         <a
-                          href={`./search?q=first_seen_at.gt%3A3+days+ago&sf=score`}
+                          href={`/search?q=first_seen_at.gt%3A3+days+ago&sf=score`}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) =>
@@ -1283,7 +1282,6 @@ const App = () => {
                       </div>
                       <div className="card-body p-3">
                         <ImageGallery
-                          urlBack="./"
                           imagesList={trendingImages}
                           gridClass="row-cols-2 g-2"
                           onOpenImage={handleOpenImage}
@@ -1328,7 +1326,7 @@ const App = () => {
                           </select>
                         </div>
                         <a
-                          href={`./search?sf=score&sd=desc`}
+                          href={`/search?sf=score&sd=desc`}
                           onClick={(e) => handleQuickLinkClick(e, '*', 'score', 'desc')}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -1345,7 +1343,7 @@ const App = () => {
                           💬 Recent Comments
                         </a>
                         <a
-                          href={`./search?q=first_seen_at.gt%3A3+days+ago&sf=comments&sd=desc`}
+                          href={`/search?q=first_seen_at.gt%3A3+days+ago&sf=comments&sd=desc`}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) =>
@@ -1394,7 +1392,6 @@ const App = () => {
                       />
 
                       <ImageGallery
-                        urlBack="./"
                         gridClass={`row-cols-2 row-cols-md-4 gallery-grid g-2`}
                         imagesList={currentImages}
                         onOpenImage={handleOpenImage}
@@ -1429,7 +1426,7 @@ const App = () => {
                     >
                       <h3 className="mb-0">Watched Images</h3>
                       <a
-                        href={`./search?q=my%3Awatched`}
+                        href={`/search?q=my%3Awatched`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="btn btn-outline-secondary btn-sm fw-bold"
@@ -1440,7 +1437,6 @@ const App = () => {
                     </div>
 
                     <ImageGallery
-                      urlBack="./"
                       gridClass="row-cols-2 row-cols-md-4 gallery-grid g-2"
                       imagesList={watchedImages}
                       onOpenImage={handleOpenImage}

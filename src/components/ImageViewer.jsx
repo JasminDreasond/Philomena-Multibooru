@@ -395,7 +395,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
               className="btn-tool"
               href={
                 openProfileInApp
-                  ? `../../${hostname}/profiles/${image.uploaderId}`
+                  ? `/${hostname}/profiles/${image.uploaderId}`
                   : `${image.booruUrl}/profiles/${uploaderName}`
               }
               onClick={(e) =>
@@ -454,7 +454,6 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
           <div className="philo-panel-body text-muted p-2">
             {image.description ? (
               <CommentBody
-                urlBack={'../../'}
                 body={image.description}
                 booruUrl={image.booruUrl}
                 imageId={image.id}
@@ -688,7 +687,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
                           target="_blank"
                           href={
                             openProfileInApp
-                              ? `../../${hostname}/profiles/${comment.userId}`
+                              ? `/${hostname}/profiles/${comment.userId}`
                               : `${image.booruUrl}/profiles/${comment.author}`
                           }
                           onClick={(e) =>
@@ -704,7 +703,6 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
                   </div>
                   <div className="mb-3" style={{ fontSize: '0.95rem' }}>
                     <CommentBody
-                      urlBack={'../../'}
                       body={comment.body}
                       booruUrl={image.booruUrl}
                       imageId={image.id}

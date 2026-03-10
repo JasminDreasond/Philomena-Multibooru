@@ -13,10 +13,9 @@ const preProcessPhilomenaTags = (text) => {
 };
 
 /**
- * @param {{ body: string, booruUrl: string, imageId?: number, urlBack: string, imageReps?: import('../services/api').ImageRepresentations, setIsLoading: import('../utils').SetIsLoading, onOpenImageLink?: import('../utils').OnOpenImageLink, onOpenProfileLink?: import('../utils').OnOpenProfileLink }} props
+ * @param {{ body: string, booruUrl: string, imageId?: number, imageReps?: import('../services/api').ImageRepresentations, setIsLoading: import('../utils').SetIsLoading, onOpenImageLink?: import('../utils').OnOpenImageLink, onOpenProfileLink?: import('../utils').OnOpenProfileLink }} props
  */
 export const CommentBody = ({
-  urlBack,
   body,
   imageReps,
   imageId,
@@ -56,7 +55,7 @@ export const CommentBody = ({
                   <a
                     href={
                       openImagesInApp
-                        ? `${urlBack}${new URL(booruUrl).hostname}/images/${refId}`
+                        ? `/${new URL(booruUrl).hostname}/images/${refId}`
                         : `${booruUrl}/images/${refId}`
                     }
                     target={openImagesInApp ? '_self' : '_blank'}
@@ -78,7 +77,7 @@ export const CommentBody = ({
                 <a
                   href={
                     openImagesInApp
-                      ? `${urlBack}${new URL(booruUrl).hostname}/images/${refId}`
+                      ? `/${new URL(booruUrl).hostname}/images/${refId}`
                       : `${booruUrl}/images/${refId}`
                   }
                   target={openImagesInApp ? '_self' : '_blank'}
@@ -133,7 +132,7 @@ export const CommentBody = ({
             <a
               href={
                 (isProfileLink && openProfileInApp) || (isImageLink && openImagesInApp)
-                  ? `${urlBack}${new URL(booruUrl).hostname}/${isImageLink ? 'images' : isProfileLink ? 'profiles' : 'null'}/${matchTarget}`
+                  ? `/${new URL(booruUrl).hostname}/${isImageLink ? 'images' : isProfileLink ? 'profiles' : 'null'}/${matchTarget}`
                   : fullHref
               }
               target={
