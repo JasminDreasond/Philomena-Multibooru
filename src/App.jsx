@@ -1256,8 +1256,8 @@ const App = () => {
             Page Not Found
           </h3>
           <p className="text-muted mb-4">
-            The URL you requested does not exist or it belongs
-            to a Booru account that is not currently connected in your settings.
+            The URL you requested does not exist or it belongs to a Booru account that is not
+            currently connected in your settings.
           </p>
           <button className="btn btn-primary px-4 fw-bold shadow-sm" onClick={goToHome}>
             Return to Home
