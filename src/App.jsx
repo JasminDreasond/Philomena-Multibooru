@@ -667,6 +667,11 @@ const App = () => {
     }
   };
 
+  const refreshHomepage = () => {
+    setIsSearching(true);
+    executeBackgroundSync(visibleBoorus).finally(() => setIsSearching(false));
+  };
+
   useEffect(() => {
     /**
      * @returns {Promise<void>}
@@ -859,10 +864,7 @@ const App = () => {
           window.dispatchEvent(new CustomEvent('appFocusRefresh'));
 
           // Dispatches a global event that ImageViewer and UserProfile can listen to
-          if (!viewingProfile && !viewingImage) {
-            setIsSearching(true);
-            executeBackgroundSync(visibleBoorus).finally(() => setIsSearching(false));
-          }
+          if (!viewingProfile && !viewingImage) refreshHomepage();
         }
         hiddenTimestamp = 0;
       }
@@ -939,6 +941,7 @@ const App = () => {
     hasSynced.current = false;
     window.scrollTo({ top: 0, behavior: 'smooth' });
     handleCloseSettings();
+    refreshHomepage();
   };
 
   /**
@@ -1150,7 +1153,10 @@ const App = () => {
       ) : viewingImage ? (
         <ImageViewer
           image={viewingImage}
-          onClose={() => setViewingImage(null)}
+          onClose={() => {
+            setViewingImage(null);
+            refreshHomepage();
+          }}
           onSearch={handleSearchSubmit}
           onOpenProfile={handleOpenProfile}
           onOpenImage={handleOpenImage}
