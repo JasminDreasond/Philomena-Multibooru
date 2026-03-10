@@ -19,6 +19,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { ImageViewer } from './components/ImageViewer';
 import { UserProfile } from './components/UserProfile';
 import { Welcome } from './components/Welcome';
+import { Error404 } from './components/404';
 
 /** @typedef {import('./services/api').ImageResult} ImageResult */
 /** @typedef {import('./services/api').ImageObj} ImageObj */
@@ -1281,19 +1282,7 @@ const App = () => {
       </nav>
 
       {is404 ? (
-        <div className="container text-center mt-5 pt-5 fade-in">
-          <h1 className="display-1 fw-bold text-danger">404</h1>
-          <h3 className="fw-bold mb-3" style={{ color: 'var(--app-text)' }}>
-            Page Not Found
-          </h3>
-          <p className="text-muted mb-4">
-            The URL you requested does not exist or it belongs to a Booru account that is not
-            currently connected in your settings.
-          </p>
-          <button className="btn btn-primary px-4 fw-bold shadow-sm" onClick={goToHome}>
-            Return to Home
-          </button>
-        </div>
+        <Error404 onClick={goToHome} />
       ) : showSettings ? (
         <SettingsPanel isDark={isDark} onClose={handleCloseSettings} />
       ) : viewingProfile ? (
