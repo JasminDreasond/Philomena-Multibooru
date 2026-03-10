@@ -660,7 +660,7 @@ const App = () => {
       /** @type {boolean} */
       const isSpecialSearch = queryToUse !== '*';
 
-      await clearImageCache();
+      // await clearImageCache();
       const syncPromises = [
         syncUserGalleryPages({
           query: queryToUse,
@@ -830,7 +830,7 @@ const App = () => {
 
           // If we have an active deep link, we skip the massive fetch of the Homepage here!
           if (!skipMainSync) {
-            await clearImageCache();
+            // await clearImageCache();
             const isSpecialSearch = initialQuery !== '*';
             const syncPromises = [
               syncUserGalleryPages({
