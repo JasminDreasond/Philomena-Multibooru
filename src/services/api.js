@@ -305,13 +305,18 @@ export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => 
  * @param {string} query
  * @param {number} [page]
  * @param {number} [perPage]
+ * @param {string} [sd]
+ * @param {string} [sf]
  * @returns {Promise<{ total: number; interactions: any[]; images: any[] }>}
  */
-const searchImagesApi = async (booruUrl, apiKey, query, page, perPage) => {
+const searchImagesApi = async (booruUrl, apiKey, query, page, perPage, sd, sf) => {
   /** @type {Record<string, any>} */
   const data = { q: query };
+
   if (typeof page === 'number') data.page = page;
   if (typeof perPage === 'number') data.per_page = perPage;
+  if (typeof sd === 'string') data.sd = sd;
+  if (typeof sf === 'string') data.sf = sf;
 
   const filterId = await getBooruFilterId(booruUrl);
   if (filterId) {
@@ -580,13 +585,23 @@ const getInteractions = (booruUrl, data) => {
  * @param {string} [query='*']
  * @param {number} [page=1]
  * @param {number} [perPage]
+ * @param {string} [sd]
+ * @param {string} [sf]
  */
-const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1, perPage = undefined) => {
+const syncGalleryPage = async (
+  booruUrl,
+  apiKey,
+  query = '*',
+  page = 1,
+  perPage = undefined,
+  sd = undefined,
+  sf = undefined,
+) => {
   if (typeof syncTimes[booruUrl] !== 'number') syncTimes[booruUrl] = 0;
   syncTimes[booruUrl]++;
   const time = syncTimes[booruUrl];
   try {
-    const data = await searchImagesApi(booruUrl, apiKey, query, page, perPage);
+    const data = await searchImagesApi(booruUrl, apiKey, query, page, perPage, sd, sf);
     /** @type {string} */
     const normalizedQuery = normalizeQueryString(query);
 
@@ -625,13 +640,22 @@ const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1, perPage 
 /**
  * Queries the local IndexedDB for images that match a given search string.
  * @param {Object} config
- * @param {string} config.query
+ * @param {string} [config.query='*']
  * @param {number} [config.limit=50]
  * @param {number} [config.page=1]
  * @param {string[]|null} [config.allowedBoorus=null]
+ * @param {string} [config.sd='desc']
+ * @param {string} [config.sf='created_at']
  * @returns {Promise<ImageResult[]>}
  */
-export const searchImages = async ({ query = '*', limit = 50, page = 1, allowedBoorus = null }) => {
+export const searchImages = async ({
+  query = '*',
+  limit = 50,
+  page = 1,
+  allowedBoorus = null,
+  sd = 'desc',
+  sf = 'created_at',
+}) => {
   if (allowedBoorus && allowedBoorus.length === 0) return [];
 
   /** @type {number} */
@@ -640,6 +664,49 @@ export const searchImages = async ({ query = '*', limit = 50, page = 1, allowedB
   const normalizedQuery = normalizeQueryString(query);
   /** @type {number} */
   const skipCount = (page - 1) * fixedLimit;
+
+  /** @type {string} */
+  let sortField = 'createdAt';
+  switch (sf) {
+    case 'updated_at':
+      sortField = 'updatedAt';
+      break;
+    case 'first_seen_at':
+      sortField = 'firstSeenAt';
+      break;
+    case 'score':
+    case 'wilson_score':
+      sortField = 'wilsonScore';
+      break;
+    case 'upvotes':
+      sortField = 'upvotes';
+      break;
+    case 'downvotes':
+      sortField = 'downvotes';
+      break;
+    case 'faves':
+      sortField = 'faves';
+      break;
+    case 'comments':
+    case 'comment_count':
+      sortField = 'commentCount';
+      break;
+    case 'size':
+      sortField = 'size';
+      break;
+    case 'width':
+      sortField = 'width';
+      break;
+    case 'height':
+      sortField = 'height';
+      break;
+    default:
+      sortField = 'createdAt';
+      break;
+  }
+
+  /** @type {string} */
+  const sortType = sd && sd.toLowerCase() === 'asc' ? 'asc' : 'desc';
 
   /** @type {ImageObj[]} */
   let results = [];
@@ -653,7 +720,7 @@ export const searchImages = async ({ query = '*', limit = 50, page = 1, allowedB
       where: whereClause,
       limit: fixedLimit,
       skip: skipCount,
-      order: { by: 'createdAt', type: 'desc' },
+      order: { by: sortField, type: sortType },
     });
   } else {
     /** @type {ImageObj[]} */
@@ -677,7 +744,7 @@ export const searchImages = async ({ query = '*', limit = 50, page = 1, allowedB
         },
         limit: batchSize,
         skip: currentSkip,
-        order: { by: 'Images.createdAt', type: 'desc' },
+        order: { by: `Images.${sortField}`, type: sortType },
       });
 
       // Stop if the database has no more records for this query
@@ -826,6 +893,8 @@ export const toggleAccountStatus = async (accountId, isActive) => {
  * @param {string[]|null} [allowedBoorus=null]
  * @param {number} [perPage]
  * @param {Account} [account]
+ * @param {string} [sd]
+ * @param {string} [sf]
  */
 export const syncUserGalleryPages = async ({
   query = '*',
@@ -833,6 +902,8 @@ export const syncUserGalleryPages = async ({
   allowedBoorus = null,
   perPage,
   account,
+  sd,
+  sf,
 } = {}) => {
   const allAccounts = !account ? await getActiveAccounts() : [account];
 
@@ -844,7 +915,7 @@ export const syncUserGalleryPages = async ({
   if (accounts.length === 0) return { accounts: [], syncLimit: 50, totalCount: 0 };
 
   const syncs = accounts.map((account) =>
-    syncGalleryPage(account.booruUrl, account.apiKey, query, page, perPage),
+    syncGalleryPage(account.booruUrl, account.apiKey, query, page, perPage, sd, sf),
   );
 
   const results = await Promise.all(syncs);

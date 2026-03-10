@@ -353,7 +353,7 @@ const App = () => {
     } else if (viewingImage) {
       const tagSnippet =
         viewingImage.tags && viewingImage.tags.length > 0
-          ? ` - ${viewingImage.tags.slice(0, 3).join(', ')}`
+          ? ` - ${viewingImage.tags.join(', ')}`
           : '';
       document.title = `Image #${viewingImage.id}${tagSnippet} - ${baseTitle}`;
     } else if (!isHomepage && searchQuery && searchQuery !== '*') {
