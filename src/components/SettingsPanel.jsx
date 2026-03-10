@@ -60,6 +60,9 @@ export const SettingsPanel = ({ isDark }) => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isPersistent, setIsPersistent] = useState(false);
 
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
+
   /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
   const [themeMode, setThemeMode] = useState(localStorage.getItem('app_themeMode') || 'system');
 
@@ -247,6 +250,12 @@ export const SettingsPanel = ({ isDark }) => {
       await factoryResetDatabase();
       window.location.reload();
     }
+  };
+
+  const handleToggleAutoRefresh = (e) => {
+    const isChecked = e.target.checked;
+    setAutoRefreshEnabled(isChecked);
+    localStorage.setItem('app_autoRefreshEnabled', isChecked ? 'true' : 'false');
   };
 
   /**
@@ -468,6 +477,11 @@ export const SettingsPanel = ({ isDark }) => {
       setSelectedFilterAccount(accounts[0]);
     }
   }, [activeTab, accounts, selectedFilterAccount]);
+
+  useEffect(() => {
+    const savedAutoRefresh = localStorage.getItem('app_autoRefreshEnabled') === 'true';
+    setAutoRefreshEnabled(savedAutoRefresh);
+  }, []);
 
   useEffect(() => {
     if (selectedFilterAccount) {
@@ -1014,6 +1028,22 @@ export const SettingsPanel = ({ isDark }) => {
                   >
                     Enable In-App Profile Viewer (Opens user profiles within the app)
                   </label>
+                </div>
+                <div className="form-check form-switch my-3">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="autoRefreshToggle"
+                    checked={autoRefreshEnabled}
+                    onChange={handleToggleAutoRefresh}
+                  />
+                  <label className="form-check-label fw-bold" htmlFor="autoRefreshToggle">
+                    Enable Auto-Refresh on Inactivity
+                  </label>
+                  <div className="form-text text-muted small">
+                    If enabled, the app will automatically fetch new images when you return to the
+                    tab after 60 seconds of inactivity.
+                  </div>
                 </div>
               </div>
             </div>

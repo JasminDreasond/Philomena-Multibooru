@@ -875,7 +875,9 @@ const App = () => {
       if (document.hidden) {
         hiddenTimestamp = Date.now();
       } else {
-        if (hiddenTimestamp && Date.now() - hiddenTimestamp > 60000) {
+        const autoRefreshEnabled = localStorage.getItem('app_autoRefreshEnabled') === 'true';
+
+        if (autoRefreshEnabled && hiddenTimestamp && Date.now() - hiddenTimestamp > 60000) {
           // 60s
 
           // Dispatches a global event that ImageViewer and UserProfile can listen to
