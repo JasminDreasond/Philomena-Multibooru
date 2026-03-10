@@ -395,7 +395,6 @@ const App = () => {
       const trendingResults = await searchImages({
         query: 'first_seen_at.gt:3 days ago',
         limit: 4,
-        page: 1,
         allowedBoorus: boorusToUse,
       });
       setTrendingImages(trendingResults);
@@ -404,7 +403,6 @@ const App = () => {
       const watchedResults = await searchImages({
         query: 'my:watched',
         limit: limitToUse,
-        page: 1,
         allowedBoorus: boorusToUse,
       });
       setWatchedImages(watchedResults);
@@ -430,13 +428,12 @@ const App = () => {
         syncPromises.push(
           syncUserGalleryPages({
             query: 'first_seen_at.gt:3 days ago',
-            page: 1,
             allowedBoorus: boorusToUse,
             perPage: 4,
           }),
         );
         syncPromises.push(
-          syncUserGalleryPages({ query: 'my:watched', page: 1, allowedBoorus: boorusToUse }),
+          syncUserGalleryPages({ query: 'my:watched', allowedBoorus: boorusToUse }),
         );
       }
 
@@ -495,13 +492,12 @@ const App = () => {
             syncPromises.push(
               syncUserGalleryPages({
                 query: 'first_seen_at.gt:3 days ago',
-                page: 1,
                 allowedBoorus: activeUrls,
                 perPage: 4,
               }),
             );
             syncPromises.push(
-              syncUserGalleryPages({ query: 'my:watched', page: 1, allowedBoorus: activeUrls }),
+              syncUserGalleryPages({ query: 'my:watched', allowedBoorus: activeUrls }),
             );
           }
 
