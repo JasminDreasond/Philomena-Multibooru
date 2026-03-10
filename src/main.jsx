@@ -7,6 +7,14 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import './index.css';
 import './tags.css';
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(() => {
+      console.log('ServiceWorker registered');
+    });
+  });
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
