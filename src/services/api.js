@@ -901,7 +901,7 @@ export const toggleAccountStatus = async (accountId, isActive) => {
  * @param {string} [config.query='*']
  * @param {number} [config.page=1]
  * @param {string[]|null} [config.allowedBoorus=null]
- * @param {number} [config.perPage]
+ * @param {number} [config.perPage=50]
  * @param {Account} [config.account]
  * @param {string} [config.sd='desc']
  * @param {string} [config.sf='created_at']
@@ -910,7 +910,7 @@ export const syncUserGalleryPages = async ({
   query = '*',
   page = 1,
   allowedBoorus = null,
-  perPage,
+  perPage = 50,
   account,
   sd = 'desc',
   sf = 'created_at',
@@ -922,7 +922,7 @@ export const syncUserGalleryPages = async ({
     ? allAccounts.filter((acc) => allowedBoorus.includes(acc.booruUrl))
     : allAccounts;
 
-  if (accounts.length === 0) return { accounts: [], syncLimit: 50, totalCount: 0 };
+  if (accounts.length === 0) return { accounts: [], syncLimit: perPage, totalCount: 0 };
 
   const syncs = accounts.map((account) =>
     syncGalleryPage(account.booruUrl, account.apiKey, query, page, perPage, sd, sf),
@@ -930,18 +930,13 @@ export const syncUserGalleryPages = async ({
 
   const results = await Promise.all(syncs);
 
-  let combinedLimit = 0;
   let combinedTotal = 0;
 
   results.forEach((data) => {
-    if (data && Array.isArray(data.images)) {
-      if (data.images.length > combinedLimit) combinedLimit = data.images.length;
-      if (typeof data.total === 'number') combinedTotal += data.total;
-    }
+    if (data && typeof data.total === 'number') combinedTotal += data.total;
   });
 
-  // Fallback to 50 if the sync returned 0 images (e.g., dead end page)
-  const finalLimit = combinedLimit > 0 ? combinedLimit : 50;
+  const finalLimit = perPage * accounts.length;
 
   return { accounts, syncLimit: finalLimit, totalCount: combinedTotal };
 };
