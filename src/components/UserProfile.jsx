@@ -492,7 +492,25 @@ export const UserProfile = ({
                         </div>
                         <div className="flex-grow-1">
                           <div className="fw-bold mb-1 d-flex justify-content-between">
-                            <span style={{ color: 'var(--app-primary)' }}>{comment.author}</span>
+                            {comment.userId ? (
+                              <a
+                                rel="noopener noreferrer"
+                                target="_blank"
+                                href={`${booruUrl}/profiles/${comment.author}`}
+                                onClick={(e) => {
+                                  if (localStorage.getItem('app_inAppProfileViewer') !== 'true')
+                                    return;
+                                  e.preventDefault();
+                                  onOpenProfile(booruUrl, comment.author, comment.userId);
+                                }}
+                              >
+                                {comment.author}
+                              </a>
+                            ) : (
+                              <span style={{ color: 'var(--app-primary)' }}>
+                                {comment.author ?? 'Anonymous'}
+                              </span>
+                            )}
                           </div>
                           <div className="text-muted mb-2 small" style={{ fontSize: '0.85rem' }}>
                             <CommentBody
