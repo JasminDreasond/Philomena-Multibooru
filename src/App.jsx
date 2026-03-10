@@ -637,6 +637,7 @@ const App = () => {
       /** @type {boolean} */
       const isSpecialSearch = queryToUse !== '*';
 
+      await clearImageCache();
       const syncPromises = [
         syncUserGalleryPages({
           query: queryToUse,
@@ -775,6 +776,7 @@ const App = () => {
 
           // If we have an active deep link, we skip the massive fetch of the Homepage here!
           if (!skipMainSync) {
+            await clearImageCache();
             const isSpecialSearch = initialQuery !== '*';
             const syncPromises = [
               syncUserGalleryPages({
@@ -1016,6 +1018,26 @@ const App = () => {
 
   return (
     <div className="min-vh-100 pb-5" style={{ backgroundColor: 'var(--app-bg)' }}>
+      {/* Custom styles to allow a flexible and adaptable Grid on large screens */}
+      <style>{`
+        @media (min-width: 992px) {
+          .gallery-grid {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+            gap: 0.5rem !important; /* equivale ao g-2 do Bootstrap */
+            margin-right: 0 !important;
+            margin-left: 0 !important;
+          }
+          .gallery-grid > * {
+            padding-right: 0 !important;
+            padding-left: 0 !important;
+            margin-top: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+        }
+      `}</style>
+
       <nav className="navbar navbar-expand-lg custom-navbar sticky-top shadow-sm">
         <div className="container-fluid px-4 d-flex align-items-center">
           <a
@@ -1379,7 +1401,7 @@ const App = () => {
 
                       <ImageGallery
                         urlBack="./"
-                        gridClass={`row-cols-1 row-cols-sm-2 row-cols-md-4 row-cols-lg-4 row-cols-xl-6 g-2`}
+                        gridClass={`row-cols-2 row-cols-md-4 gallery-grid g-2`}
                         imagesList={currentImages}
                         onOpenImage={handleOpenImage}
                       />
@@ -1425,7 +1447,7 @@ const App = () => {
 
                     <ImageGallery
                       urlBack="./"
-                      gridClass="row-cols-1 row-cols-sm-2 row-cols-md-6 row-cols-lg-7 g-2"
+                      gridClass="row-cols-2 row-cols-md-4 gallery-grid g-2"
                       imagesList={watchedImages}
                       onOpenImage={handleOpenImage}
                     />

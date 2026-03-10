@@ -6,6 +6,7 @@ import {
   fetchComments,
   syncUserGalleryPages,
   getAccountBooru,
+  clearImageCache,
 } from '../services/api';
 import { Image } from './ImageGallery';
 import { CommentBody } from './CommentBody';
@@ -99,6 +100,7 @@ export const UserProfile = ({
           const favedQuery = `faved_by_id:${userProfile.id}`;
           const allowedBoorus = [booruUrl];
 
+          await clearImageCache();
           await Promise.all([
             syncUserGalleryPages({
               query: uploaderQuery,
