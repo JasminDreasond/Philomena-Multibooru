@@ -319,6 +319,9 @@ const App = () => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isHomepage, setIsHomepage] = useState(true);
 
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [is404, setIs404] = useState(false);
+
   /** @type {[ImageResult|null, import('react').Dispatch<import('react').SetStateAction<ImageResult|null>>]} */
   const [viewingImage, setViewingImage] = useState(null);
 
@@ -384,6 +387,9 @@ const App = () => {
     if (showSettings) {
       newPath = '/settings';
       if (window.location.search.includes('tab=')) newSearch = window.location.search;
+    } else if (is404) {
+      // Keeps the current broken URL visible so the user sees what went wrong
+      return;
     } else if (viewingProfile) {
       const host = new URL(viewingProfile.booruUrl).hostname;
       newPath = `/${host}/profiles/${viewingProfile.id}`;
@@ -419,13 +425,16 @@ const App = () => {
     sortField,
     sortDirection,
     currentPage,
+    is404,
   ]);
 
   // Synchronizes document <title> with the active view
   useEffect(() => {
     const baseTitle = 'Philomena Multi-Booru';
 
-    if (showSettings) {
+    if (is404) {
+      document.title = `Page Not Found - ${baseTitle}`;
+    } else if (showSettings) {
       document.title = `Settings - ${baseTitle}`;
     } else if (viewingProfile) {
       document.title = `${viewingProfile.username}'s Profile - ${baseTitle}`;
@@ -440,7 +449,7 @@ const App = () => {
     } else {
       document.title = baseTitle;
     }
-  }, [showSettings, viewingProfile, viewingImage, isHomepage, searchQuery]);
+  }, [showSettings, viewingProfile, viewingImage, isHomepage, searchQuery, is404]);
 
   // Handle Forward/Back button navigation internally
   useEffect(() => {
@@ -457,9 +466,11 @@ const App = () => {
         setSortField('created_at');
         setSortDirection('desc');
         setCurrentPage(1);
+        setIs404(false);
         hasSynced.current = false; // Force recharge the main gallery if necessary
       } else if (path.startsWith('/settings')) {
         setShowSettings(true);
+        setIs404(false);
       } else if (path.startsWith('/search')) {
         const q = params.get('q') || '*';
         const sfParam = params.get('sf') || 'created_at';
@@ -474,6 +485,7 @@ const App = () => {
         setViewingImage(null);
         setViewingProfile(null);
         setShowSettings(false);
+        setIs404(false);
         hasSynced.current = false; // Force reload the search
       } else {
         const imgMatch = path.match(/^\/([^/]+)\/images\/(\d+)/);
@@ -487,12 +499,15 @@ const App = () => {
           if (acc) {
             setIsHomepage(false);
             setShowSettings(false);
+            setIs404(false);
 
             if (imgMatch) {
               const imgData = await fetchSingleImage(acc.booruUrl, acc.apiKey, imgMatch[2]);
               if (imgData) {
                 setViewingProfile(null);
                 setViewingImage(imgData);
+              } else {
+                setIs404(true);
               }
             } else if (profMatch) {
               const profileData = await fetchProfile(acc.booruUrl, profMatch[2]);
@@ -503,9 +518,15 @@ const App = () => {
                   username: profileData.name,
                   id: profileData.id,
                 });
+              } else {
+                setIs404(true);
               }
             }
+          } else {
+            setIs404(true);
           }
+        } else {
+          setIs404(true);
         }
       }
     };
@@ -728,6 +749,7 @@ const App = () => {
               setShowSettings(true);
               isDeepLinkSpecial = true;
               skipMainSync = true;
+              setIs404(false);
             } else if (path.startsWith('/search')) {
               const q = params.get('q') || '*';
               initialSf = params.get('sf') || 'created_at';
@@ -741,6 +763,7 @@ const App = () => {
               initialQuery = q;
               setIsHomepage(false);
               isDeepLinkSpecial = true;
+              setIs404(false);
             } else if (path !== '/' && path !== '') {
               const imgMatch = path.match(/^\/([^/]+)\/images\/(\d+)/);
               const profMatch = path.match(/^\/([^/]+)\/profiles\/([^/]+)/);
@@ -753,10 +776,12 @@ const App = () => {
                   setIsHomepage(false);
                   isDeepLinkSpecial = true;
                   skipMainSync = true;
+                  setIs404(false);
 
                   if (imgMatch) {
                     const imgData = await fetchSingleImage(acc.booruUrl, acc.apiKey, imgMatch[2]);
                     if (imgData) setViewingImage(imgData);
+                    else setIs404(true);
                   } else if (profMatch) {
                     const profileData = await fetchProfile(acc.booruUrl, profMatch[2]);
                     if (profileData) {
@@ -765,9 +790,17 @@ const App = () => {
                         username: profileData.name,
                         id: profileData.id,
                       });
-                    }
+                    } else setIs404(true);
                   }
+                } else {
+                  setIs404(true);
+                  skipMainSync = true;
+                  isDeepLinkSpecial = true;
                 }
+              } else {
+                setIs404(true);
+                skipMainSync = true;
+                isDeepLinkSpecial = true;
               }
             }
           }
@@ -884,7 +917,7 @@ const App = () => {
           window.dispatchEvent(new CustomEvent('appFocusRefresh'));
 
           // Dispatches a global event that ImageViewer and UserProfile can listen to
-          if (!viewingProfile && !viewingImage) refreshHomepage();
+          if (!viewingProfile && !viewingImage && !is404) refreshHomepage();
         }
         hiddenTimestamp = 0;
       }
@@ -902,6 +935,7 @@ const App = () => {
     visibleBoorus,
     sortField,
     sortDirection,
+    is404,
   ]);
 
   /**
@@ -921,6 +955,7 @@ const App = () => {
     setSearchQuery(newQuery);
     setCurrentPage(1);
     setViewingImage(null);
+    setIs404(false);
     hasSynced.current = false;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -932,6 +967,7 @@ const App = () => {
     setIsHomepage(false);
     setViewingProfile(null);
     setCurrentPage(newPage);
+    setIs404(false);
     hasSynced.current = false;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -944,6 +980,7 @@ const App = () => {
     setSortField(newSf);
     setSortDirection(newSd);
     setCurrentPage(1);
+    setIs404(false);
     hasSynced.current = false;
   };
 
@@ -961,6 +998,7 @@ const App = () => {
     setSortField(sf);
     setSortDirection(sd);
     setCurrentPage(1);
+    setIs404(false);
     handleSearchSubmit(query);
   };
 
@@ -985,6 +1023,7 @@ const App = () => {
     setViewingImage(null);
     setViewingProfile(null);
     setShowSettings(false);
+    setIs404(false);
 
     if (willUseEffectTrigger) {
       hasSynced.current = false;
@@ -1001,12 +1040,14 @@ const App = () => {
   const handleOpenImage = (img) => {
     setViewingProfile(null);
     setViewingImage(img);
+    setIs404(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleOpenProfile = (booruUrl, username, id) => {
     setViewingImage(null);
     setViewingProfile({ booruUrl, username, id });
+    setIs404(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -1084,7 +1125,7 @@ const App = () => {
             </div>
 
             <div className="offcanvas-body align-items-lg-center">
-              {!showSettings && (
+              {!showSettings && !is404 && (
                 <div className="mx-lg-3 my-3 my-lg-0 flex-grow-1" style={{ maxWidth: '600px' }}>
                   <SearchBar
                     onSearchSubmit={(q) => {
@@ -1193,7 +1234,10 @@ const App = () => {
                   data-bs-dismiss="offcanvas"
                   style={{ borderColor: 'var(--app-navbar-text)', color: 'var(--app-navbar-text)' }}
                   onClick={() => {
-                    if (!showSettings) hasSynced.current = false;
+                    if (!showSettings) {
+                      hasSynced.current = false;
+                      setIs404(false);
+                    }
                     setShowSettings(!showSettings);
                   }}
                 >
@@ -1205,7 +1249,21 @@ const App = () => {
         </div>
       </nav>
 
-      {showSettings ? (
+      {is404 ? (
+        <div className="container text-center mt-5 pt-5 fade-in">
+          <h1 className="display-1 fw-bold text-danger">404</h1>
+          <h3 className="fw-bold mb-3" style={{ color: 'var(--app-text)' }}>
+            Page Not Found
+          </h3>
+          <p className="text-muted mb-4">
+            The URL you requested does not exist or it belongs
+            to a Booru account that is not currently connected in your settings.
+          </p>
+          <button className="btn btn-primary px-4 fw-bold shadow-sm" onClick={goToHome}>
+            Return to Home
+          </button>
+        </div>
+      ) : showSettings ? (
         <SettingsPanel isDark={isDark} onClose={handleCloseSettings} />
       ) : viewingProfile ? (
         <UserProfile
@@ -1237,10 +1295,25 @@ const App = () => {
               </div>
             </div>
           ) : connectedAccounts && connectedAccounts.length === 0 ? (
-            <div className="alert alert-warning mt-3" role="alert">
-              You need to add at least one Philomena API account to start syncing data! Click on
-              "Settings".
-            </div>
+            <>
+              <div className="alert alert-warning mt-3" role="alert">
+                You need to add at least one Philomena API account to start syncing data! Click on
+                "Settings".
+              </div>
+              <center>
+                <img src="/icon/512.png" height={256} alt="icon" />
+                <div>Welcome to Philomena MultiBooru!</div>
+                <button
+                  className="mt-2 btn btn-sm btn-outline-light"
+                  onClick={() => {
+                    if (!showSettings) hasSynced.current = false;
+                    setShowSettings(!showSettings);
+                  }}
+                >
+                  {'Start Now!'}
+                </button>
+              </center>
+            </>
           ) : (
             <>
               <div className="row g-4">
