@@ -951,6 +951,15 @@ const App = () => {
    * @returns {void}
    */
   const goToHome = () => {
+    // Check if React will fire the useEffect naturally
+    const willUseEffectTrigger =
+      showSettings !== false ||
+      currentPage !== 1 ||
+      searchQuery !== '' ||
+      isHomepage !== true ||
+      sortField !== 'created_at' ||
+      sortDirection !== 'desc';
+
     setIsHomepage(true);
     setSearchQuery('');
     setSortField('created_at');
@@ -958,9 +967,15 @@ const App = () => {
     setCurrentPage(1);
     setViewingImage(null);
     setViewingProfile(null);
-    hasSynced.current = false;
+    setShowSettings(false);
+
+    if (willUseEffectTrigger) {
+      hasSynced.current = false;
+    } else {
+      refreshHomepage();
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    handleCloseSettings();
   };
 
   /**
