@@ -38,7 +38,7 @@ const timeSince = (date) => {
 };
 
 /**
- * @param {{ booruUrl: string, username: string, userId: number, handleSearchSubmit: (query: string) => void, onClose: () => void, onOpenImage: (img: ImageResult) => void, onOpenProfile: (booruUrl: string, username: string, id: number) => void }} props
+ * @param {{ booruUrl: string, username: string, userId: number, handleQuickLinkClick: import('../App').HandleQuickLinkClick, onClose: () => void, onOpenImage: (img: ImageResult) => void, onOpenProfile: (booruUrl: string, username: string, id: number) => void }} props
  */
 export const UserProfile = ({
   booruUrl,
@@ -47,7 +47,7 @@ export const UserProfile = ({
   onClose,
   onOpenImage,
   onOpenProfile,
-  handleSearchSubmit,
+  handleQuickLinkClick,
 }) => {
   /** @type {[UserProfileData|null, import('react').Dispatch<import('react').SetStateAction<UserProfileData|null>>]} */
   const [pf, setProfile] = useState(null);
@@ -408,12 +408,17 @@ export const UserProfile = ({
             <div className="philo-panel mb-4">
               <div className="philo-panel-header justify-content-between">
                 <span>Recent Uploads</span>
-                <button
-                  onClick={() => handleSearchSubmit(`uploader:${profile.slug}`)}
+                <a
+                  href={`../../search?q=uploader%3A${profile.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) =>
+                    handleQuickLinkClick(e, `uploader:${profile.slug}`, 'created_at', 'desc')
+                  }
                   className="btn btn-link text-white text-decoration-none small p-0 align-baseline"
                 >
                   View all
-                </button>
+                </a>
               </div>
               <div className="philo-panel-body p-2">
                 {recentUploads.length > 0 ? (
@@ -434,12 +439,17 @@ export const UserProfile = ({
             <div className="philo-panel mb-4">
               <div className="philo-panel-header justify-content-between">
                 <span>Recent Favorites</span>
-                <button
-                  onClick={() => handleSearchSubmit(`faved_by:${profile.slug}`)}
+                <a
+                  href={`../../search?q=uploader%3A${profile.slug}&sf=score`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) =>
+                    handleQuickLinkClick(e, `faved_by:${profile.slug}`, 'created_at', 'desc')
+                  }
                   className="btn btn-link text-white text-decoration-none small p-0 align-baseline"
                 >
                   View all
-                </button>
+                </a>
               </div>
               <div className="philo-panel-body p-2">
                 {recentFaves.length > 0 ? (

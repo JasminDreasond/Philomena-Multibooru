@@ -24,6 +24,10 @@ import { UserProfile } from './components/UserProfile';
 /** @typedef {import('./services/api').Account} Account */
 
 /**
+ * @typedef {(e: MouseEvent<HTMLAnchorElement, MouseEvent>, query: string, sf: string, sd: string) => void} HandleQuickLinkClick
+ */
+
+/**
  * @returns {{ isDark: boolean, mode: string }}
  */
 const applyThemeFromStorage = () => {
@@ -1193,7 +1197,7 @@ const App = () => {
           onClose={() => setViewingProfile(null)}
           onOpenImage={handleOpenImage}
           onOpenProfile={handleOpenProfile}
-          handleSearchSubmit={handleSearchSubmit}
+          handleQuickLinkClick={handleQuickLinkClick}
         />
       ) : viewingImage ? (
         <ImageViewer
