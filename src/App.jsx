@@ -1047,11 +1047,7 @@ const App = () => {
             className="navbar-brand mb-0 fw-bold d-flex align-items-center text-decoration-none"
             style={{ color: 'var(--app-navbar-text)' }}
           >
-            <img
-              src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-              alt="Logo"
-              className="app-logo bg-primary"
-            />
+            <img src="./icon/512.png" alt="Logo" className="app-logo" />
             Philomena Multi-Booru
           </a>
 
