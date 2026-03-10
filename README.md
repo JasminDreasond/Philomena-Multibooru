@@ -37,8 +37,8 @@ Your data is *yours*. **Philomena Multi-Booru does not collect, track, or send a
 ## 🚀 Getting Started
 
 1. Clone this repository:
-   ```bash
-   git clone [https://github.com/JasminDreasond/Philomena-Multibooru.git](https://github.com/JasminDreasond/Philomena-Multibooru.git)
+```bash
+   git clone https://github.com/JasminDreasond/Philomena-Multibooru.git
 ```
 
 2. Install the dependencies:
