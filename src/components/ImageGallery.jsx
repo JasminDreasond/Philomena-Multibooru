@@ -6,11 +6,12 @@ import { useState } from 'react';
  */
 
 /**
- * @param {{ img: ImageResult; className?: string; onOpenImage?: (img: ImageResult) => void }} props
+ * @param {{ img: ImageResult; urlBack: string; className?: string; onOpenImage?: (img: ImageResult) => void }} props
  */
-export const Image = ({ img, className, onOpenImage }) => {
+export const Image = ({ img, urlBack, className, onOpenImage }) => {
   /** @type {[Set<number>, import('react').Dispatch<import('react').SetStateAction<Set<number>>>]} */
   const [unspoileredIds, setUnspoileredIds] = useState(new Set());
+  const openImagesInApp = localStorage.getItem('app_inAppViewer') === 'true';
 
   /**
    * @param {import('react').MouseEvent<HTMLAnchorElement>} event
@@ -26,8 +27,7 @@ export const Image = ({ img, className, onOpenImage }) => {
       return;
     }
 
-    const useViewer = localStorage.getItem('app_inAppViewer') === 'true';
-    if (useViewer && onOpenImage) {
+    if (openImagesInApp) {
       event.preventDefault();
       onOpenImage(img);
     }
@@ -50,7 +50,11 @@ export const Image = ({ img, className, onOpenImage }) => {
       style={{ backgroundColor: 'var(--app-surface)', color: 'var(--app-text)' }}
     >
       <a
-        href={targetUrl}
+        href={
+          openImagesInApp
+            ? `${urlBack}${new URL(img.booruUrl).hostname}/images/${img.id}`
+            : targetUrl
+        }
         target="_blank"
         rel="noopener noreferrer"
         className="text-decoration-none d-block h-100"
@@ -172,10 +176,11 @@ export const Image = ({ img, className, onOpenImage }) => {
 };
 
 /**
- * @param {{ imagesList: ImageResult[], gridClass?: string, onOpenImage?: (img: ImageResult) => void }} props
+ * @param {{ imagesList: ImageResult[], urlBack: string, gridClass?: string, onOpenImage?: (img: ImageResult) => void }} props
  */
 export const ImageGallery = ({
   imagesList,
+  urlBack,
   gridClass = 'row-cols-1 row-cols-sm-2 row-cols-md-4 row-cols-lg-4 row-cols-xl-4 row-cols-xxl-6 g-2',
   onOpenImage,
 }) => {
@@ -194,7 +199,7 @@ export const ImageGallery = ({
       <div className={`row ${gridClass}`}>
         {imagesList.map((img) => (
           <div className="col" key={`${img.booruUrl}-${img.id}`}>
-            <Image img={img} onOpenImage={onOpenImage} />
+            <Image urlBack={urlBack} img={img} onOpenImage={onOpenImage} />
           </div>
         ))}
       </div>

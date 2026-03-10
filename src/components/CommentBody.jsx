@@ -13,9 +13,15 @@ const preProcessPhilomenaTags = (text) => {
 };
 
 /**
- * @param {{ body: string, image: import('../services/api').ImageObj, setIsLoading: import('../utils').SetIsLoading, onOpenImageLink?: import('../utils').OnOpenImageLink, onOpenProfileLink?: import('../utils').OnOpenProfileLink }} props
+ * @param {{ body: string, urlBack: string, image: import('../services/api').ImageObj, setIsLoading: import('../utils').SetIsLoading, onOpenImageLink?: import('../utils').OnOpenImageLink, onOpenProfileLink?: import('../utils').OnOpenProfileLink }} props
  */
-export const CommentBody = ({ body, image, onOpenImageLink, onOpenProfileLink, setIsLoading }) => {
+export const CommentBody = ({
+  urlBack,
+  body,
+  image,
+  onOpenImageLink,
+  /** onOpenProfileLink, */ setIsLoading,
+}) => {
   const openImagesInApp = localStorage.getItem('app_inAppViewer') === 'true';
   const openProfileInApp = localStorage.getItem('app_inAppProfileViewer') === 'true';
 
@@ -33,7 +39,7 @@ export const CommentBody = ({ body, image, onOpenImageLink, onOpenProfileLink, s
               const sizeType = match[2];
 
               const handleRefClick = (e) => {
-                if (openImagesInApp && onOpenImageLink) {
+                if (openImagesInApp) {
                   e.preventDefault();
                   openImageLink(image.booruUrl, onOpenImageLink, setIsLoading, refId);
                 }
@@ -46,7 +52,11 @@ export const CommentBody = ({ body, image, onOpenImageLink, onOpenProfileLink, s
 
                 return (
                   <a
-                    href={`${image.booruUrl}/images/${refId}`}
+                    href={
+                      openImagesInApp
+                        ? `${urlBack}${new URL(image.booruUrl).hostname}/images/${refId}`
+                        : `${image.booruUrl}/images/${refId}`
+                    }
                     target={openImagesInApp ? '_self' : '_blank'}
                     rel="noopener noreferrer"
                     className="d-inline-block mt-2 mb-2"
@@ -64,7 +74,11 @@ export const CommentBody = ({ body, image, onOpenImageLink, onOpenProfileLink, s
 
               return (
                 <a
-                  href={`${image.booruUrl}/images/${refId}`}
+                  href={
+                    openImagesInApp
+                      ? `${urlBack}${new URL(image.booruUrl).hostname}/images/${refId}`
+                      : `${image.booruUrl}/images/${refId}`
+                  }
                   target={openImagesInApp ? '_self' : '_blank'}
                   rel="noopener noreferrer"
                   className="fw-bold text-decoration-none"
@@ -104,10 +118,10 @@ export const CommentBody = ({ body, image, onOpenImageLink, onOpenProfileLink, s
           }
 
           const handleNormalClick = (e) => {
-            if (openImagesInApp && isImageLink && onOpenImageLink) {
+            if (openImagesInApp && isImageLink) {
               e.preventDefault();
               openImageLink(image.booruUrl, onOpenImageLink, setIsLoading, matchTarget);
-            } else if (openProfileInApp && isProfileLink && onOpenProfileLink) {
+            } else if (openProfileInApp && isProfileLink) {
               // e.preventDefault();
               // openProfileLink(image.booruUrl, onOpenProfileLink, setIsLoading, matchTarget);
             }
@@ -115,7 +129,11 @@ export const CommentBody = ({ body, image, onOpenImageLink, onOpenProfileLink, s
 
           return (
             <a
-              href={fullHref}
+              href={
+                (isProfileLink && openProfileInApp) || (isImageLink && openImagesInApp)
+                  ? `${urlBack}${new URL(image.booruUrl).hostname}/${isImageLink ? 'images' : isProfileLink ? 'profiles' : 'null'}/${matchTarget}`
+                  : fullHref
+              }
               target={
                 (openImagesInApp && isImageLink) || (openProfileInApp && isProfileLink)
                   ? '_self'

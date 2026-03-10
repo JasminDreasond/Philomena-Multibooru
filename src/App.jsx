@@ -1241,6 +1241,7 @@ const App = () => {
                           <span>Featured Image</span>
                         </div>
                         <Image
+                          urlBack="./"
                           className="rounded-0"
                           img={fixImageObj(featuredImage.image)}
                           onOpenImage={handleOpenImage}
@@ -1266,6 +1267,7 @@ const App = () => {
                       </div>
                       <div className="card-body p-3">
                         <ImageGallery
+                          urlBack="./"
                           imagesList={trendingImages}
                           gridClass="row-cols-2 g-2"
                           onOpenImage={handleOpenImage}
@@ -1376,6 +1378,7 @@ const App = () => {
                       />
 
                       <ImageGallery
+                        urlBack="./"
                         gridClass={`row-cols-1 row-cols-sm-2 row-cols-md-4 row-cols-lg-4 row-cols-xl-6 g-2`}
                         imagesList={currentImages}
                         onOpenImage={handleOpenImage}
@@ -1421,6 +1424,7 @@ const App = () => {
                     </div>
 
                     <ImageGallery
+                      urlBack="./"
                       gridClass="row-cols-1 row-cols-sm-2 row-cols-md-6 row-cols-lg-7 g-2"
                       imagesList={watchedImages}
                       onOpenImage={handleOpenImage}

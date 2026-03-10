@@ -165,6 +165,7 @@ export const UserProfile = ({
 
   /** @type {UserProfileData} */
   const profile = pf;
+  const openImagesInApp = localStorage.getItem('app_inAppViewer') === 'true';
 
   return (
     <div className="fade-in">
@@ -425,7 +426,7 @@ export const UserProfile = ({
                   <div className="row row-cols-2 row-cols-md-4 g-2">
                     {recentUploads.map((img) => (
                       <div className="col" key={img.id}>
-                        <Image img={img} onOpenImage={onOpenImage} />
+                        <Image urlBack="../../" img={img} onOpenImage={onOpenImage} />
                       </div>
                     ))}
                   </div>
@@ -456,7 +457,7 @@ export const UserProfile = ({
                   <div className="row row-cols-2 row-cols-md-4 g-2">
                     {recentFaves.map((img) => (
                       <div className="col" key={img.id}>
-                        <Image img={img} onOpenImage={onOpenImage} />
+                        <Image urlBack="../../" img={img} onOpenImage={onOpenImage} />
                       </div>
                     ))}
                   </div>
@@ -524,6 +525,7 @@ export const UserProfile = ({
                           </div>
                           <div className="text-muted mb-2 small" style={{ fontSize: '0.85rem' }}>
                             <CommentBody
+                              urlBack={'../../'}
                               body={comment.body}
                               image={{ id: comment.imageId, booruUrl }}
                               onOpenImageLink={onOpenImage}
@@ -535,12 +537,16 @@ export const UserProfile = ({
                             <span>Posted {timeSince(comment.createdAt)}</span>
                             <div className="d-flex gap-2">
                               <a
-                                href={`${booruUrl}/images/${comment.imageId}#comment_${comment.id}`}
+                                href={
+                                  openImagesInApp
+                                    ? `../../${new URL(booruUrl).hostname}/images/${comment.imageId}#comment_${comment.id}`
+                                    : `${booruUrl}/images/${comment.imageId}#comment_${comment.id}`
+                                }
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-muted text-decoration-none"
                                 onClick={(e) => {
-                                  if (localStorage.getItem('app_inAppViewer') !== 'true') return;
+                                  if (!openImagesInApp) return;
                                   e.preventDefault();
                                   openImageLink(
                                     booruUrl,
