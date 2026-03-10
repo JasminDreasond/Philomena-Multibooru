@@ -88,9 +88,28 @@ export const initDatabase = async () => {
     },
   };
 
+  const tblTotalImagesCounter = {
+    name: 'TotalImagesCounter',
+    columns: {
+      id: { primaryKey: true, dataType: 'string', notNull: true },
+      booruUrl: { dataType: 'string', notNull: true },
+      query: { dataType: 'string', notNull: true },
+      total: { dataType: 'number', notNull: true },
+      updatedAt: { dataType: 'number', notNull: true },
+    },
+  };
+
   const database = {
     name: 'PhilomenaMultiBooru',
-    tables: [tblImages, tblAccounts, tblQueries, tblSettings, tblInteractions],
+    version: 2,
+    tables: [
+      tblImages,
+      tblAccounts,
+      tblQueries,
+      tblSettings,
+      tblInteractions,
+      tblTotalImagesCounter,
+    ],
   };
 
   await dbConnection.initDb(database);

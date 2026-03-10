@@ -1,3 +1,4 @@
+import TinySimpleDice from 'tiny-essentials/libs/TinySimpleDice';
 import { dbConnection } from '../db/connection';
 
 /**
@@ -387,6 +388,15 @@ export const updateSystemSettings = async (maxItems, persistentStorage) => {
 };
 
 /**
+ * @typedef {Object} TotalImagesCounter
+ * @property {string} id
+ * @property {string} booruUrl
+ * @property {string} query
+ * @property {number} total
+ * @property {number} updatedAt
+ */
+
+/**
  * Enforces the local storage limit by deleting the oldest images if the max limit is exceeded.
  * @returns {Promise<void>}
  */
@@ -425,6 +435,29 @@ const enforceStorageLimit = async () => {
     await dbConnection.remove({
       from: 'Images',
       where: { id: { in: idsToDelete } },
+    });
+  }
+
+  /** @type {number} */
+  const totalCounters = await dbConnection.count({ from: 'TotalImagesCounter' });
+
+  if (totalCounters > settings.maxItems) {
+    /** @type {number} */
+    const excessCounters = totalCounters - settings.maxItems;
+
+    /** @type {any[]} */
+    const oldestCounters = await dbConnection.select({
+      from: 'TotalImagesCounter',
+      order: { by: 'updatedAt', type: 'asc' },
+      limit: excessCounters,
+    });
+
+    /** @type {string[]} */
+    const counterIdsToDelete = oldestCounters.map((c) => c.id);
+
+    await dbConnection.remove({
+      from: 'TotalImagesCounter',
+      where: { id: { in: counterIdsToDelete } },
     });
   }
 };
@@ -628,6 +661,20 @@ const syncGalleryPage = async (
       }));
       await dbConnection.insert({ into: 'Queries', values: queryEntries, upsert: true });
     }
+
+    await dbConnection.insert({
+      into: 'TotalImagesCounter',
+      values: [
+        {
+          id: `${booruUrl}_${normalizedQuery}`,
+          booruUrl: booruUrl,
+          query: normalizedQuery,
+          total: data.total,
+          updatedAt: Date.now(),
+        },
+      ],
+      upsert: true,
+    });
 
     await enforceStorageLimit();
 
@@ -1044,6 +1091,7 @@ export const clearImageCache = async () => {
     await dbConnection.clear('Queries');
     await dbConnection.clear('Interactions');
     await dbConnection.clear('Images');
+    await dbConnection.clear('TotalImagesCounter');
 
     // Note: You might want to clear 'Interactions' as well
     // if they are strictly tied to the cached images.
@@ -1075,6 +1123,7 @@ export const clearSpecificBooruCache = async (booruUrls) => {
     await dbConnection.remove({ from: 'Queries', where: whereClause });
     await dbConnection.remove({ from: 'Interactions', where: whereClause });
     await dbConnection.remove({ from: 'Images', where: whereClause });
+    await dbConnection.remove({ from: 'TotalImagesCounter', where: whereClause });
 
     console.log(`Cache cleared for: ${normalizedUrls.join(', ')}`);
   } catch (error) {
@@ -1255,4 +1304,120 @@ export const fetchSingleImage = async (booruUrl, apiKey, imageId) => {
     console.error(`Failed to fetch single image ${imageId} from ${booruUrl}:`, error);
     return null;
   }
+};
+
+/**
+ * @param {Account[]} accounts
+ * @param {string} query
+ * @returns {Promise<ImageResult|null>}
+ */
+export const randomImage = async (accounts, query = '*') => {
+  const allAccounts = !accounts ? await getActiveAccounts() : accounts;
+  if (!Array.isArray(allAccounts) || allAccounts.length === 0) return null;
+
+  /** @type {string} */
+  const normalizedQuery = normalizeQueryString(query);
+
+  /** @type {{ account: Account, total: number }[]} */
+  const validBoorus = [];
+
+  for (const account of allAccounts) {
+    try {
+      const data = await searchImagesApi(account.booruUrl, account.apiKey, query, 1, 1);
+      /** @type {number} */
+      const apiTotal = data.total;
+
+      /** @type {TotalImagesCounter[]} */
+      const cachedData = await dbConnection.select({
+        from: 'TotalImagesCounter',
+        where: { id: `${account.booruUrl}_${normalizedQuery}` },
+      });
+
+      if (cachedData.length > 0) {
+        /** @type {number} */
+        const cachedTotal = cachedData[0].total;
+
+        if (apiTotal !== cachedTotal) {
+          await dbConnection.update({
+            in: 'TotalImagesCounter',
+            set: { total: apiTotal, updatedAt: Date.now() },
+            where: { id: `${account.booruUrl}_${normalizedQuery}` },
+          });
+        }
+      } else {
+        await dbConnection.insert({
+          into: 'TotalImagesCounter',
+          values: [
+            {
+              id: `${account.booruUrl}_${normalizedQuery}`,
+              booruUrl: account.booruUrl,
+              query: normalizedQuery,
+              total: apiTotal,
+              updatedAt: Date.now(),
+            },
+          ],
+        });
+      }
+
+      if (apiTotal > 0) {
+        validBoorus.push({ account, total: apiTotal });
+      }
+    } catch (error) {
+      console.error(
+        `Failed to fetch and cache total for randomImage on ${account.booruUrl}:`,
+        error,
+      );
+    }
+  }
+
+  if (validBoorus.length === 0) return null;
+
+  /** @type {number} */
+  const selectedBooruIndex = TinySimpleDice.rollArrayIndex(validBoorus);
+  const selectedData = validBoorus[selectedBooruIndex];
+
+  const dice = new TinySimpleDice({ maxValue: selectedData.total, allowZero: false });
+  /** @type {number} */
+  const selectedImageNumber = dice.roll();
+
+  // Extreme optimization: We take only 1 item (per_page=1) and the page is the number selected
+  /** @type {number} */
+  const targetPage = selectedImageNumber;
+  /** @type {number} */
+  const perPage = 1;
+
+  try {
+    const result = await searchImagesApi(
+      selectedData.account.booruUrl,
+      selectedData.account.apiKey,
+      query,
+      targetPage,
+      perPage,
+    );
+
+    if (result && Array.isArray(result.images) && result.images.length > 0) {
+      const rawImage = result.images[0];
+
+      /** @type {ImageObj} */
+      const formattedImage = parseImageData(selectedData.account.booruUrl, rawImage);
+      const formattedInteractions = getInteractions(selectedData.account.booruUrl, result);
+
+      /** @type {ImageResult} */
+      const imageResult = { ...formattedImage, interaction: null };
+
+      const specificInteraction = formattedInteractions.find(
+        (int) => int.imageId === formattedImage.id,
+      );
+
+      if (specificInteraction) {
+        imageResult.interaction = specificInteraction.value;
+      }
+
+      return fixImageObj(imageResult);
+    }
+  } catch (error) {
+    console.error('Failed to fetch the mathematically calculated random image:', error);
+  }
+
+  return null;
 };

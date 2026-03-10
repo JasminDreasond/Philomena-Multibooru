@@ -11,6 +11,7 @@ import {
   clearImageCache,
   fetchSingleImage,
   fetchProfile,
+  randomImage,
 } from './services/api';
 
 import { SearchBar } from './components/SearchBar';
@@ -194,7 +195,7 @@ const PaginationBar = ({ currentPage, isHomepage, totalPages, onPageChange }) =>
         {pages.map((num, idx) => (
           <li
             key={idx}
-            className={`page-item ${num === currentPage ? 'active' : ''} ${num === '...' ? 'disabled' : ''}`}
+            className={`page-item ${num === currentPage ? 'active' : ''} ${num === '...'} ? 'disabled' : ''}`}
           >
             <button
               className="page-link"
@@ -341,6 +342,9 @@ const App = () => {
 
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isSearching, setIsSearching] = useState(false);
+
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isRandomizing, setIsRandomizing] = useState(false);
 
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isDark, setIsDark] = useState(false);
@@ -1083,6 +1087,30 @@ const App = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  /**
+   * @returns {Promise<void>}
+   */
+  const handleRandomImageClick = async () => {
+    if (!connectedAccounts || connectedAccounts.length === 0) return;
+
+    setIsRandomizing(true);
+    try {
+      const queryToUse = searchQuery.trim() === '' ? '*' : searchQuery;
+      const activeAccounts = connectedAccounts.filter((a) => visibleBoorus.includes(a.booruUrl));
+
+      if (activeAccounts.length > 0) {
+        const img = await randomImage(activeAccounts, queryToUse);
+        if (img) {
+          handleOpenImage(img);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching random image:', error);
+    } finally {
+      setIsRandomizing(false);
+    }
+  };
+
   /** @type {boolean} */
   const showSpecialContent =
     (searchQuery.trim() === '' || searchQuery.trim() === '*') && isHomepage;
@@ -1095,7 +1123,7 @@ const App = () => {
           .gallery-grid {
             display: grid !important;
             grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
-            gap: 0.5rem !important; /* equivale ao g-2 do Bootstrap */
+            gap: 0.5rem !important;
             margin-right: 0 !important;
             margin-left: 0 !important;
           }
@@ -1176,6 +1204,26 @@ const App = () => {
               )}
 
               <div className="ms-lg-auto d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-3 gap-lg-0 mt-2 mt-lg-0">
+                {/* Random Button */}
+                <button
+                  className="btn btn-sm btn-outline-info text-nowrap w-100 w-lg-auto me-lg-2 mb-2 mb-lg-0 fw-bold"
+                  onClick={handleRandomImageClick}
+                  disabled={isRandomizing || isSearching}
+                >
+                  {isRandomizing ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      ></span>
+                      Rolling...
+                    </>
+                  ) : (
+                    '🎲 Random'
+                  )}
+                </button>
+
                 {/* Booru Instance Filter Dropdown */}
                 <div className="dropdown me-lg-3 w-100 w-lg-auto" ref={booruDropdownRef}>
                   <button
