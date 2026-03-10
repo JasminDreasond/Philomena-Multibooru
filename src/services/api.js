@@ -581,13 +581,7 @@ const getInteractions = (booruUrl, data) => {
  * @param {number} [page=1]
  * @param {number} [perPage]
  */
-export const syncGalleryPage = async (
-  booruUrl,
-  apiKey,
-  query = '*',
-  page = 1,
-  perPage = undefined,
-) => {
+const syncGalleryPage = async (booruUrl, apiKey, query = '*', page = 1, perPage = undefined) => {
   if (typeof syncTimes[booruUrl] !== 'number') syncTimes[booruUrl] = 0;
   syncTimes[booruUrl]++;
   const time = syncTimes[booruUrl];
@@ -630,24 +624,20 @@ export const syncGalleryPage = async (
 
 /**
  * Queries the local IndexedDB for images that match a given search string.
- * @param {string} rawSearchString
- * @param {number} [limit=50]
- * @param {number} [page=1]
- * @param {string[]|null} [allowedBoorus=null]
+ * @param {Object} config
+ * @param {string} config.query
+ * @param {number} [config.limit=50]
+ * @param {number} [config.page=1]
+ * @param {string[]|null} [config.allowedBoorus=null]
  * @returns {Promise<ImageResult[]>}
  */
-export const searchImages = async (
-  rawSearchString = '*',
-  limit = 50,
-  page = 1,
-  allowedBoorus = null,
-) => {
+export const searchImages = async ({ query = '*', limit = 50, page = 1, allowedBoorus = null }) => {
   if (allowedBoorus && allowedBoorus.length === 0) return [];
 
   /** @type {number} */
   const fixedLimit = limit > 1000 ? 1000 : limit;
   /** @type {string} */
-  const normalizedQuery = normalizeQueryString(rawSearchString);
+  const normalizedQuery = normalizeQueryString(query);
   /** @type {number} */
   const skipCount = (page - 1) * fixedLimit;
 
@@ -744,13 +734,13 @@ export const searchImages = async (
 
 /**
  * Returns the total count of images in the database for a specific query.
- * @param {string} rawSearchString
+ * @param {string} query
  * @param {string[]|null} [allowedBoorus=null]
  * @returns {Promise<number>}
  */
-export const countImages = async (rawSearchString = '*', allowedBoorus = null) => {
+export const countImages = async (query = '*', allowedBoorus = null) => {
   /** @type {string} */
-  const normalizedQuery = normalizeQueryString(rawSearchString);
+  const normalizedQuery = normalizeQueryString(query);
   const whereClause = allowedBoorus ? { booruUrl: { in: allowedBoorus } } : undefined;
 
   if (normalizedQuery === '*') {
@@ -830,19 +820,20 @@ export const toggleAccountStatus = async (accountId, isActive) => {
 
 /**
  * Background task that syncs gallery pages for multiple connected accounts.
+ * @param {Object} [config]
  * @param {string} [query='*']
  * @param {number} [page=1]
  * @param {string[]|null} [allowedBoorus=null]
  * @param {number} [perPage]
  * @param {Account} [account]
  */
-export const syncUserGalleryPages = async (
+export const syncUserGalleryPages = async ({
   query = '*',
   page = 1,
   allowedBoorus = null,
-  perPage = undefined,
-  account = undefined,
-) => {
+  perPage,
+  account,
+} = {}) => {
   const allAccounts = !account ? await getActiveAccounts() : [account];
 
   // Hard filters the accounts to prevent unnecessary API requests

@@ -100,13 +100,25 @@ export const UserProfile = ({
           const allowedBoorus = [booruUrl];
 
           await Promise.all([
-            syncUserGalleryPages(uploaderQuery, 1, allowedBoorus, 4, account),
-            syncUserGalleryPages(favedQuery, 1, allowedBoorus, 4, account),
+            syncUserGalleryPages({
+              query: uploaderQuery,
+              page: 1,
+              allowedBoorus,
+              perPage: 4,
+              account,
+            }),
+            syncUserGalleryPages({
+              query: favedQuery,
+              page: 1,
+              allowedBoorus,
+              perPage: 4,
+              account,
+            }),
           ]);
 
           const [uploadsRes, favesRes, commentsRes] = await Promise.all([
-            searchImages(uploaderQuery, 4, 1, allowedBoorus),
-            searchImages(favedQuery, 4, 1, allowedBoorus),
+            searchImages({ query: uploaderQuery, limit: 4, page: 1, allowedBoorus: allowedBoorus }),
+            searchImages({ query: favedQuery, limit: 4, page: 1, allowedBoorus: allowedBoorus }),
             fetchComments(booruUrl, account.apiKey, `user_id:${userId}`, 1),
           ]);
 

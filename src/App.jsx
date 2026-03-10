@@ -378,7 +378,12 @@ const App = () => {
    */
   const loadLocalData = async (limitToUse, pageToUse, queryToUse, boorusToUse) => {
     /** @type {ImageResult[]} */
-    const mainResults = await searchImages(queryToUse, limitToUse, pageToUse, boorusToUse);
+    const mainResults = await searchImages({
+      query: queryToUse,
+      limit: limitToUse,
+      page: pageToUse,
+      allowedBoorus: boorusToUse,
+    });
     setCurrentImages(mainResults);
 
     /** @type {boolean} */
@@ -387,11 +392,21 @@ const App = () => {
     // Only load special content if on Page 1 and no search query
     if (!isSpecialSearch && isHomepage) {
       /** @type {ImageResult[]} */
-      const trendingResults = await searchImages('first_seen_at.gt:3 days ago', 4, 1, boorusToUse);
+      const trendingResults = await searchImages({
+        query: 'first_seen_at.gt:3 days ago',
+        limit: 4,
+        page: 1,
+        allowedBoorus: boorusToUse,
+      });
       setTrendingImages(trendingResults);
 
       /** @type {ImageResult[]} */
-      const watchedResults = await searchImages('my:watched', limitToUse, 1, boorusToUse);
+      const watchedResults = await searchImages({
+        query: 'my:watched',
+        limit: limitToUse,
+        page: 1,
+        allowedBoorus: boorusToUse,
+      });
       setWatchedImages(watchedResults);
     }
   };
@@ -407,11 +422,22 @@ const App = () => {
       /** @type {boolean} */
       const isSpecialSearch = queryToUse !== '*';
 
-      const syncPromises = [syncUserGalleryPages(queryToUse, currentPage, boorusToUse)];
+      const syncPromises = [
+        syncUserGalleryPages({ query: queryToUse, page: currentPage, allowedBoorus: boorusToUse }),
+      ];
 
       if (!isSpecialSearch && isHomepage) {
-        syncPromises.push(syncUserGalleryPages('first_seen_at.gt:3 days ago', 1, boorusToUse, 4));
-        syncPromises.push(syncUserGalleryPages('my:watched', 1, boorusToUse));
+        syncPromises.push(
+          syncUserGalleryPages({
+            query: 'first_seen_at.gt:3 days ago',
+            page: 1,
+            allowedBoorus: boorusToUse,
+            perPage: 4,
+          }),
+        );
+        syncPromises.push(
+          syncUserGalleryPages({ query: 'my:watched', page: 1, allowedBoorus: boorusToUse }),
+        );
       }
 
       const results = await Promise.all(syncPromises);
@@ -457,13 +483,26 @@ const App = () => {
           /** @type {boolean} */
           const isSpecialSearch = queryToUse !== '*';
 
-          const syncPromises = [syncUserGalleryPages(queryToUse, currentPage, activeUrls)];
+          const syncPromises = [
+            syncUserGalleryPages({
+              query: queryToUse,
+              page: currentPage,
+              allowedBoorus: activeUrls,
+            }),
+          ];
 
           if (!isSpecialSearch && isHomepage) {
             syncPromises.push(
-              syncUserGalleryPages('first_seen_at.gt:3 days ago', 1, activeUrls, 4),
+              syncUserGalleryPages({
+                query: 'first_seen_at.gt:3 days ago',
+                page: 1,
+                allowedBoorus: activeUrls,
+                perPage: 4,
+              }),
             );
-            syncPromises.push(syncUserGalleryPages('my:watched', 1, activeUrls));
+            syncPromises.push(
+              syncUserGalleryPages({ query: 'my:watched', page: 1, allowedBoorus: activeUrls }),
+            );
           }
 
           const results = await Promise.all(syncPromises);
