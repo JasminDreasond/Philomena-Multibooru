@@ -91,9 +91,9 @@ class BootstrapDialogs {
             <div class="modal fade" id="bs-custom-modal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
-                        <div class="modal-header">
+                        <div class="modal-header" style="background-color: var(--app-navbar-bg);">
                             <h5 class="modal-title">${title}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="color: #fff;"></button>
                         </div>
                         <div class="modal-body" style="white-space: pre-wrap;">${body}</div>
                         <div class="modal-footer">

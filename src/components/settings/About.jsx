@@ -29,7 +29,7 @@ export const About = () => (
           rel="noopener noreferrer"
           className="btn btn-outline-primary btn-sm fw-bold"
         >
-          <i class="fa-brands fa-github"></i> Visit my GitHub
+          <i className="fa-brands fa-github"></i> Visit my GitHub
         </a>
       </div>
     </div>
