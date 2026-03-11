@@ -17,7 +17,7 @@ import { Modal } from 'bootstrap/dist/js/bootstrap.bundle.min.js';
  */
 
 /**
- * Utility to replace native alert/prompt with Bootstrap 5 modals.
+ * Utility to replace native alert/confirm/prompt with Bootstrap 5 modals.
  */
 class BootstrapDialogs {
   /**
@@ -26,10 +26,30 @@ class BootstrapDialogs {
    * @returns {Promise<void>}
    */
   static async alert(message, options = {}) {
-    const { title = 'Alert', confirmText = 'OK' } = options;
+    /** @type {string} */
+    const title = options.title || 'Alert';
+    /** @type {string} */
+    const confirmText = options.confirmText || 'OK';
 
     const html = this._createTemplate(title, message, false, confirmText);
-    await this._show(html);
+    await this._show(html, 'alert');
+  }
+
+  /**
+   * @param {string} message
+   * @param {ModalOptions} [options]
+   * @returns {Promise<boolean>}
+   */
+  static async confirm(message, options = {}) {
+    /** @type {string} */
+    const title = options.title || 'Confirm';
+    /** @type {string} */
+    const confirmText = options.confirmText || 'Yes';
+    /** @type {string} */
+    const cancelText = options.cancelText || 'No';
+
+    const html = this._createTemplate(title, message, true, confirmText, cancelText);
+    return await this._show(html, 'confirm');
   }
 
   /**
@@ -39,15 +59,18 @@ class BootstrapDialogs {
    * @returns {Promise<string|null>}
    */
   static async prompt(message, defaultValue = '', options = {}) {
-    const { title = 'Prompt', confirmText = 'Submit', cancelText = 'Cancel' } = options;
+    /** @type {string} */
+    const title = options.title || 'Prompt';
+    /** @type {string} */
+    const confirmText = options.confirmText || 'Submit';
+    /** @type {string} */
+    const cancelText = options.cancelText || 'Cancel';
 
-    // Added mt-2 for spacing between text and input
     const inputHtml = `<input type="text" class="form-control mt-2" id="bs-prompt-input" value="${defaultValue}">`;
     const bodyContent = `${message}${inputHtml}`;
 
     const html = this._createTemplate(title, bodyContent, true, confirmText, cancelText);
-
-    return await this._show(html, true);
+    return await this._show(html, 'prompt');
   }
 
   /**
@@ -59,11 +82,11 @@ class BootstrapDialogs {
    * @returns {string}
    */
   static _createTemplate(title, body, showCancel, confirmText, cancelText = 'Cancel') {
+    /** @type {string} */
     const cancelBtn = showCancel
       ? `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${cancelText}</button>`
       : '';
 
-    // The 'style="white-space: pre-wrap;"' ensures \n is respected
     return `
             <div class="modal fade" id="bs-custom-modal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
@@ -84,27 +107,37 @@ class BootstrapDialogs {
 
   /**
    * @param {string} html
-   * @param {boolean} isPrompt
+   * @param {'alert'|'confirm'|'prompt'} type
    * @returns {Promise<any>}
    */
-  static _show(html, isPrompt = false) {
+  static _show(html, type) {
     return new Promise((resolve) => {
-      // Remove existing modal if any
+      /** @type {HTMLElement|null} */
       const existing = document.getElementById('bs-custom-modal');
       if (existing) existing.remove();
 
       document.body.insertAdjacentHTML('beforeend', html);
+
+      /** @type {HTMLElement} */
       const modalElement = document.getElementById('bs-custom-modal');
+      /** @type {HTMLElement} */
       const confirmBtn = document.getElementById('bs-modal-confirm');
+      /** @type {HTMLInputElement|null} */
       const inputField = document.getElementById('bs-prompt-input');
 
       // @ts-ignore
       const bsModal = new Modal(modalElement);
+      /** @type {boolean} */
       let isConfirmed = false;
 
+      /** @type {Function} */
       const handleConfirm = () => {
         isConfirmed = true;
-        const value = isPrompt ? inputField.value : true;
+        let value;
+        if (type === 'prompt') value = inputField.value;
+        else if (type === 'confirm') value = true;
+        else value = undefined;
+
         bsModal.hide();
         resolve(value);
       };
@@ -115,12 +148,14 @@ class BootstrapDialogs {
       modalElement.addEventListener('hidden.bs.modal', () => {
         modalElement.remove();
         if (!isConfirmed) {
-          resolve(isPrompt ? null : undefined);
+          if (type === 'prompt') resolve(null);
+          else if (type === 'confirm') resolve(false);
+          else resolve();
         }
       });
 
       bsModal.show();
-      if (isPrompt) {
+      if (type === 'prompt' && inputField) {
         modalElement.addEventListener('shown.bs.modal', () => inputField.focus());
       }
     });
@@ -129,6 +164,7 @@ class BootstrapDialogs {
 
 // Global Override
 window.alert = (msg) => BootstrapDialogs.alert(msg);
+window.confirm = (msg) => BootstrapDialogs.confirm(msg);
 window.prompt = (msg, def) => BootstrapDialogs.prompt(msg, def);
 
 export { BootstrapDialogs };
@@ -147,3 +183,10 @@ export const alert = (msg) => BootstrapDialogs.alert(msg);
  * @returns {Promise<string|null>}
  */
 export const prompt = (msg, def) => BootstrapDialogs.prompt(msg, def);
+
+/**
+ * @param {string} message
+ * @param {ModalOptions} [options]
+ * @returns {Promise<boolean>}
+ */
+export const confirm = (msg) => BootstrapDialogs.confirm(msg);
