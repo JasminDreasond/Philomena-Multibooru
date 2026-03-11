@@ -17,7 +17,7 @@ import { applyThemeFromStorage } from './services/theme';
 
 import { SearchBar } from './components/search/SearchBar';
 import { ImageGallery, Image } from './components/image/ImageGallery';
-import { SettingsPanel } from './components/SettingsPanel';
+import { SettingsPanel } from './components/settings/SettingsPanel';
 import { ImageViewer } from './components/image/ImageViewer';
 import { UserProfile } from './components/user/UserProfile';
 import { Welcome } from './components/home/Welcome';

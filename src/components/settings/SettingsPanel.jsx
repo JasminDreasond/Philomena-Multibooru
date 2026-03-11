@@ -1,16 +1,16 @@
 import { useState } from 'react';
-import { getActiveAccounts } from '../services/api';
+import { getActiveAccounts } from '../../services/api';
 
-import { Privacy } from './settings/Privacy';
-import { About } from './settings/About';
-import { ThemeSettings } from './settings/Theme';
-import { AppSettings } from './settings/AppSettings';
-import { FactoryReset } from './settings/FactoryReset';
-import { Filters } from './settings/Filters';
-import { Accounts } from './settings/Accounts';
+import { Privacy } from './Privacy';
+import { About } from './About';
+import { ThemeSettings } from './Theme';
+import { AppSettings } from './AppSettings';
+import { FactoryReset } from './FactoryReset';
+import { Filters } from './Filters';
+import { Accounts } from './Accounts';
 
 /**
- * @typedef {import('../services/api').Account} Account
+ * @typedef {import('../../services/api').Account} Account
  */
 
 /**
