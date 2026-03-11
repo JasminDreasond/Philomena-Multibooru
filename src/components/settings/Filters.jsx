@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { alert } from '../../tools/BootstrapDialogs';
 
 import {
   fixBooruUrl,

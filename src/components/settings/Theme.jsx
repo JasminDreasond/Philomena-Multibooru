@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { alert } from '../../tools/BootstrapDialogs';
 
 /**
  * @param {Object} config

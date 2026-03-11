@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Plyr from 'plyr';
+import { alert } from '../../tools/BootstrapDialogs';
 import { fetchComments, getAccountBooruApi } from '../../services/api';
 import { CommentBody } from '../utils/CommentBody';
 import { Loading } from '../utils/Loading';

@@ -1,3 +1,4 @@
+import { alert } from './BootstrapDialogs';
 import { fetchProfile, fetchSingleImage, getAccountBooruApi } from '../services/api';
 
 /**
