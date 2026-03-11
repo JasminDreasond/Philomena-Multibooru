@@ -1,5 +1,5 @@
 import ReactMarkdown from 'react-markdown';
-import { openImageLink } from '../utils';
+import { openImageLink } from '../../utils';
 
 /**
  * @param {string} text

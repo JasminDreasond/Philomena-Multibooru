@@ -15,15 +15,15 @@ import {
 } from './services/api';
 import { applyThemeFromStorage } from './services/theme';
 
-import { SearchBar } from './components/SearchBar';
-import { ImageGallery, Image } from './components/ImageGallery';
+import { SearchBar } from './components/search/SearchBar';
+import { ImageGallery, Image } from './components/image/ImageGallery';
 import { SettingsPanel } from './components/SettingsPanel';
-import { ImageViewer } from './components/ImageViewer';
-import { UserProfile } from './components/UserProfile';
-import { Welcome } from './components/Welcome';
-import { Error404 } from './components/404';
-import { PaginationBar } from './components/PaginationBar';
-import { SearchControls } from './components/SearchControls';
+import { ImageViewer } from './components/image/ImageViewer';
+import { UserProfile } from './components/user/UserProfile';
+import { Welcome } from './components/home/Welcome';
+import { Error404 } from './components/errors/404';
+import { PaginationBar } from './components/utils/PaginationBar';
+import { SearchControls } from './components/search/SearchControls';
 
 /** @typedef {import('./services/api').ImageResult} ImageResult */
 /** @typedef {import('./services/api').ImageObj} ImageObj */

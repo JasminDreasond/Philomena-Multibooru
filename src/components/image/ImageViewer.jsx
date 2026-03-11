@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import Plyr from 'plyr';
-import { fetchComments, getAccountBooruApi } from '../services/api';
-import { CommentBody } from './CommentBody';
-import { Loading } from './Loading';
+import { fetchComments, getAccountBooruApi } from '../../services/api';
+import { CommentBody } from '../utils/CommentBody';
+import { Loading } from '../utils/Loading';
 
 const tags = [
   // Roles
@@ -29,8 +29,8 @@ const tags = [
 ];
 
 /**
- * @typedef {import('../services/api').ImageResult} ImageResult
- * @typedef {import('../services/api').CommentData} CommentData
+ * @typedef {import('../../services/api').ImageResult} ImageResult
+ * @typedef {import('../../services/api').CommentData} CommentData
  */
 
 /**

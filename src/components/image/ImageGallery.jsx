@@ -1,8 +1,8 @@
 import { useState } from 'react';
 
 /**
- * @typedef {import('../services/api').ImageResult} ImageResult
- * @typedef {import('../services/api').ImageObj} ImageObj
+ * @typedef {import('../../services/api').ImageResult} ImageResult
+ * @typedef {import('../../services/api').ImageObj} ImageObj
  */
 
 /**

@@ -5,15 +5,15 @@ import {
   fetchComments,
   syncUserGalleryPages,
   getAccountBooru,
-} from '../services/api';
-import { Image } from './ImageGallery';
-import { CommentBody } from './CommentBody';
-import { openImageLink } from '../utils';
+} from '../../services/api';
+import { Image } from '../image/ImageGallery';
+import { CommentBody } from '../utils/CommentBody';
+import { openImageLink } from '../../utils';
 
 /**
- * @typedef {import('../services/api').UserProfileData} UserProfileData
- * @typedef {import('../services/api').ImageResult} ImageResult
- * @typedef {import('../services/api').CommentData} CommentData
+ * @typedef {import('../../services/api').UserProfileData} UserProfileData
+ * @typedef {import('../../services/api').ImageResult} ImageResult
+ * @typedef {import('../../services/api').CommentData} CommentData
  */
 
 /**
@@ -37,7 +37,7 @@ const timeSince = (date) => {
 };
 
 /**
- * @param {{ booruUrl: string, username: string, userId: number, handleQuickLinkClick: import('../App').HandleQuickLinkClick, onClose: () => void, onOpenImage: (img: ImageResult) => void, onOpenProfile: (booruUrl: string, username: string, id: number) => void }} props
+ * @param {{ booruUrl: string, username: string, userId: number, handleQuickLinkClick: import('../../App').HandleQuickLinkClick, onClose: () => void, onOpenImage: (img: ImageResult) => void, onOpenProfile: (booruUrl: string, username: string, id: number) => void }} props
  */
 export const UserProfile = ({
   booruUrl,
