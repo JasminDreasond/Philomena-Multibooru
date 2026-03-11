@@ -41,19 +41,35 @@ Your data is *yours*. **Philomena Multi-Booru does not collect, track, or send a
 git clone https://github.com/JasminDreasond/Philomena-Multibooru.git
 ```
 
+
 2. Install the dependencies:
 ```bash
 yarn
 ```
 
 
-3. Start the development server:
+3. Development mode:
+To run the app with hot-reload for development:
 ```bash
 yarn dev
 ```
 
 
-4. Open the app, head to the **Settings** panel, and add your favorite Booru URLs along with your API keys to start syncing!
+4. Building for production:
+To generate a production-ready version of the app:
+```bash
+yarn build
+```
+
+
+This command will create a `/dist` folder containing all the optimized website files.
+
+### 🌐 Deployment Note
+
+The project includes a pre-configured Service Worker at `dist/sw.js`. This script is essential for the application's routing, as it ensures that all URL paths are correctly redirected to `index.html`. This allows the Single Page Application (SPA) to handle deep linking and navigation seamlessly without needing complex server-side rewrites.
+
+5. **Final Setup:**
+Open the app in your browser, head to the **Settings** panel, and add your favorite Booru URLs along with your API keys to start syncing!
 
 ## 🛠️ Built With
 
