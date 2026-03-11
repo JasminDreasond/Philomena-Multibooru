@@ -1,16 +1,27 @@
 import { fetchProfile, fetchSingleImage, getAccountBooruApi } from './services/api';
 
 /**
+ * Function type to update the loading state.
  * @typedef {(isLoading: boolean) => void} SetIsLoading
+ */
+
+/**
+ * Represents an image object from the API.
  * @typedef {import("./services/api").ImageObj} ImageObj
+ */
+
+/**
+ * Function type to handle opening an image link.
  * @typedef {(img: import('../services/api').ImageResult) => void} OnOpenImageLink
  */
 
 /**
- * @param {string} refId
- * @param {SetIsLoading} setIsLoading
- * @param {OnOpenImageLink} onOpenImageLink
- * @param {string} booruUrl
+ * Fetches image data from a Booru API and executes a callback to open the link.
+ * @param {string} refId - The reference ID of the image to fetch.
+ * @param {SetIsLoading} setIsLoading - Function to toggle the loading state.
+ * @param {string} booruUrl - The base URL of the Booru service.
+ * @param {OnOpenImageLink} onOpenImageLink - Callback function to handle the fetched image data.
+ * @returns {Promise<void>}
  */
 export const openImageLink = async (booruUrl, onOpenImageLink, setIsLoading, refId) => {
   setIsLoading(true);
@@ -32,14 +43,17 @@ export const openImageLink = async (booruUrl, onOpenImageLink, setIsLoading, ref
 };
 
 /**
+ * Function type to handle opening a profile link.
  * @typedef {(booruUrl: string, username: string, id: number) => void} OnOpenProfileLink
  */
 
 /**
- * @param {string} matchTarget
- * @param {SetIsLoading} setIsLoading
- * @param {OnOpenProfileLink} onOpenProfileLink
- * @param {string} booruUrl
+ * Fetches profile data from a Booru API and executes a callback to open the profile.
+ * @param {string} matchTarget - The username or target to match the profile.
+ * @param {SetIsLoading} setIsLoading - Function to toggle the loading state.
+ * @param {OnOpenProfileLink} onOpenProfileLink - Callback function to handle the profile data.
+ * @param {string} booruUrl - The base URL of the Booru service.
+ * @returns {Promise<void>}
  */
 export const openProfileLink = async (booruUrl, onOpenProfileLink, setIsLoading, matchTarget) => {
   setIsLoading(true);
@@ -57,4 +71,39 @@ export const openProfileLink = async (booruUrl, onOpenProfileLink, setIsLoading,
     console.error('Error fetching profile link:', err);
     alert('Error fetching profile data.');
   }
+};
+
+/**
+ * Updates the content attribute of a specific meta tag if it exists.
+ * @param {string} property - The property or name attribute of the meta tag.
+ * @param {string} content - The new content value for the meta tag.
+ * @returns {void}
+ */
+const setMetaTag = (property, content) => {
+  const element =
+    document.querySelector(`meta[property="${property}"]`) ||
+    document.querySelector(`meta[name="${property}"]`);
+
+  if (element) {
+    element.setAttribute('content', content);
+  } else {
+    console.warn(`Meta tag with property/name "${property}" was not found in the document.`);
+  }
+};
+
+/**
+ * Updates multiple Open Graph and Twitter meta tags for social media embeds.
+ * @param {Object} data - The metadata information object.
+ * @param {string} data.title - The title to be displayed in the embed.
+ * @param {string} data.description - The description text for the embed.
+ * @param {string} data.image - The absolute URL of the thumbnail image.
+ * @param {string} data.url - The canonical URL of the page.
+ * @returns {void}
+ */
+export const updateEmbedMetadata = ({ title, description, image, url }) => {
+  setMetaTag('og:title', title);
+  setMetaTag('twitter:title', title);
+  setMetaTag('og:description', description);
+  setMetaTag('og:image', image);
+  setMetaTag('og:url', url);
 };
