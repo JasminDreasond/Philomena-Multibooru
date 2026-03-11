@@ -173,7 +173,7 @@ export const ThemeSettings = ({ isDark }) => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const json = JSON.parse(e.target.result);
         const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
@@ -213,7 +213,7 @@ export const ThemeSettings = ({ isDark }) => {
         }
 
         if (importedCount > 0) {
-          alert('Theme imported successfully! Reloading to apply all colors.');
+          await alert('Theme imported successfully! Reloading to apply all colors.');
           window.location.reload();
         } else {
           alert('No valid colors found in the file.');
