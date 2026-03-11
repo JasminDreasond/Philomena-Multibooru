@@ -38,7 +38,7 @@ Your data is *yours*. **Philomena Multi-Booru does not collect, track, or send a
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/JasminDreasond/Philomena-Multibooru.git
+git clone https://github.com/Pony-House/Philomena-Multibooru.git
 ```
 
 

@@ -95,14 +95,14 @@ body {
     sans-serif;
 }
 
-a,
-a:link,
-a:visited {
+a:not(.btn):not(.btn-tool),
+a:not(.btn):not(.btn-tool):link,
+a:not(.btn):not(.btn-tool):visited {
   color: var(--app-primary);
   text-decoration: none;
 }
 
-a:hover {
+a:not(.btn):not(.btn-tool):hover {
   color: var(--app-primary-hover);
 }
 
@@ -204,15 +204,24 @@ a:hover {
   transform: translateY(0);
 }
 
-.btn-primary {
-  background-color: var(--app-primary) !important;
+.text-primary {
+  color: var(--app-primary) !important;
+}
+
+.btn-primary,
+.btn-outline-primary {
   border-color: var(--app-primary) !important;
   color: #ffffff !important;
 }
 
-.btn-primary:hover {
-  background-color: var(--app-primary-hover) !important;
+.btn-primary:hover,
+.btn-outline-primary:hover {
   border-color: var(--app-primary-hover) !important;
+  background-color: var(--app-primary-hover) !important;
+}
+
+.btn-primary {
+  background-color: var(--app-primary) !important;
 }
 
 .btn-secondary {
