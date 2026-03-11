@@ -1,4 +1,5 @@
 import { factoryResetDatabase } from '../../services/api';
+import { confirm } from '../../tools/BootstrapDialogs';
 
 /**
  * @param {Object} config
@@ -10,13 +11,13 @@ export const FactoryReset = ({ isLoading }) => {
    */
   const handleFactoryReset = async () => {
     /** @type {boolean} */
-    const firstWarning = window.confirm(
+    const firstWarning = await confirm(
       'WARNING: This will delete ALL data, including cached images, tags, and accounts. Do you want to proceed?',
     );
     if (!firstWarning) return;
 
     /** @type {boolean} */
-    const secondWarning = window.confirm(
+    const secondWarning = await confirm(
       'FINAL WARNING: This action is completely irreversible. Are you absolutely sure you want to factory reset the database?',
     );
     if (secondWarning) {

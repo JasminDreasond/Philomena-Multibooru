@@ -9,6 +9,7 @@ import {
   fixBooruUrl,
   clearSpecificBooruCache,
 } from '../../services/api';
+import { confirm } from '../../tools/BootstrapDialogs';
 
 export const Accounts = ({
   setMaxItemsLimit,
@@ -97,7 +98,7 @@ export const Accounts = ({
    */
   const handleClearAllAccounts = async () => {
     /** @type {boolean} */
-    const isConfirmed = window.confirm('Are you sure you want to delete all configured accounts?');
+    const isConfirmed = await confirm('Are you sure you want to delete all configured accounts?');
     if (isConfirmed) {
       setIsLoading(true);
       await deleteAllAccounts();
