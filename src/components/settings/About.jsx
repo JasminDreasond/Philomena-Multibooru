@@ -1,6 +1,3 @@
-/**
- * @param {{}} props
- */
 export const About = () => (
   <div className="fade-in pt-3">
     <div className="card no-anim mb-4">

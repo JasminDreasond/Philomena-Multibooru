@@ -17,7 +17,7 @@ import {
 
 import { Privacy } from './settings/Privacy';
 import { About } from './settings/About';
-import { Theme } from './settings/Theme';
+import { ThemeSettings } from './settings/Theme';
 
 /**
  * @typedef {import('../services/api').Account} Account
@@ -963,7 +963,7 @@ export const SettingsPanel = ({ isDark }) => {
         )}
 
         {/* Theme TAB */}
-        {activeTab === 'theme' && <Theme isDark={isDark} />}
+        {activeTab === 'theme' && <ThemeSettings isDark={isDark} />}
 
         {/* ABOUT & FAQ TAB */}
         {activeTab === 'about' && <About />}

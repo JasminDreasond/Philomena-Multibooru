@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
  * @param {Object} config
  * @param {boolean} config.isDark
  */
-export const Theme = ({ isDark }) => {
+export const ThemeSettings = ({ isDark }) => {
   /** @type {import('react').MutableRefObject<HTMLInputElement | null>} */
   const fileInputRef = useRef(null);
 
