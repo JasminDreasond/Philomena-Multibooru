@@ -224,7 +224,7 @@ export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => 
 
 /**
  * Represents the type of interaction a user had with an image.
- * @typedef {'faved'|'upVote'|null} InteractionValue
+ * @typedef {'faved'|'upVote'|'downVote'|null} InteractionValue
  */
 
 /**
@@ -648,16 +648,35 @@ const syncGalleryPage = async (
     /** @type {string} */
     const normalizedQuery = normalizeQueryString(query);
 
-    /** @type {ImageObj} */
+    /** @type {ImageObj[]} */
     const formattedImages = data.images.map((img) => parseImageData(booruUrl, img));
     const formattedInteractions = getInteractions(booruUrl, data);
 
     await dbConnection.insert({ into: 'Images', values: formattedImages, upsert: true });
-    await dbConnection.insert({
-      into: 'Interactions',
-      values: formattedInteractions,
-      upsert: true,
-    });
+
+    if (formattedInteractions.length > 0) {
+      await dbConnection.insert({
+        into: 'Interactions',
+        values: formattedInteractions,
+        upsert: true,
+      });
+    }
+
+    /** @type {number[]} */
+    const fetchedImageIds = data.images.map((img) => img.id);
+    /** @type {number[]} */
+    const interactedImageIds = data.interactions.map((int) => int.image_id);
+    /** @type {number[]} */
+    const nonInteractedImageIds = fetchedImageIds.filter((id) => !interactedImageIds.includes(id));
+
+    if (nonInteractedImageIds.length > 0) {
+      /** @type {string[]} */
+      const interactionIdsToRemove = nonInteractedImageIds.map((id) => `${booruUrl}_${id}`);
+      await dbConnection.remove({
+        from: 'Interactions',
+        where: { id: { in: interactionIdsToRemove } },
+      });
+    }
 
     if (normalizedQuery !== '*') {
       /** @type {QueryItem[]} */
