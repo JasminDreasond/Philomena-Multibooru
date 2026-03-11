@@ -1,4 +1,4 @@
-import { fetchProfile, fetchSingleImage, getAccountBooruApi } from './services/api';
+import { fetchProfile, fetchSingleImage, getAccountBooruApi } from '../../services/api';
 
 /**
  * Function type to update the loading state.
@@ -7,7 +7,7 @@ import { fetchProfile, fetchSingleImage, getAccountBooruApi } from './services/a
 
 /**
  * Represents an image object from the API.
- * @typedef {import("./services/api").ImageObj} ImageObj
+ * @typedef {import("../../services/api").ImageObj} ImageObj
  */
 
 /**
