@@ -1,5 +1,6 @@
 {
   "name": "philomena-multibooru",
+  "description": "Run philomena multibooru instances in a single page.",
   "private": true,
   "version": "0.0.0",
   "type": "module",
