@@ -1,4 +1,4 @@
-import { fetchProfile, fetchSingleImage, getAccountBooruApi } from '../../services/api';
+import { fetchProfile, fetchSingleImage, getAccountBooruApi } from '../services/api';
 
 /**
  * Function type to update the loading state.

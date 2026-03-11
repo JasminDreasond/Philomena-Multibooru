@@ -8,7 +8,7 @@ import {
 } from '../../services/api';
 import { Image } from '../image/ImageGallery';
 import { CommentBody } from '../utils/CommentBody';
-import { openImageLink } from '../utils/utils';
+import { openImageLink } from '../../tools/utils';
 
 /**
  * @typedef {import('../../services/api').UserProfileData} UserProfileData
