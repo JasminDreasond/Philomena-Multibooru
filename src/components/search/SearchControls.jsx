@@ -1,10 +1,16 @@
 /**
- * @param {{ sf: string, sd: string, onSortChange: (sf: string, sd: string) => void }} props
+ * @param {{ sf: string, sd: string, onSortChange: (sf: string, sd: string) => void, isInfiniteScroll: boolean, onInfiniteScrollChange: (val: boolean) => void }} props
  */
-export const SearchControls = ({ sf, sd, onSortChange }) => {
+export const SearchControls = ({
+  sf,
+  sd,
+  onSortChange,
+  isInfiniteScroll,
+  onInfiniteScrollChange,
+}) => {
   return (
     <div
-      className="d-flex flex-wrap gap-2 align-items-center px-2 rounded shadow-sm border"
+      className={`d-flex flex-wrap gap-2 align-items-center px-2 py-2${isInfiniteScroll ? ' mb-5' : ''} rounded shadow-sm border`}
       style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
     >
       <span className="fw-bold small ms-2" style={{ color: 'var(--app-text-muted)' }}>
@@ -50,6 +56,27 @@ export const SearchControls = ({ sf, sd, onSortChange }) => {
         <option value="desc">Descending</option>
         <option value="asc">Ascending</option>
       </select>
+
+      {/* Infinite Scroll Switch */}
+      <div className="ms-auto d-flex align-items-center me-2 mt-2 mt-sm-0">
+        <div className="form-check form-switch m-0 d-flex align-items-center">
+          <input
+            className="form-check-input mt-0 me-2"
+            type="checkbox"
+            id="infiniteScrollToggle"
+            checked={isInfiniteScroll}
+            onChange={(e) => onInfiniteScrollChange(e.target.checked)}
+            style={{ cursor: 'pointer' }}
+          />
+          <label
+            className="form-check-label small fw-bold"
+            htmlFor="infiniteScrollToggle"
+            style={{ color: 'var(--app-text-muted)', cursor: 'pointer' }}
+          >
+            Infinite Scroll
+          </label>
+        </div>
+      </div>
     </div>
   );
 };

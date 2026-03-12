@@ -108,6 +108,16 @@ const App = () => {
   /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
   const [sortDirection, setSortDirection] = useState('desc');
 
+  // --- Infinite Scroll States ---
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isInfiniteScroll, setIsInfiniteScroll] = useState(() => {
+    return localStorage.getItem('app_infiniteScroll') === 'true';
+  });
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [galleryRateLimited, setGalleryRateLimited] = useState(false);
+
   /** @type {import('react').MutableRefObject<boolean>} */
   const hasInitialized = useRef(false);
 
@@ -117,10 +127,20 @@ const App = () => {
   /** @type {import('react').MutableRefObject<boolean>} */
   const isFirstLoad = useRef(true);
 
-  // Refs for Dropdown and Sync control Smart
+  // Refs for Dropdown, Sync control and Infinite Scroll
   const booruDropdownRef = useRef(null);
   const lastSyncedBoorus = useRef(visibleBoorus);
   const latestVisibleBoorus = useRef(visibleBoorus);
+
+  /** @type {import('react').MutableRefObject<number|null>} */
+  const galleryObserverTarget = useRef(null);
+  /** @type {import('react').MutableRefObject<number>} */
+  const lastGalleryFetchTime = useRef(0);
+
+  // Synchronize Infinite Scroll Setting
+  useEffect(() => {
+    localStorage.setItem('app_infiniteScroll', isInfiniteScroll.toString());
+  }, [isInfiniteScroll]);
 
   // Synchronizes internal App State outbound to the URL bar
   useEffect(() => {
@@ -216,6 +236,10 @@ const App = () => {
     const handlePopState = async () => {
       const path = window.location.pathname;
       const params = new URLSearchParams(window.location.search);
+
+      // Resets shared pagination states for infinite scroll
+      setGalleryRateLimited(false);
+      lastGalleryFetchTime.current = 0;
 
       if (path === '/' || path === '') {
         setIsHomepage(true);
@@ -323,6 +347,9 @@ const App = () => {
     if (isSame) return; // Just gives refresh if you really changed something
 
     setIsSearching(true);
+    setGalleryRateLimited(false);
+    lastGalleryFetchTime.current = 0;
+    setCurrentPage(1);
     await clearImageCache(); // Cleans old images
     lastSyncedBoorus.current = newBoorus;
 
@@ -412,6 +439,47 @@ const App = () => {
         allowedBoorus: boorusToUse,
       });
       setWatchedImages(watchedResults);
+    }
+  };
+
+  /**
+   * Infinite scroll specific function: Appends the next page silently
+   */
+  const loadNextPage = async () => {
+    setIsFetchingMore(true);
+    lastGalleryFetchTime.current = Date.now();
+    const nextPage = currentPage + 1;
+    const queryToUse = searchQuery.trim() === '' ? geString : searchQuery;
+
+    try {
+      await syncUserGalleryPages({
+        query: parseQueryResults(queryToUse),
+        page: nextPage,
+        allowedBoorus: visibleBoorus,
+        sd: sortDirection,
+        sf: sortField,
+      });
+
+      const newImages = await searchImages({
+        query: parseQueryResults(queryToUse),
+        limit: pageLimit,
+        page: nextPage,
+        allowedBoorus: visibleBoorus,
+        sd: sortDirection,
+        sf: sortField,
+      });
+
+      setCurrentImages((prev) => {
+        const prevIds = new Set(prev.map((p) => p.id));
+        const uniqueNew = newImages.filter((f) => !prevIds.has(f.id));
+        return [...prev, ...uniqueNew];
+      });
+
+      setCurrentPage(nextPage);
+    } catch (err) {
+      console.error('Error fetching next page via Infinite Scroll:', err);
+    } finally {
+      setIsFetchingMore(false);
     }
   };
 
@@ -751,6 +819,39 @@ const App = () => {
     showNotifications,
   ]);
 
+  // Observer Effect specifically for Infinite Scroll in the Gallery
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          isInfiniteScroll &&
+          currentPage < totalPages &&
+          !isSearching &&
+          !isFetchingMore &&
+          !galleryRateLimited
+        ) {
+          const now = Date.now();
+          if (lastGalleryFetchTime.current > 0 && now - lastGalleryFetchTime.current < 2000) {
+            console.warn(
+              '⚠️ Security Lock: API request spam detected in gallery. Infinite scroll paused.',
+            );
+            setGalleryRateLimited(true);
+            return;
+          }
+          loadNextPage();
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    if (galleryObserverTarget.current) {
+      observer.observe(galleryObserverTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [isInfiniteScroll, currentPage, totalPages, isSearching, isFetchingMore, galleryRateLimited]);
+
   /**
    * @returns {void}
    */
@@ -779,6 +880,8 @@ const App = () => {
     setShowNotifications(false);
     setIs404(false);
     hasSynced.current = false;
+    setGalleryRateLimited(false);
+    lastGalleryFetchTime.current = 0;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -791,6 +894,8 @@ const App = () => {
     setCurrentPage(newPage);
     setIs404(false);
     hasSynced.current = false;
+    setGalleryRateLimited(false);
+    lastGalleryFetchTime.current = 0;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -804,6 +909,8 @@ const App = () => {
     setCurrentPage(1);
     setIs404(false);
     hasSynced.current = false;
+    setGalleryRateLimited(false);
+    lastGalleryFetchTime.current = 0;
   };
 
   /**
@@ -821,6 +928,8 @@ const App = () => {
     setSortDirection(sd);
     setCurrentPage(1);
     setIs404(false);
+    setGalleryRateLimited(false);
+    lastGalleryFetchTime.current = 0;
     handleSearchSubmit(query);
   };
 
@@ -848,6 +957,8 @@ const App = () => {
     setShowSettings(false);
     setShowNotifications(false);
     setIs404(false);
+    setGalleryRateLimited(false);
+    lastGalleryFetchTime.current = 0;
 
     if (willUseEffectTrigger) {
       hasSynced.current = false;
@@ -956,6 +1067,8 @@ const App = () => {
       document.removeEventListener('visibilitychange', handleVisibilityAndFocus);
     };
   }, []);
+
+  const infinityScrollMode = isInfiniteScroll && !isHomepage;
 
   return (
     <div className="min-vh-100 pb-5" style={{ backgroundColor: 'var(--app-bg)' }}>
@@ -1367,6 +1480,8 @@ const App = () => {
                       sf={sortField}
                       sd={sortDirection}
                       onSortChange={handleSortChange}
+                      isInfiniteScroll={isInfiniteScroll}
+                      onInfiniteScrollChange={setIsInfiniteScroll}
                     />
                   )}
 
@@ -1381,12 +1496,14 @@ const App = () => {
                     </div>
                   ) : (
                     <>
-                      <PaginationBar
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        isHomepage={isHomepage}
-                        onPageChange={changePage}
-                      />
+                      {!infinityScrollMode && (
+                        <PaginationBar
+                          currentPage={currentPage}
+                          totalPages={totalPages}
+                          isHomepage={isHomepage}
+                          onPageChange={changePage}
+                        />
+                      )}
 
                       <ImageGallery
                         gridClass={`row-cols-2 row-cols-md-4 gallery-grid g-2`}
@@ -1394,18 +1511,55 @@ const App = () => {
                         onOpenImage={handleOpenImage}
                       />
 
-                      <PaginationBar
-                        currentPage={currentPage}
-                        isHomepage={isHomepage}
-                        totalPages={totalPages}
-                        onPageChange={changePage}
-                      />
+                      {/* Infinite Scroll Trigger Element */}
+                      {infinityScrollMode && currentImages.length > 0 && (
+                        <div ref={galleryObserverTarget} className="text-center py-4 w-100 mt-2">
+                          {isFetchingMore ? (
+                            <div className="spinner-border text-primary" role="status"></div>
+                          ) : galleryRateLimited ? (
+                            <div
+                              className="alert p-3 mb-0 rounded shadow-sm border-0 mx-auto"
+                              style={{
+                                maxWidth: '500px',
+                                backgroundColor: 'var(--app-surface)',
+                                color: 'var(--app-text)',
+                                borderLeft: '4px solid #dc3545 !important',
+                              }}
+                            >
+                              <div className="d-flex flex-column text-center">
+                                <h6 className="fw-bold text-danger mb-2">
+                                  <i className="fa-solid fa-shield-halved me-2"></i>Security Lock
+                                </h6>
+                                <span className="small fw-semibold text-muted">
+                                  Auto-load disabled to prevent API spam. Your screen resolution
+                                  triggered the anti-spam protection.
+                                </span>
+                              </div>
+                            </div>
+                          ) : currentPage < totalPages ? (
+                            <span className="text-muted small fw-semibold">Scroll for more...</span>
+                          ) : (
+                            <span className="text-muted small fw-semibold">End of results.</span>
+                          )}
+                        </div>
+                      )}
+
+                      {!infinityScrollMode && (
+                        <PaginationBar
+                          currentPage={currentPage}
+                          isHomepage={isHomepage}
+                          totalPages={totalPages}
+                          onPageChange={changePage}
+                        />
+                      )}
 
                       {!isHomepage && (
                         <SearchControls
                           sf={sortField}
                           sd={sortDirection}
                           onSortChange={handleSortChange}
+                          isInfiniteScroll={isInfiniteScroll}
+                          onInfiniteScrollChange={setIsInfiniteScroll}
                         />
                       )}
                     </>
