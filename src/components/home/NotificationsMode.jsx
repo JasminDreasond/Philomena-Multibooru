@@ -20,6 +20,11 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
   });
 
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [enableSound, setEnableSound] = useState(() => {
+    return localStorage.getItem('app_notifSound') !== 'false';
+  });
+
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isActive, setIsActive] = useState(false);
 
   /** @type {[Date | null, import('react').Dispatch<import('react').SetStateAction<Date | null>>]} */
@@ -36,6 +41,10 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
     localStorage.setItem('app_notifAction', clickAction);
   }, [clickAction]);
 
+  useEffect(() => {
+    localStorage.setItem('app_notifSound', enableSound.toString());
+  }, [enableSound]);
+
   const requestPermission = async () => {
     const result = await Notification.requestPermission();
     setPermission(result);
@@ -47,6 +56,16 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
    * @param {string} body
    */
   const sendNotification = (booruUrl, title, body) => {
+    if (enableSound) {
+      try {
+        // REPLACE THIS PATH LATER WITH YOUR ACTUAL AUDIO FILE PATH
+        const audio = new Audio('/sounds/notification.mp3');
+        audio.play().catch((err) => console.warn('Audio playback prevented by browser:', err));
+      } catch (err) {
+        console.error('Failed to play notification sound:', err);
+      }
+    }
+
     if (Notification.permission !== 'granted') return;
 
     const notification = new Notification(title, {
@@ -116,6 +135,9 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
     return () => clearInterval(intervalId);
   }, [isActive, intervalMinutes, permission, visibleBoorus, accounts]);
 
+  /**
+   * @param {import('react').ChangeEvent<HTMLInputElement>} e
+   */
   const handleIntervalChange = (e) => {
     let val = parseInt(e.target.value, 10);
     if (isNaN(val)) val = 30;
@@ -195,6 +217,22 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
             <option value="app">Open in App Homepage</option>
             <option value="booru">Open natively in the Booru</option>
           </select>
+        </div>
+
+        <div className="mb-4 text-start">
+          <div className="form-check form-switch">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              id="enableSoundSwitch"
+              checked={enableSound}
+              onChange={(e) => setEnableSound(e.target.checked)}
+              disabled={isActive}
+            />
+            <label className="form-check-label fw-bold" htmlFor="enableSoundSwitch">
+              Play Sound Alert
+            </label>
+          </div>
         </div>
 
         {permission === 'granted' && (
