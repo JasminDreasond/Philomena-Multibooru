@@ -19,6 +19,11 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
     return localStorage.getItem('app_notifAction') === 'booru' ? 'booru' : 'app';
   });
 
+  /** @type {['default' | 'watched', import('react').Dispatch<import('react').SetStateAction<'default' | 'watched'>>]} */
+  const [searchType, setSearchType] = useState(() => {
+    return localStorage.getItem('app_notifSearchType') === 'watched' ? 'watched' : 'default';
+  });
+
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [enableSound, setEnableSound] = useState(() => {
     return localStorage.getItem('app_notifSound') !== 'false';
@@ -44,6 +49,10 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
   useEffect(() => {
     localStorage.setItem('app_notifSound', enableSound.toString());
   }, [enableSound]);
+
+  useEffect(() => {
+    localStorage.setItem('app_notifSearchType', searchType);
+  }, [searchType]);
 
   const requestPermission = async () => {
     const result = await Notification.requestPermission();
@@ -93,11 +102,12 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
       if (visibleBoorus.length === 0 || accounts.length === 0) return;
 
       const activeAccounts = accounts.filter((a) => visibleBoorus.includes(a.booruUrl));
+      const query = searchType === 'watched' ? 'my:watched' : '*';
 
       for (const acc of activeAccounts) {
         try {
           const data = await fetchPhilomena(acc.booruUrl, 'search/images', acc.apiKey, {
-            q: '*',
+            q: query,
             per_page: 1,
             sf: 'created_at',
             sd: 'desc',
@@ -105,17 +115,25 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
 
           if (data && data.images && data.images.length > 0) {
             const latestImage = data.images[0];
-            const previousId = lastSeenIds.current[acc.booruUrl];
+            const trackerKey = `${acc.booruUrl}_${searchType}`;
+            const previousId = lastSeenIds.current[trackerKey];
 
             if (previousId && latestImage.id > previousId) {
-              sendNotification(
-                acc.booruUrl,
-                `New Images on ${new URL(acc.booruUrl).hostname}!`,
-                `Yay! Fresh new images have just landed in the gallery!`,
-              );
+              const booruName = new URL(acc.booruUrl).hostname;
+              const title =
+                searchType === 'watched'
+                  ? `New Watched Images on ${booruName}!`
+                  : `New Images on ${booruName}!`;
+
+              const body =
+                searchType === 'watched'
+                  ? `Yaaaaaaay! Fresh new images have just landed in the gallery matching your watched tags!`
+                  : `Yay! Fresh new images have just landed in the gallery!`;
+
+              sendNotification(acc.booruUrl, title, body);
             }
 
-            lastSeenIds.current[acc.booruUrl] = latestImage.id;
+            lastSeenIds.current[trackerKey] = latestImage.id;
           }
         } catch (error) {
           console.error(`Failed to check notifications for ${acc.booruUrl}:`, error);
@@ -133,7 +151,7 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
     const intervalId = setInterval(checkNewImages, ms);
 
     return () => clearInterval(intervalId);
-  }, [isActive, intervalMinutes, permission, visibleBoorus, accounts]);
+  }, [isActive, intervalMinutes, permission, visibleBoorus, accounts, searchType]);
 
   /**
    * @param {import('react').ChangeEvent<HTMLInputElement>} e
@@ -185,6 +203,20 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
             </button>
           </div>
         )}
+
+        <div className="mb-3 text-start">
+          <label className="form-label fw-bold">Search Type</label>
+          <select
+            className="form-select fw-semibold"
+            style={{ backgroundColor: 'var(--app-bg)', color: 'var(--app-text)' }}
+            value={searchType}
+            onChange={(e) => setSearchType(e.target.value)}
+            disabled={isActive}
+          >
+            <option value="default">Default Gallery (*)</option>
+            <option value="watched">Watched List (my:watched)</option>
+          </select>
+        </div>
 
         <div className="mb-3 text-start">
           <label className="form-label fw-bold">Check Interval (Minutes)</label>
