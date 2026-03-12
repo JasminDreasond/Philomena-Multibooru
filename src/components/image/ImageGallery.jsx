@@ -112,8 +112,8 @@ const ContextMenu = ({ x, y, img, onClose }) => {
     : '';
 
   const groups = [
-    { icon: 'fa-solid fa-image', label: 'App Image URL', url: appImageUrl },
-    { icon: 'fa-solid fa-globe', label: 'Booru Image URL', url: booruImageUrl },
+    { icon: 'fa-solid fa-image', label: 'Image Page', url: appImageUrl },
+    { icon: 'fa-solid fa-globe', label: 'Image Page (Booru)', url: booruImageUrl },
     { icon: 'fa-solid fa-expand', label: 'Original Full Image', url: fullImageUrl },
   ];
 
@@ -122,8 +122,8 @@ const ContextMenu = ({ x, y, img, onClose }) => {
   }
 
   if (hasProfile) {
-    groups.push({ icon: 'fa-solid fa-id-badge', label: 'App Profile', url: appProfileUrl });
-    groups.push({ icon: 'fa-solid fa-user-circle', label: 'Booru Profile', url: booruProfileUrl });
+    groups.push({ icon: 'fa-solid fa-id-badge', label: 'Author Profile', url: appProfileUrl });
+    groups.push({ icon: 'fa-solid fa-user-circle', label: 'Author Profile (Booru)', url: booruProfileUrl });
   }
 
   const openLeft = x > window.innerWidth - 380;
