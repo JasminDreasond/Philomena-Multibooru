@@ -22,7 +22,7 @@ const throwApiError = (context, field) => {
  * @returns {Promise<any>} The parsed JSON response from the server.
  */
 export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) => {
-  const queryParams = new URLSearchParams({ ...params, key: apiKey }).toString();
+  const queryParams = new URLSearchParams(apiKey ? { ...params, key: apiKey } : params).toString();
   const url = `${booruUrl}/api/v1/json/${endpoint}?${queryParams}`;
 
   const response = await fetch(url);
