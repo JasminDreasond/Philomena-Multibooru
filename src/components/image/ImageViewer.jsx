@@ -49,6 +49,18 @@ const RATING_TAGS = [
   'grotesque',
 ];
 
+// Prefixes that should be ignored to ensure recommendation diversity
+const BLACKLIST_PREFIXES = [
+  'artist:',
+  'prompt:',
+  'author:',
+  'generator:',
+  'comic:',
+  'editor:',
+  'prompter:',
+  'voice actor:',
+];
+
 /**
  * @typedef {import('../../services/api').ImageResult} ImageResult
  * @typedef {import('../../services/api').CommentData} CommentData
@@ -264,7 +276,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
     let isMounted = true;
 
     /**
-     * Internal function to load image recommendations
+     * Internal function to load image recommendations with smart filtering
      */
     const loadRecommendations = async () => {
       if (
@@ -289,29 +301,38 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
           /** @type {string[]} */
           const allTags = image.tags || [];
 
-          // Separate rating tags from content tags
+          // 1. Extract rating tags (Static)
           /** @type {string[]} */
           const staticRatings = allTags.filter((tag) =>
             RATING_TAGS.includes(tag.toLowerCase().trim()),
           );
 
+          // 2. Filter out blacklisted metadata tags and ratings to get pure content
           /** @type {string[]} */
-          const contentTags = allTags.filter(
-            (tag) => !RATING_TAGS.includes(tag.toLowerCase().trim()),
-          );
+          const contentTags = allTags.filter((tag) => {
+            /** @type {string} */
+            const lowerTag = tag.toLowerCase().trim();
+            /** @type {boolean} */
+            const isRating = RATING_TAGS.includes(lowerTag);
+            /** @type {boolean} */
+            const isBlacklisted = BLACKLIST_PREFIXES.some((prefix) => lowerTag.startsWith(prefix));
 
+            return !isRating && !isBlacklisted;
+          });
+
+          // 3. Shuffle and pick content tags for the "OR" group
           /** @type {string[]} */
           const selectedContent = shuffleArray(contentTags).slice(0, recTagLimit);
 
           /** @type {string[]} */
           let queryParts = [];
 
-          // Add static ratings (e.g., "safe, suggestive")
+          // Add ratings (AND)
           if (staticRatings.length > 0) {
             queryParts.push(staticRatings.join(', '));
           }
 
-          // Add dynamic content tags with OR grouping (e.g., "(pony OR happy)")
+          // Add content group (OR)
           if (selectedContent.length > 0) {
             queryParts.push(`(${selectedContent.join(' OR ')})`);
           }
