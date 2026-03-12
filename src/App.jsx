@@ -1094,8 +1094,8 @@ const App = () => {
                 <button
                   className={`btn btn-sm text-nowrap w-100 w-lg-auto me-lg-2 mb-2 mb-lg-0 fw-bold ${showNotifications ? 'btn-warning' : 'btn-outline-warning'}`}
                   onClick={() => {
+                    hasSynced.current = false; // Make sure the gallery forces a refetch!
                     if (!showNotifications) {
-                      hasSynced.current = false;
                       setIs404(false);
                       setShowSettings(false);
                     }
@@ -1110,8 +1110,8 @@ const App = () => {
                   data-bs-dismiss="offcanvas"
                   style={{ borderColor: 'var(--app-navbar-text)', color: 'var(--app-navbar-text)' }}
                   onClick={() => {
+                    hasSynced.current = false; // Make sure the gallery forces a refetch!
                     if (!showSettings) {
-                      hasSynced.current = false;
                       setIs404(false);
                       setShowNotifications(false);
                     }
