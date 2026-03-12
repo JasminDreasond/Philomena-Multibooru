@@ -64,7 +64,13 @@ const formatBytes = (bytes) => {
 };
 
 /**
- * @param {{ image: ImageResult|null, onClose: () => void, onSearch: (query: string) => void, onOpenImage: (img: ImageResult) => void, onOpenProfile: (booruUrl: string, username: string, id: number) => void, onNavigateImage: (direction: 'prev'|'next') => Promise<void> }} props
+ * @param {object} props
+ * @param {ImageResult|null} props.image
+ * @param {() => void} props.onClose
+ * @param {(query: string) => void} props.onSearch
+ * @param {(img: ImageResult) => void} props.onOpenImage
+ * @param {(booruUrl: string, username: string, id: number) => void} props.onOpenProfile
+ * @param {(direction: 'prev'|'next') => Promise<void>} props.onNavigateImage
  */
 export const ImageViewer = ({
   image,
@@ -128,6 +134,8 @@ export const ImageViewer = ({
   const lastFetchTime = useRef(0); // Tracks the timestamp of the last fetch start
   /** @type {import('react').MutableRefObject<boolean>} */
   const pendingNavigation = useRef(false);
+  /** @type {import('react').MutableRefObject<number>} */
+  const lastNavActionTime = useRef(0); // Security cooldown for keyboard events
 
   // Initial Spoiler check
   const isImageSpoiler = image?.spoilered;
@@ -185,15 +193,24 @@ export const ImageViewer = ({
 
   // Setup Keyboard Shortcuts for Fast Navigation
   useEffect(() => {
+    /**
+     * @param {KeyboardEvent} e
+     */
     const handleKeyDown = (e) => {
       // Ignore key events originating from form elements like <input> or <textarea>
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
+      const now = Date.now();
+      // Security: 200ms debounce for navigation keys to prevent glitches
+      if (now - lastNavActionTime.current < 200) return;
+
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
+        lastNavActionTime.current = now;
         handleNavigation('prev');
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
+        lastNavActionTime.current = now;
         handleNavigation('next');
       }
     };
@@ -209,6 +226,7 @@ export const ImageViewer = ({
     setHasMoreRecs(true);
     setIsAllowedToFetch(false);
     setIsRateLimited(false);
+    setIsLoadingRecs(false);
     currentRecQuery.current = '';
     lastFetchTime.current = 0;
 
@@ -232,6 +250,10 @@ export const ImageViewer = ({
     const unlock = (e) => {
       // Don't unlock if the user is just holding down the quick nav arrow keys
       if (e.type === 'keydown' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) return;
+
+      const now = Date.now();
+      // Security: 200ms debounce for navigation keys to prevent glitches
+      if (now - lastNavActionTime.current < 200) return;
       setIsInteractionReady(true);
     };
 
@@ -321,16 +343,7 @@ export const ImageViewer = ({
      * Internal function to load image recommendations with smart filtering
      */
     const loadRecommendations = async () => {
-      if (
-        !image ||
-        !enableRecs ||
-        !hasMoreRecs ||
-        !isAllowedToFetch ||
-        isLoadingRecs ||
-        isRateLimited
-      )
-        return;
-
+      if (!image || !enableRecs || !hasMoreRecs || !isAllowedToFetch || isRateLimited) return;
       setIsLoadingRecs(true);
       lastFetchTime.current = Date.now(); // Record the exact moment the API request starts
 
@@ -369,14 +382,10 @@ export const ImageViewer = ({
           let queryParts = [];
 
           // Add ratings (AND)
-          if (staticRatings.length > 0) {
-            queryParts.push(staticRatings.join(', '));
-          }
+          if (staticRatings.length > 0) queryParts.push(staticRatings.join(', '));
 
           // Add content group (OR)
-          if (selectedContent.length > 0) {
-            queryParts.push(`(${selectedContent.join(' OR ')})`);
-          }
+          if (selectedContent.length > 0) queryParts.push(`(${selectedContent.join(' OR ')})`);
 
           // Global filters
           queryParts.push(
@@ -412,9 +421,7 @@ export const ImageViewer = ({
 
         if (isMounted && data) {
           // If the API returns less than requested, we reached the end
-          if (data.length < 20) {
-            setHasMoreRecs(false);
-          }
+          if (data.length < 20) setHasMoreRecs(false);
 
           // Filter out the exact image being viewed to avoid self-recommendation
           let formatted = data.filter(
@@ -476,11 +483,7 @@ export const ImageViewer = ({
       },
       { threshold: 0.1 },
     );
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
+    if (observerTarget.current) observer.observe(observerTarget.current);
     return () => observer.disconnect();
   }, [hasMoreRecs, isLoadingRecs, isAllowedToFetch, isRateLimited]);
 
@@ -505,12 +508,7 @@ export const ImageViewer = ({
    */
   const formatPhilomenaTags = (tags) => {
     return tags
-      .map((tag) => {
-        /** @type {string} */
-        const sanitized = tag.toLowerCase().trim().replace(/\s+/g, '+').replace(/:/g, '-colon-');
-
-        return sanitized;
-      })
+      .map((tag) => tag.toLowerCase().trim().replace(/\s+/g, '+').replace(/:/g, '-colon-'))
       .join('_');
   };
 
@@ -519,12 +517,7 @@ export const ImageViewer = ({
    * @returns {string}
    */
   const getDownloadUrl = (url) => {
-    /** @type {string} */
-    const VIEW_PATH = '/img/view/';
-    /** @type {string} */
-    const DOWNLOAD_PATH = '/img/download/';
-
-    return url.replace(VIEW_PATH, DOWNLOAD_PATH);
+    return url.replace('/img/view/', '/img/download/');
   };
 
   /**
@@ -579,16 +572,13 @@ export const ImageViewer = ({
   /**
    * @returns {void}
    */
-  const handleDownloadWithTags = () => {
+  const handleDownloadWithTags = () =>
     handleDownloadTemplate(getFullDownloadUrl(image.representations.full, image.tags));
-  };
 
   /**
    * @returns {void}
    */
-  const handleDownload = () => {
-    handleDownloadTemplate(getDownloadUrl(image.representations.full));
-  };
+  const handleDownload = () => handleDownloadTemplate(getDownloadUrl(image.representations.full));
 
   /**
    * @param {string} text
