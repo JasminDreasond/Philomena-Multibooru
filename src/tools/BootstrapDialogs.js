@@ -1,3 +1,5 @@
+import { Modal } from 'bootstrap/dist/js/bootstrap.bundle.min.js';
+
 /**
  * @typedef {Object} ModalOptions
  * @property {string} [title]
@@ -5,8 +7,6 @@
  * @property {string} [cancelText]
  * @property {string} [defaultValue]
  */
-
-import { Modal } from 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 /**
  * @typedef {Object} ModalOptions
@@ -20,6 +20,13 @@ import { Modal } from 'bootstrap/dist/js/bootstrap.bundle.min.js';
  * Utility to replace native alert/confirm/prompt with Bootstrap 5 modals.
  */
 class BootstrapDialogs {
+  /** @type {Modal|null} */
+  static _activeInstance = null;
+  /** @type {Function|null} */
+  static _activeResolve = null;
+  /** @type {'alert'|'confirm'|'prompt'|null} */
+  static _activeType = null;
+
   /**
    * @param {string} message
    * @param {ModalOptions} [options]
@@ -91,9 +98,9 @@ class BootstrapDialogs {
             <div class="modal fade" id="bs-custom-modal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
-                        <div class="modal-header" style="background-color: var(--app-navbar-bg);">
-                            <h5 class="modal-title">${title}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="color: #fff;"></button>
+                        <div class="modal-header" style="background-color: var(--app-navbar-bg, #000);">
+                            <h5 class="modal-title" style="color: #fff;">${title}</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body" style="white-space: pre-wrap;">${body}</div>
                         <div class="modal-footer">
@@ -106,15 +113,48 @@ class BootstrapDialogs {
   }
 
   /**
+   * Clean up any existing modal and resolve its promise.
+   */
+  static _cleanup() {
+    if (this._activeResolve) {
+      /** @type {any} */
+      let cancelValue;
+      if (this._activeType === 'prompt') cancelValue = null;
+      else if (this._activeType === 'confirm') cancelValue = false;
+
+      this._activeResolve(cancelValue);
+      this._activeResolve = null;
+    }
+
+    if (this._activeInstance) {
+      this._activeInstance.dispose();
+      this._activeInstance = null;
+    }
+
+    /** @type {HTMLElement|null} */
+    const element = document.getElementById('bs-custom-modal');
+    if (element) element.remove();
+
+    /** @type {HTMLElement|null} */
+    const backdrop = document.querySelector('.modal-backdrop');
+    if (backdrop) backdrop.remove();
+
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+  }
+
+  /**
    * @param {string} html
    * @param {'alert'|'confirm'|'prompt'} type
    * @returns {Promise<any>}
    */
   static _show(html, type) {
+    this._cleanup();
+
     return new Promise((resolve) => {
-      /** @type {HTMLElement|null} */
-      const existing = document.getElementById('bs-custom-modal');
-      if (existing) existing.remove();
+      this._activeResolve = resolve;
+      this._activeType = type;
 
       document.body.insertAdjacentHTML('beforeend', html);
 
@@ -125,20 +165,19 @@ class BootstrapDialogs {
       /** @type {HTMLInputElement|null} */
       const inputField = document.getElementById('bs-prompt-input');
 
-      // @ts-ignore
-      const bsModal = new Modal(modalElement);
+      this._activeInstance = new Modal(modalElement);
       /** @type {boolean} */
       let isConfirmed = false;
 
       /** @type {Function} */
       const handleConfirm = () => {
         isConfirmed = true;
+        /** @type {any} */
         let value;
         if (type === 'prompt') value = inputField.value;
         else if (type === 'confirm') value = true;
-        else value = undefined;
 
-        bsModal.hide();
+        this._activeInstance.hide();
         resolve(value);
       };
 
@@ -146,17 +185,26 @@ class BootstrapDialogs {
 
       // Handle cancel/close
       modalElement.addEventListener('hidden.bs.modal', () => {
-        modalElement.remove();
-        if (!isConfirmed) {
-          if (type === 'prompt') resolve(null);
-          else if (type === 'confirm') resolve(false);
-          else resolve();
+        if (this._activeResolve === resolve) {
+          if (!isConfirmed) {
+            /** @type {any} */
+            let value;
+            if (type === 'prompt') value = null;
+            else if (type === 'confirm') value = false;
+            resolve(value);
+          }
+          this._activeResolve = null;
+          this._activeInstance = null;
         }
+        modalElement.remove();
       });
 
-      bsModal.show();
+      this._activeInstance.show();
       if (type === 'prompt' && inputField) {
-        modalElement.addEventListener('shown.bs.modal', () => inputField.focus());
+        modalElement.addEventListener('shown.bs.modal', () => {
+          inputField.focus();
+          inputField.select();
+        });
       }
     });
   }
@@ -170,23 +218,20 @@ window.prompt = (msg, def) => BootstrapDialogs.prompt(msg, def);
 export { BootstrapDialogs };
 
 /**
- * @param {string} message
- * @param {ModalOptions} [options]
+ * @param {string} msg
  * @returns {Promise<void>}
  */
 export const alert = (msg) => BootstrapDialogs.alert(msg);
 
 /**
- * @param {string} message
- * @param {string} [defaultValue]
- * @param {ModalOptions} [options]
+ * @param {string} msg
+ * @param {string} [def]
  * @returns {Promise<string|null>}
  */
 export const prompt = (msg, def) => BootstrapDialogs.prompt(msg, def);
 
 /**
- * @param {string} message
- * @param {ModalOptions} [options]
+ * @param {string} msg
  * @returns {Promise<boolean>}
  */
 export const confirm = (msg) => BootstrapDialogs.confirm(msg);
