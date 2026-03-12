@@ -1,9 +1,6 @@
 import './404.css';
 
-/**
- * @param {{ onClick: () => void }} props
- */
-export const Error404 = ({ onClick }) => {
+export const Error404 = () => {
   return (
     <div className="error-container text-center fade-in">
       <img
@@ -19,9 +16,9 @@ export const Error404 = ({ onClick }) => {
         connected in your settings.
       </p>
 
-      <button className="btn btn-home fw-bold shadow-sm" onClick={onClick}>
+      <a className="btn btn-home fw-bold shadow-sm" href="/">
         Return to Home
-      </button>
+      </a>
     </div>
   );
 };

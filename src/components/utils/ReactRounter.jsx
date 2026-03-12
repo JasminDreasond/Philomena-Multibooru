@@ -63,50 +63,6 @@ const ServiceWorkerSync = () => {
       document.removeEventListener('visibilitychange', handleVisibilityAndFocus);
     };
   }, []);
-
-  useEffect(() => {
-    /**
-     * @param {MessageEvent} event
-     */
-    const handleMessage = (event) => {
-      /** @type {any} */
-      const data = event.data;
-
-      if (data?.type === 'ROUTE_INVALID') {
-        console.warn(`[React] Unauthorized or invalid route detected by SW: ${data.path}`);
-
-        // Strategy: Force a reload to let the Service Worker's 'fetch' event
-        // take over and serve the actual 404 Response with the correct status code.
-        window.location.reload();
-      }
-    };
-
-    if ('serviceWorker' in navigator) {
-      // Listen for messages from the SW
-      navigator.serviceWorker.addEventListener('message', handleMessage);
-
-      // Send current route for validation whenever it changes
-      if (navigator.serviceWorker.controller) {
-        /** @type {string} */
-        const currentPath = window.location.pathname;
-        /** @type {string} */
-        const currentHost = window.location.hostname;
-
-        navigator.serviceWorker.controller.postMessage({
-          type: 'VALIDATE_ROUTE',
-          path: currentPath,
-          hostname: currentHost,
-        });
-      }
-    }
-
-    // Cleanup listener on unmount
-    return () => {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.removeEventListener('message', handleMessage);
-      }
-    };
-  }, [window.location.pathname]);
 };
 
 export default ServiceWorkerSync;

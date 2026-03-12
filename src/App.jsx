@@ -1113,7 +1113,7 @@ const App = () => {
    * @returns {Promise<void>}
    */
   const handleRandomImageClick = async () => {
-    if (!connectedAccounts || connectedAccounts.length === 0) return;
+    if (is404 || !connectedAccounts || connectedAccounts.length === 0) return;
 
     setIsRandomizing(true);
     try {
@@ -1167,6 +1167,7 @@ const App = () => {
             href="/"
             onClick={(e) => {
               e.preventDefault();
+              if (is404) return window.open('/', '_self');
               goToHome();
             }}
             className="navbar-brand mb-0 fw-bold d-flex align-items-center text-decoration-none"
@@ -1258,86 +1259,88 @@ const App = () => {
                       border: '1px solid var(--app-border)',
                     }}
                     type="button"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                    data-bs-auto-close="outside"
+                    data-bs-toggle={!is404 ? 'dropdown' : null}
+                    aria-expanded={!is404 ? 'false' : null}
+                    data-bs-auto-close={!is404 ? 'outside' : null}
                   >
                     <span className="fw-bold">
                       Boorus ({visibleBoorus.length}/{connectedAccounts?.length || 0})
                     </span>
                     <i className="bi bi-chevron-down"></i>
                   </button>
-                  <ul
-                    className="dropdown-menu dropdown-menu-end shadow-sm"
-                    style={{
-                      backgroundColor: 'var(--app-surface)',
-                      borderColor: 'var(--app-border)',
-                    }}
-                  >
-                    <li>
-                      <button
-                        className="dropdown-item fw-bold text-success"
-                        onClick={() => {
-                          const allAccounts = connectedAccounts.map((a) => a.booruUrl);
-                          setVisibleBoorus(allAccounts);
-                          applyBooruChanges(allAccounts);
-                        }}
-                      >
-                        Select All
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        className="dropdown-item fw-bold text-danger"
-                        onClick={() => {
-                          setVisibleBoorus([]);
-                          applyBooruChanges([]);
-                        }}
-                      >
-                        Deselect All
-                      </button>
-                    </li>
-                    <li>
-                      <hr
-                        className="dropdown-divider"
-                        style={{ borderColor: 'var(--app-border)' }}
-                      />
-                    </li>
-                    {connectedAccounts?.map((acc) => {
-                      const isVisible = visibleBoorus.includes(acc.booruUrl);
-                      return (
-                        <li key={acc.id}>
-                          <button
-                            className="dropdown-item d-flex align-items-center gap-2"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (isVisible)
-                                setVisibleBoorus(
-                                  visibleBoorus.filter((url) => url !== acc.booruUrl),
-                                );
-                              else setVisibleBoorus([...visibleBoorus, acc.booruUrl]);
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              className="form-check-input m-0"
-                              checked={isVisible}
-                              readOnly
-                            />
-                            {new URL(acc.booruUrl).hostname}
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  {!is404 && (
+                    <ul
+                      className="dropdown-menu dropdown-menu-end shadow-sm"
+                      style={{
+                        backgroundColor: 'var(--app-surface)',
+                        borderColor: 'var(--app-border)',
+                      }}
+                    >
+                      <li>
+                        <button
+                          className="dropdown-item fw-bold text-success"
+                          onClick={() => {
+                            const allAccounts = connectedAccounts.map((a) => a.booruUrl);
+                            setVisibleBoorus(allAccounts);
+                            applyBooruChanges(allAccounts);
+                          }}
+                        >
+                          Select All
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          className="dropdown-item fw-bold text-danger"
+                          onClick={() => {
+                            setVisibleBoorus([]);
+                            applyBooruChanges([]);
+                          }}
+                        >
+                          Deselect All
+                        </button>
+                      </li>
+                      <li>
+                        <hr
+                          className="dropdown-divider"
+                          style={{ borderColor: 'var(--app-border)' }}
+                        />
+                      </li>
+                      {connectedAccounts?.map((acc) => {
+                        const isVisible = visibleBoorus.includes(acc.booruUrl);
+                        return (
+                          <li key={acc.id}>
+                            <button
+                              className="dropdown-item d-flex align-items-center gap-2"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (isVisible)
+                                  setVisibleBoorus(
+                                    visibleBoorus.filter((url) => url !== acc.booruUrl),
+                                  );
+                                else setVisibleBoorus([...visibleBoorus, acc.booruUrl]);
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                className="form-check-input m-0"
+                                checked={isVisible}
+                                readOnly
+                              />
+                              {new URL(acc.booruUrl).hostname}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
                 </div>
 
                 <button
                   className={`btn btn-sm text-nowrap w-100 w-lg-auto me-lg-2 mb-2 mb-lg-0 fw-bold ${showNotifications ? 'btn-warning' : 'btn-outline-warning'}`}
                   onClick={() => {
+                    if (is404) return window.open('/notifications', '_self');
                     hasSynced.current = false; // Make sure the gallery forces a refetch!
                     if (!showNotifications) {
-                      setIs404(false);
                       setShowSettings(false);
                     }
                     setShowNotifications(!showNotifications);
@@ -1351,9 +1354,9 @@ const App = () => {
                   data-bs-dismiss="offcanvas"
                   style={{ borderColor: 'var(--app-navbar-text)', color: 'var(--app-navbar-text)' }}
                   onClick={() => {
+                    if (is404) return window.open('/settings', '_self');
                     hasSynced.current = false; // Make sure the gallery forces a refetch!
                     if (!showSettings) {
-                      setIs404(false);
                       setShowNotifications(false);
                     }
                     setShowSettings(!showSettings);
@@ -1368,7 +1371,7 @@ const App = () => {
       </nav>
 
       {is404 ? (
-        <Error404 onClick={goToHome} />
+        <Error404 />
       ) : showNotifications ? (
         <NotificationsMode
           accounts={connectedAccounts || []}
