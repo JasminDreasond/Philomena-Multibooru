@@ -1,6 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { shuffleArray } from 'tiny-essentials/basics/array';
-import Plyr from 'plyr';
+
+import { MediaPlayer, MediaProvider } from '@vidstack/react';
+import {
+  defaultLayoutIcons,
+  DefaultVideoLayout,
+  DefaultAudioLayout,
+} from '@vidstack/react/player/layouts/default';
+
 import { alert } from '../../tools/BootstrapDialogs';
 import {
   fetchComments,
@@ -121,11 +128,6 @@ export const ImageViewer = ({
   /** @type {import('react').MutableRefObject<boolean>} */
   const pendingNavigation = useRef(false);
 
-  /** @type {import('react').MutableRefObject<HTMLElement>} */
-  const videoRef = useRef(null);
-  /** @type {[HTMLElement|null, import('react').Dispatch<import('react').SetStateAction<HTMLElement>>]} */
-  const [, setPlayer] = useState(null);
-
   const enableRecs = localStorage.getItem('app_enableRecs') === 'true';
   const recVideoMode = localStorage.getItem('app_recVideoMode') === 'true';
   const recTagLimit = parseInt(localStorage.getItem('app_recTagLimit') || '5', 10);
@@ -237,26 +239,6 @@ export const ImageViewer = ({
       window.removeEventListener('keydown', unlock, { capture: true });
     };
   }, [isInteractionReady]);
-
-  // Plyr Setup
-  useEffect(() => {
-    if (videoRef.current && isVideo && !isLoading && !isNavigating) {
-      const p = new Plyr(videoRef.current, {
-        autoplay: plyrAutoplay,
-        muted: plyrMuted,
-        loop: { active: plyrLoop },
-        hideControls: plyrHideControls,
-        fullscreen: {
-          enabled: true,
-          fallback: true,
-          iosNative: true,
-          container: null,
-        },
-        storage: { enabled: plyrStorage, key: 'plyr' },
-      });
-      setPlayer(p);
-    }
-  }, [image, isVideo, plyrAutoplay, plyrMuted, plyrLoop, plyrHideControls, plyrStorage]);
 
   // Fetch Comments (Lazy Loaded via isInteractionReady)
   useEffect(() => {
@@ -750,17 +732,22 @@ export const ImageViewer = ({
         )}
 
         {isVideo ? (
-          <video
-            ref={videoRef}
-            src={image.representations.full}
+          <MediaPlayer
             className="booru-video-player"
-            controls
+            src={image.representations.full}
+            onCanPlay={() => setIsMediaLoaded(true)}
+            style={{ opacity: isMediaLoaded ? 1 : 0, transition: 'opacity 0.2s ease-in' }}
             autoPlay={plyrAutoplay}
             loop={plyrLoop}
             muted={plyrMuted}
-            onLoadedData={() => setIsMediaLoaded(true)}
-            style={{ opacity: isMediaLoaded ? 1 : 0, transition: 'opacity 0.2s ease-in' }}
-          />
+            storage={plyrStorage ? 'media-player' : null}
+            hideControlsOnMouseLeave={plyrHideControls}
+          >
+            <MediaProvider />
+            {/* Layouts */}
+            <DefaultAudioLayout icons={defaultLayoutIcons} />
+            <DefaultVideoLayout icons={defaultLayoutIcons} />
+          </MediaPlayer>
         ) : (
           <img
             src={imageSrc}

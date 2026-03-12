@@ -29,7 +29,7 @@ export const AppSettings = ({
     localStorage.getItem('app_inAppViewer') === 'true',
   );
 
-  /* Plyr Settings */
+  /* Player Settings */
   const [plyrAutoplay, setPlyrAutoplay] = useState(
     localStorage.getItem('app_plyrAutoplay') !== 'false',
   );
@@ -213,7 +213,7 @@ export const AppSettings = ({
       </div>
 
       <div className="card no-anim mt-4">
-        <div className="card-header fw-bold">Video Player (Plyr) Settings</div>
+        <div className="card-header fw-bold">Video Player Settings</div>
         <div className="card-body">
           <div className="form-check form-switch mb-2">
             <input
@@ -297,7 +297,7 @@ export const AppSettings = ({
               className="form-check-label fw-semibold text-primary"
               htmlFor="plyrStorageSwitch"
             >
-              Enable Plyr Local Storage (Remembers volume and player settings)
+              Enable Player Local Storage (Remembers volume and player settings)
             </label>
           </div>
         </div>

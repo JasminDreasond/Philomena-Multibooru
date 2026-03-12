@@ -599,20 +599,22 @@ a:not(.btn):not(.btn-tool):hover {
    Video Player
    ========================================= */
 
-:root {
-  --plyr-color-main: var(--app-primary);
+.booru-video-player .vds-slider-track-fill {
+  background-color: var(--app-primary);
 }
 
 .booru-video-player {
-  max-width: 100%;
   max-height: 85vh;
-  object-fit: contain;
+  width: auto;
+  border: 0px solid transparent !important;
+}
+
+.booru-video-player video {
+  height: 100%;
 }
 
 :fullscreen .booru-video-player {
-  max-width: unset;
   max-height: unset;
-  object-fit: unset;
 }
 
 /* =========================================
