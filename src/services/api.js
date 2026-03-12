@@ -310,9 +310,10 @@ export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => 
  * @param {number} [perPage] Items per page.
  * @param {string} [sd] Sort direction ('asc' or 'desc').
  * @param {string} [sf] Sort field (e.g., 'created_at').
+ * @param {number} [limit=null] Content limit.
  * @returns {Promise<{ total: number; interactions: any[]; images: any[] }>} Raw API response data.
  */
-export const searchImagesApi = async (booruUrl, apiKey, query, page, perPage, sd, sf) => {
+export const searchImagesApi = async (booruUrl, apiKey, query, page, perPage, sd, sf, limit) => {
   /** @type {Record<string, any>} */
   const data = { q: query };
 
@@ -320,6 +321,7 @@ export const searchImagesApi = async (booruUrl, apiKey, query, page, perPage, sd
   if (typeof perPage === 'number') data.per_page = perPage;
   if (typeof sd === 'string') data.sd = sd;
   if (typeof sf === 'string') data.sf = sf;
+  if (typeof limit === 'number') data.limit = limit;
 
   const filterId = await getBooruFilterId(booruUrl);
   if (filterId) {
@@ -629,6 +631,7 @@ const getInteractions = (booruUrl, data) => {
  * @param {number} [perPage] Results per page.
  * @param {string} [sd] Sort direction.
  * @param {string} [sf] Sort field.
+ * @param {number} [limit=null] Content limit.
  * @returns {Promise<any>} The raw data returned by the API.
  */
 const syncGalleryPage = async (
@@ -639,13 +642,14 @@ const syncGalleryPage = async (
   perPage = undefined,
   sd = undefined,
   sf = undefined,
+  limit = null,
 ) => {
   if (typeof syncTimes[booruUrl] !== 'number') syncTimes[booruUrl] = 0;
   syncTimes[booruUrl]++;
   const time = syncTimes[booruUrl];
 
   try {
-    const data = await searchImagesApi(booruUrl, apiKey, query, page, perPage, sd, sf);
+    const data = await searchImagesApi(booruUrl, apiKey, query, page, perPage, sd, sf, limit);
     /** @type {string} */
     const normalizedQuery = normalizeQueryString(query);
 
@@ -1007,6 +1011,7 @@ export const toggleAccountStatus = async (accountId, isActive) => {
  * @param {Object} [config] Configuration object.
  * @param {string} [config.query='*'] Search query.
  * @param {number} [config.page=1] Page number.
+ * @param {number} [config.limit=null] Content limit.
  * @param {string[]|null} [config.allowedBoorus=null] Boorus to sync.
  * @param {number} [config.perPage=50] Limit per booru.
  * @param {Account} [config.account] Specific account to sync.
@@ -1017,6 +1022,7 @@ export const toggleAccountStatus = async (accountId, isActive) => {
 export const syncUserGalleryPages = async ({
   query = '*',
   page = 1,
+  limit = null,
   allowedBoorus = null,
   perPage = 50,
   account,
@@ -1033,7 +1039,7 @@ export const syncUserGalleryPages = async ({
   if (accounts.length === 0) return { accounts: [], syncLimit: perPage, totalCount: 0 };
 
   const syncs = accounts.map((account) =>
-    syncGalleryPage(account.booruUrl, account.apiKey, query, page, perPage, sd, sf),
+    syncGalleryPage(account.booruUrl, account.apiKey, query, page, perPage, sd, sf, limit),
   );
 
   const results = await Promise.all(syncs);

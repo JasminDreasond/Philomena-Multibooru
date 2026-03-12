@@ -12,9 +12,8 @@ import { alert } from '../../tools/BootstrapDialogs';
 import {
   fetchComments,
   getAccountBooruApi,
-  searchImagesApi,
-  parseImageData,
-  fixImageObj,
+  searchImages,
+  syncUserGalleryPages,
 } from '../../services/api';
 import { CommentBody } from '../utils/CommentBody';
 import { Loading } from '../utils/Loading';
@@ -62,6 +61,58 @@ const formatBytes = (bytes) => {
   const sizes = ['Bytes', 'KiB', 'MiB', 'GiB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(0)) + ' ' + sizes[i];
+};
+
+/**
+ * Component to handle Recommendation Items with built-in Spoiler System
+ * @param {{ recImg: ImageResult, onOpenImage: (img: ImageResult) => void }} props
+ */
+const RecommendationItem = ({ recImg, onOpenImage }) => {
+  const isSpoiler =
+    recImg.spoilered ||
+    recImg.tags?.some(
+      (t) => t.toLowerCase() === 'spoiler' || t.toLowerCase().startsWith('spoiler:'),
+    );
+
+  const [revealed, setRevealed] = useState(!isSpoiler);
+
+  return (
+    <div className="col" key={`${recImg.booruUrl}_${recImg.id}`}>
+      <div
+        className="h-100 position-relative"
+        style={{ overflow: 'hidden', borderRadius: 'var(--bs-border-radius, 0.25rem)' }}
+      >
+        <div
+          style={{
+            filter: revealed ? 'none' : 'blur(15px)',
+            transition: 'filter 0.3s ease',
+            height: '100%',
+          }}
+          onClick={(e) => {
+            if (!revealed) {
+              e.preventDefault();
+              e.stopPropagation();
+              setRevealed(true);
+            }
+          }}
+        >
+          <Image img={recImg} onOpenImage={onOpenImage} />
+        </div>
+        {!revealed && (
+          <div
+            className="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+            style={{ backgroundColor: 'rgba(0,0,0,0.4)', cursor: 'pointer', zIndex: 10 }}
+            onClick={() => setRevealed(true)}
+            title="Click to reveal spoiler"
+          >
+            <span className="badge bg-danger fs-6 fw-bold shadow-sm">
+              <i className="bi bi-eye-slash me-1"></i>Spoiler
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 /**
@@ -290,7 +341,7 @@ export const ImageViewer = ({
     };
   }, [image?.id, enableRecs]);
 
-  // Fetch Recommendations (Lazy Loaded via isInteractionReady)
+  // Fetch Recommendations using Multi-Booru Search
   useEffect(() => {
     if (!isInteractionReady) return;
 
@@ -314,9 +365,6 @@ export const ImageViewer = ({
       lastFetchTime.current = Date.now(); // Record the exact moment the API request starts
 
       try {
-        /** @type {string} */
-        const apiKey = await getAccountBooruApi(image.booruUrl);
-
         // Generate query ONLY on the first page to keep pagination stable
         if (recPage === 1 && !currentRecQuery.current) {
           /** @type {string[]} */
@@ -370,36 +418,48 @@ export const ImageViewer = ({
           currentRecQuery.current = queryParts.join(', ');
         }
 
-        const data = await searchImagesApi(
-          image.booruUrl,
-          apiKey,
-          parseQueryResults(currentRecQuery.current),
-          recPage,
-          20,
-          'desc',
-          'wilson_score',
-        );
+        // Fetching from all active boorus selected by the user
+        const activeBoorus = JSON.parse(localStorage.getItem('app_visibleBoorus') || '[]');
+        if (activeBoorus.length === 0) activeBoorus.push(image.booruUrl);
 
-        if (isMounted && data && data.images) {
+        await syncUserGalleryPages({
+          query: parseQueryResults(currentRecQuery.current),
+          limit: 20,
+          page: recPage,
+          allowedBoorus: activeBoorus,
+          sd: 'desc',
+          sf: 'wilson_score',
+        });
+
+        const data = await searchImages({
+          query: parseQueryResults(currentRecQuery.current),
+          limit: 20,
+          page: recPage,
+          allowedBoorus: activeBoorus,
+          sd: 'desc',
+          sf: 'wilson_score',
+        });
+
+        if (isMounted && data) {
           // If the API returns less than requested, we reached the end
-          if (data.images.length < 20) {
+          if (data.length < 20) {
             setHasMoreRecs(false);
           }
 
-          /** @type {ImageResult[]} */
-          let formatted = data.images
-            .filter((img) => img.id !== image.id) // Exclude current viewing image
-            .map((img) => fixImageObj(parseImageData(image.booruUrl, img)));
+          // Filter out the exact image being viewed to avoid self-recommendation
+          let formatted = data.filter(
+            (img) => !(img.id === image.id && img.booruUrl === image.booruUrl),
+          );
 
           // Shuffle the newly fetched batch so the grid looks organic
           formatted = shuffleArray(formatted);
 
           setRecommendations((prev) => {
-            // Prevent duplicates using a Set (just in case the API overlaps pages)
-            /** @type {Set<number>} */
-            const prevIds = new Set(prev.map((p) => p.id));
+            // Using composite key (booruUrl + id) to prevent dupes across platforms
+            /** @type {Set<string>} */
+            const prevIds = new Set(prev.map((p) => `${p.booruUrl}_${p.id}`));
             /** @type {ImageResult[]} */
-            const uniqueNew = formatted.filter((f) => !prevIds.has(f.id));
+            const uniqueNew = formatted.filter((f) => !prevIds.has(`${f.booruUrl}_${f.id}`));
             return [...prev, ...uniqueNew];
           });
         }
@@ -713,6 +773,7 @@ export const ImageViewer = ({
 
       {/* Image Area */}
       <div
+        key={image.id}
         className="position-relative d-flex justify-content-center align-items-center bg-black mb-4 mx-auto shadow-sm"
         style={{
           minHeight: '400px',
@@ -1133,11 +1194,11 @@ export const ImageViewer = ({
               ) : (
                 <div className="row row-cols-2 row-cols-lg-1 g-3">
                   {recommendations.map((recImg) => (
-                    <div className="col" key={`${recImg.booruUrl}_${recImg.id}`}>
-                      <div className="h-100">
-                        <Image img={recImg} onOpenImage={onOpenImage} />
-                      </div>
-                    </div>
+                    <RecommendationItem
+                      key={`${recImg.booruUrl}_${recImg.id}`}
+                      recImg={recImg}
+                      onOpenImage={onOpenImage}
+                    />
                   ))}
                 </div>
               )}
