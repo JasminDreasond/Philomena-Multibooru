@@ -426,7 +426,7 @@ export const UserProfile = ({
               <div className="philo-panel-header justify-content-between">
                 <span>Recent Uploads</span>
                 <a
-                  href={`/search?q=uploader%3A${profile.name}`}
+                  href={`/search?q=uploader%3A${encodeURIComponent(profile.name)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) =>
@@ -457,7 +457,7 @@ export const UserProfile = ({
               <div className="philo-panel-header justify-content-between">
                 <span>Recent Favorites</span>
                 <a
-                  href={`/search?q=faved_by:${profile.name}`}
+                  href={`/search?q=faved_by:${encodeURIComponent(profile.name)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) =>
