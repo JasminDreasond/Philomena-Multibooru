@@ -64,58 +64,6 @@ const formatBytes = (bytes) => {
 };
 
 /**
- * Component to handle Recommendation Items with built-in Spoiler System
- * @param {{ recImg: ImageResult, onOpenImage: (img: ImageResult) => void }} props
- */
-const RecommendationItem = ({ recImg, onOpenImage }) => {
-  const isSpoiler =
-    recImg.spoilered ||
-    recImg.tags?.some(
-      (t) => t.toLowerCase() === 'spoiler' || t.toLowerCase().startsWith('spoiler:'),
-    );
-
-  const [revealed, setRevealed] = useState(!isSpoiler);
-
-  return (
-    <div className="col" key={`${recImg.booruUrl}_${recImg.id}`}>
-      <div
-        className="h-100 position-relative"
-        style={{ overflow: 'hidden', borderRadius: 'var(--bs-border-radius, 0.25rem)' }}
-      >
-        <div
-          style={{
-            filter: revealed ? 'none' : 'blur(15px)',
-            transition: 'filter 0.3s ease',
-            height: '100%',
-          }}
-          onClick={(e) => {
-            if (!revealed) {
-              e.preventDefault();
-              e.stopPropagation();
-              setRevealed(true);
-            }
-          }}
-        >
-          <Image img={recImg} onOpenImage={onOpenImage} />
-        </div>
-        {!revealed && (
-          <div
-            className="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
-            style={{ backgroundColor: 'rgba(0,0,0,0.4)', cursor: 'pointer', zIndex: 10 }}
-            onClick={() => setRevealed(true)}
-            title="Click to reveal spoiler"
-          >
-            <span className="badge bg-danger fs-6 fw-bold shadow-sm">
-              <i className="bi bi-eye-slash me-1"></i>Spoiler
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-/**
  * @param {{ image: ImageResult|null, onClose: () => void, onSearch: (query: string) => void, onOpenImage: (img: ImageResult) => void, onOpenProfile: (booruUrl: string, username: string, id: number) => void, onNavigateImage: (direction: 'prev'|'next') => Promise<void> }} props
  */
 export const ImageViewer = ({
@@ -165,6 +113,8 @@ export const ImageViewer = ({
   const [hasMoreRecs, setHasMoreRecs] = useState(true);
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isAllowedToFetch, setIsAllowedToFetch] = useState(false);
+  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  const [retryRecsCount, setRetryRecsCount] = useState(0);
 
   // Security Anti-Spam State
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
@@ -178,6 +128,12 @@ export const ImageViewer = ({
   const lastFetchTime = useRef(0); // Tracks the timestamp of the last fetch start
   /** @type {import('react').MutableRefObject<boolean>} */
   const pendingNavigation = useRef(false);
+
+  // Initial Spoiler check
+  const isImageSpoiler = image?.spoilered;
+
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [revealed, setRevealed] = useState(!isImageSpoiler);
 
   const enableRecs = localStorage.getItem('app_enableRecs') === 'true';
   const recVideoMode = localStorage.getItem('app_recVideoMode') === 'true';
@@ -256,6 +212,10 @@ export const ImageViewer = ({
     currentRecQuery.current = '';
     lastFetchTime.current = 0;
 
+    // Fix 1: Re-evaluate the spoiler state for the new image safely
+    const isImgSpoiler = image?.spoilered;
+    setRevealed(!isImgSpoiler);
+
     // Checks if we got here via quick navigation to engage the Lazy Load lock
     if (pendingNavigation.current) {
       setIsInteractionReady(false);
@@ -263,7 +223,7 @@ export const ImageViewer = ({
     } else {
       setIsInteractionReady(true);
     }
-  }, [image?.id]);
+  }, [image?.id, image?.spoilered]);
 
   // Interaction Unlocker for Lazy Loading network-heavy tasks
   useEffect(() => {
@@ -340,6 +300,16 @@ export const ImageViewer = ({
       document.removeEventListener('visibilitychange', checkFocus);
     };
   }, [image?.id, enableRecs]);
+
+  // Retry Mechanism for Recommendations
+  const handleRetryRecs = () => {
+    setHasMoreRecs(true);
+    setRecPage(1);
+    currentRecQuery.current = ''; // Clear query forces useEffect to draw new tags!
+    setRecommendations([]);
+    setIsRateLimited(false);
+    setRetryRecsCount((prev) => prev + 1);
+  };
 
   // Fetch Recommendations using Multi-Booru Search
   useEffect(() => {
@@ -476,7 +446,7 @@ export const ImageViewer = ({
     return () => {
       isMounted = false;
     };
-  }, [image, enableRecs, isAllowedToFetch, recPage, isInteractionReady]);
+  }, [image, enableRecs, isAllowedToFetch, recPage, isInteractionReady, retryRecsCount]);
 
   // Infinite Scroll Observer for Recommendations with Anti-Spam protection
   useEffect(() => {
@@ -776,11 +746,19 @@ export const ImageViewer = ({
         key={image.id}
         className="position-relative d-flex justify-content-center align-items-center bg-black mb-4 mx-auto shadow-sm"
         style={{
+          filter: revealed ? 'none' : 'blur(100px)',
+          transition: 'filter 0.3s ease',
           minHeight: '400px',
           cursor: isVideo ? 'default' : isZoomed ? 'zoom-out' : 'zoom-in',
           borderBottom: '1px solid #111',
         }}
-        onClick={() => !isVideo && setIsZoomed(!isZoomed)}
+        onClick={(e) => {
+          if (!revealed) {
+            e.preventDefault();
+            e.stopPropagation();
+            setRevealed(true);
+          } else if (!isVideo) setIsZoomed(!isZoomed);
+        }}
       >
         {/* Visual Loading State overlay for the media box */}
         {!isMediaLoaded && (
@@ -822,6 +800,18 @@ export const ImageViewer = ({
               opacity: isMediaLoaded ? 1 : 0,
             }}
           />
+        )}
+        {!revealed && (
+          <div
+            className="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+            style={{ backgroundColor: 'rgba(0,0,0,0.4)', cursor: 'pointer', zIndex: 10 }}
+            onClick={() => setRevealed(true)}
+            title="Click to reveal spoiler"
+          >
+            <span className="badge bg-danger fs-6 fw-bold shadow-sm">
+              <i className="bi bi-eye-slash me-1"></i>Spoiler
+            </span>
+          </div>
         )}
       </div>
 
@@ -1185,20 +1175,27 @@ export const ImageViewer = ({
                   <div className="spinner-border text-primary" role="status"></div>
                 </div>
               ) : recommendations.length === 0 ? (
-                <div
-                  className="text-muted text-center p-3 border rounded border-dashed"
-                  style={{ borderColor: 'var(--app-border)' }}
-                >
-                  No similar recommendations found right now.
+                <div className="d-flex flex-column gap-2">
+                  <div
+                    className="text-muted text-center p-3 border rounded border-dashed"
+                    style={{ borderColor: 'var(--app-border)' }}
+                  >
+                    No similar recommendations found right now.
+                  </div>
+                  {/* Fix 2: Button to try to search again by image new tags from the original image */}
+                  <button
+                    className="btn btn-sm btn-outline-primary fw-bold"
+                    onClick={handleRetryRecs}
+                  >
+                    🔄 Try Again
+                  </button>
                 </div>
               ) : (
                 <div className="row row-cols-2 row-cols-lg-1 g-3">
                   {recommendations.map((recImg) => (
-                    <RecommendationItem
-                      key={`${recImg.booruUrl}_${recImg.id}`}
-                      recImg={recImg}
-                      onOpenImage={onOpenImage}
-                    />
+                    <div key={`${recImg.booruUrl}_${recImg.id}`}>
+                      <Image img={recImg} onOpenImage={onOpenImage} />
+                    </div>
                   ))}
                 </div>
               )}
