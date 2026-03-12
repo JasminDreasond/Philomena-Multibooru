@@ -14,52 +14,10 @@ import { Loading } from '../utils/Loading';
 import { ProfileLink } from './ProfileLink';
 import { Image } from './ImageGallery';
 
-const tags = [
-  // Roles
-  { prefix: 'artist:', className: 'artist' },
-  { prefix: 'prompter:', className: 'prompter' },
-  { prefix: 'editor:', className: 'editor' },
-  { prefix: 'voice actor:', className: 'voice-actor' },
-
-  // Content Types
-  { prefix: 'character:', className: 'character' },
-  { prefix: 'series:', className: 'series' },
-  { prefix: 'anatomy:', className: 'anatomy' },
-  { prefix: 'oc:', className: 'oc' },
-  { prefix: 'project:', className: 'project' },
-  { prefix: 'comic:', className: 'comic' },
-  { prefix: 'spoiler:', className: 'spoiler' },
-
-  // Technical & Status
-  { prefix: 'software:', className: 'software' },
-  { prefix: 'generator:', className: 'generator' },
-  { prefix: 'meta:', className: 'meta' },
-  { prefix: 'spoiler:', className: 'spoiler' },
-  { prefix: 'warning:', className: 'warning' },
-];
-
-// List of static rating tags used by Philomena-based boorus
-const RATING_TAGS = [
-  'safe',
-  'suggestive',
-  'questionable',
-  'explicit',
-  'semi-grimdark',
-  'grimdark',
-  'grotesque',
-];
-
-// Prefixes that should be ignored to ensure recommendation diversity
-const BLACKLIST_PREFIXES = [
-  'artist:',
-  'prompt:',
-  'author:',
-  'generator:',
-  'comic:',
-  'editor:',
-  'prompter:',
-  'voice actor:',
-];
+import CORE_TAGS from './tags/core';
+import BLACKLIST_TAGS from './tags/blacklistTags';
+import BLACKLIST_PREFIXES from './tags/blacklistPrefixes';
+import tagsPrefixCssList from './tags/tagsPrefixCssList';
 
 /**
  * @typedef {import('../../services/api').ImageResult} ImageResult
@@ -304,7 +262,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
           // 1. Extract rating tags (Static)
           /** @type {string[]} */
           const staticRatings = allTags.filter((tag) =>
-            RATING_TAGS.includes(tag.toLowerCase().trim()),
+            CORE_TAGS.includes(tag.toLowerCase().trim()),
           );
 
           // 2. Filter out blacklisted metadata tags and ratings to get pure content
@@ -313,9 +271,11 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
             /** @type {string} */
             const lowerTag = tag.toLowerCase().trim();
             /** @type {boolean} */
-            const isRating = RATING_TAGS.includes(lowerTag);
+            const isRating = CORE_TAGS.includes(lowerTag);
             /** @type {boolean} */
-            const isBlacklisted = BLACKLIST_PREFIXES.some((prefix) => lowerTag.startsWith(prefix));
+            const isBlacklisted =
+              BLACKLIST_PREFIXES.some((prefix) => lowerTag.startsWith(prefix)) ||
+              BLACKLIST_TAGS.some((tag) => lowerTag === tag);
 
             return !isRating && !isBlacklisted;
           });
@@ -547,7 +507,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
    * @returns {string}
    */
   const getTagClass = (tag) => {
-    const extraTag = tags.find((i) => tag.startsWith(i.prefix));
+    const extraTag = tagsPrefixCssList.find((i) => tag.startsWith(i.prefix));
     return `tag-${tag
       .replace(/[^a-zA-Z\s:]/g, '')
       .replace(/:/g, '-')
