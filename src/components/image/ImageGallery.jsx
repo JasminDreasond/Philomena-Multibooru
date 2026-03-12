@@ -93,9 +93,9 @@ const ContextMenuGroup = ({ icon, label, url, openLeft }) => {
 };
 
 /**
- * @param {{ x: number, y: number, img: ImageResult, onClose: () => void }} props
+ * @param {{ x: number, y: number, img: ImageResult, onClose: () => void, onOpenImage?: (img: ImageResult) => void }} props
  */
-const ContextMenu = ({ x, y, img, onClose }) => {
+const ContextMenu = ({ x, y, img, onClose, onOpenImage }) => {
   const appImageUrl = `${window.location.origin}/${new URL(img.booruUrl).hostname}/images/${img.id}`;
   const booruImageUrl = `${img.booruUrl}/images/${img.id}`;
   const fullImageUrl = img.representations?.full;
@@ -131,7 +131,10 @@ const ContextMenu = ({ x, y, img, onClose }) => {
 
   const openLeft = x > window.innerWidth - 380;
   const safeX = Math.min(x, window.innerWidth - 220);
-  const safeY = Math.min(y, window.innerHeight - groups.length * 40);
+
+  const totalItemsCount = (onOpenImage ? 1 : 0) + groups.length;
+  const safeY = Math.min(y, window.innerHeight - totalItemsCount * 40);
+  const openImagesInApp = localStorage.getItem('app_inAppViewer') === 'true';
 
   return createPortal(
     <>
@@ -161,6 +164,30 @@ const ContextMenu = ({ x, y, img, onClose }) => {
           borderColor: 'var(--app-border)',
         }}
       >
+        {!openImagesInApp && (
+          <>
+            <button
+              className="dropdown-item d-flex justify-content-start align-items-center fw-semibold rounded"
+              style={{
+                fontSize: '0.85rem',
+                padding: '0.4rem 1rem',
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                onOpenImage(img);
+                onClose();
+              }}
+            >
+              <i
+                className="fa-solid fa-eye me-2 text-primary"
+                style={{ width: '16px', textAlign: 'center' }}
+              ></i>
+              Open in App Viewer
+            </button>
+            <hr className="dropdown-divider my-1" style={{ borderColor: 'var(--app-border)' }} />
+          </>
+        )}
+
         {groups.map((group, idx) => (
           <ContextMenuGroup
             key={idx}
@@ -372,7 +399,13 @@ export const Image = ({ img, className, onOpenImage }) => {
       </div>
 
       {contextMenu.visible && (
-        <ContextMenu x={contextMenu.x} y={contextMenu.y} img={img} onClose={closeContextMenu} />
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          img={img}
+          onClose={closeContextMenu}
+          onOpenImage={onOpenImage}
+        />
       )}
     </>
   );
