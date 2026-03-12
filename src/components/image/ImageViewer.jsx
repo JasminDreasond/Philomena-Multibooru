@@ -38,6 +38,17 @@ const tags = [
   { prefix: 'warning:', className: 'warning' },
 ];
 
+// List of static rating tags used by Philomena-based boorus
+const RATING_TAGS = [
+  'safe',
+  'suggestive',
+  'questionable',
+  'explicit',
+  'semi-grimdark',
+  'grimdark',
+  'grotesque',
+];
+
 /**
  * @typedef {import('../../services/api').ImageResult} ImageResult
  * @typedef {import('../../services/api').CommentData} CommentData
@@ -252,6 +263,9 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
   useEffect(() => {
     let isMounted = true;
 
+    /**
+     * Internal function to load image recommendations
+     */
     const loadRecommendations = async () => {
       if (
         !image ||
@@ -267,17 +281,46 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
       lastFetchTime.current = Date.now(); // Record the exact moment the API request starts
 
       try {
+        /** @type {string} */
         const apiKey = await getAccountBooruApi(image.booruUrl);
 
         // Generate query ONLY on the first page to keep pagination stable
         if (recPage === 1 && !currentRecQuery.current) {
-          const shuffledTags = shuffleArray(image.tags || []);
-          const selectedTags = shuffledTags.slice(0, recTagLimit);
+          /** @type {string[]} */
+          const allTags = image.tags || [];
 
-        // Build the query using Philomena's correct syntax for OR grouping
-          let queryParts = [`(${selectedTags.join(' OR ')})`, 'first_seen_at.gt:3 days ago'];
+          // Separate rating tags from content tags
+          /** @type {string[]} */
+          const staticRatings = allTags.filter((tag) =>
+            RATING_TAGS.includes(tag.toLowerCase().trim()),
+          );
+
+          /** @type {string[]} */
+          const contentTags = allTags.filter(
+            (tag) => !RATING_TAGS.includes(tag.toLowerCase().trim()),
+          );
+
+          /** @type {string[]} */
+          const selectedContent = shuffleArray(contentTags).slice(0, recTagLimit);
+
+          /** @type {string[]} */
+          let queryParts = [];
+
+          // Add static ratings (e.g., "safe, suggestive")
+          if (staticRatings.length > 0) {
+            queryParts.push(staticRatings.join(', '));
+          }
+
+          // Add dynamic content tags with OR grouping (e.g., "(pony OR happy)")
+          if (selectedContent.length > 0) {
+            queryParts.push(`(${selectedContent.join(' OR ')})`);
+          }
+
+          // Global filters
+          queryParts.push('first_seen_at.gt:3 days ago');
           if (recVideoMode) queryParts.push('video');
 
+          // The comma between static ratings and the OR group acts as AND
           currentRecQuery.current = queryParts.join(', ');
         }
 
@@ -295,6 +338,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
             setHasMoreRecs(false);
           }
 
+          /** @type {ImageResult[]} */
           let formatted = data.images
             .filter((img) => img.id !== image.id) // Exclude current viewing image
             .map((img) => fixImageObj(parseImageData(image.booruUrl, img)));
@@ -304,7 +348,9 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
 
           setRecommendations((prev) => {
             // Prevent duplicates using a Set (just in case the API overlaps pages)
+            /** @type {Set<number>} */
             const prevIds = new Set(prev.map((p) => p.id));
+            /** @type {ImageResult[]} */
             const uniqueNew = formatted.filter((f) => !prevIds.has(f.id));
             return [...prev, ...uniqueNew];
           });
