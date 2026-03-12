@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * @typedef {import('../../services/api').ImageResult} ImageResult
@@ -93,9 +94,9 @@ const ContextMenuGroup = ({ icon, label, url, openLeft }) => {
 };
 
 /**
- * @param {{ x: number, y: number, img: ImageResult }} props
+ * @param {{ x: number, y: number, img: ImageResult, onClose: () => void }} props
  */
-const ContextMenu = ({ x, y, img }) => {
+const ContextMenu = ({ x, y, img, onClose }) => {
   const appImageUrl = `${window.location.origin}/${new URL(img.booruUrl).hostname}/images/${img.id}`;
   const booruImageUrl = `${img.booruUrl}/images/${img.id}`;
   const fullImageUrl = img.representations?.full;
@@ -129,28 +130,46 @@ const ContextMenu = ({ x, y, img }) => {
   const safeX = Math.min(x, window.innerWidth - 220);
   const safeY = Math.min(y, window.innerHeight - groups.length * 40);
 
-  return (
-    <div
-      className="dropdown-menu show shadow p-1"
-      style={{
-        position: 'fixed',
-        top: Math.max(0, safeY),
-        left: Math.max(0, safeX),
-        zIndex: 1050,
-        backgroundColor: 'var(--app-surface)',
-        borderColor: 'var(--app-border)',
-      }}
-    >
-      {groups.map((group, idx) => (
-        <ContextMenuGroup
-          key={idx}
-          icon={group.icon}
-          label={group.label}
-          url={group.url}
-          openLeft={openLeft}
-        />
-      ))}
-    </div>
+  return createPortal(
+    <>
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 1040,
+        }}
+        onClick={onClose}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          onClose();
+        }}
+      />
+      <div
+        className="dropdown-menu show shadow p-1"
+        style={{
+          position: 'fixed',
+          top: Math.max(0, safeY),
+          left: Math.max(0, safeX),
+          zIndex: 1050,
+          backgroundColor: 'var(--app-surface)',
+          borderColor: 'var(--app-border)',
+        }}
+      >
+        {groups.map((group, idx) => (
+          <ContextMenuGroup
+            key={idx}
+            icon={group.icon}
+            label={group.label}
+            url={group.url}
+            openLeft={openLeft}
+          />
+        ))}
+      </div>
+    </>,
+    document.body,
   );
 };
 
@@ -185,6 +204,10 @@ export const Image = ({ img, className, onOpenImage }) => {
       x: e.clientX,
       y: e.clientY,
     });
+  };
+
+  const closeContextMenu = () => {
+    setContextMenu({ visible: false, x: 0, y: 0 });
   };
 
   /**
@@ -345,7 +368,9 @@ export const Image = ({ img, className, onOpenImage }) => {
         </a>
       </div>
 
-      {contextMenu.visible && <ContextMenu x={contextMenu.x} y={contextMenu.y} img={img} />}
+      {contextMenu.visible && (
+        <ContextMenu x={contextMenu.x} y={contextMenu.y} img={img} onClose={closeContextMenu} />
+      )}
     </>
   );
 };
