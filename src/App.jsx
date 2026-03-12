@@ -18,6 +18,7 @@ import { applyThemeFromStorage } from './services/theme';
 import { SearchBar } from './components/search/SearchBar';
 import { ImageGallery, Image } from './components/image/ImageGallery';
 import { SettingsPanel } from './components/settings/SettingsPanel';
+import { NotificationsMode } from './components/home/NotificationsMode';
 import { ImageViewer } from './components/image/ImageViewer';
 import { UserProfile } from './components/user/UserProfile';
 import { Welcome } from './components/home/Welcome';
@@ -30,7 +31,7 @@ import { SearchControls } from './components/search/SearchControls';
 /** @typedef {import('./services/api').Account} Account */
 
 /**
- * @typedef {(e: MouseEvent<HTMLAnchorElement, MouseEvent>, query: string, sf: string, sd: string) => void} HandleQuickLinkClick
+ * @typedef {(e: import('react').MouseEvent<HTMLAnchorElement, MouseEvent>, query: string, sf: string, sd: string) => void} HandleQuickLinkClick
  */
 
 const App = () => {
@@ -54,6 +55,9 @@ const App = () => {
 
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [showSettings, setShowSettings] = useState(false);
+
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [showNotifications, setShowNotifications] = useState(false);
 
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isHomepage, setIsHomepage] = useState(true);
@@ -129,6 +133,8 @@ const App = () => {
     if (showSettings) {
       newPath = '/settings';
       if (window.location.search.includes('tab=')) newSearch = window.location.search;
+    } else if (showNotifications) {
+      newPath = '/notifications';
     } else if (is404) {
       // Keeps the current broken URL visible so the user sees what went wrong
       return;
@@ -159,6 +165,7 @@ const App = () => {
     }
   }, [
     showSettings,
+    showNotifications,
     viewingProfile,
     viewingImage,
     isHomepage,
@@ -178,6 +185,8 @@ const App = () => {
       document.title = `Page Not Found - ${baseTitle}`;
     } else if (showSettings) {
       document.title = `Settings - ${baseTitle}`;
+    } else if (showNotifications) {
+      document.title = `Notifications Mode - ${baseTitle}`;
     } else if (viewingProfile) {
       document.title = `${viewingProfile.username}'s Profile - ${baseTitle}`;
     } else if (viewingImage) {
@@ -191,7 +200,15 @@ const App = () => {
     } else {
       document.title = baseTitle;
     }
-  }, [showSettings, viewingProfile, viewingImage, isHomepage, searchQuery, is404]);
+  }, [
+    showSettings,
+    showNotifications,
+    viewingProfile,
+    viewingImage,
+    isHomepage,
+    searchQuery,
+    is404,
+  ]);
 
   // Handle Forward/Back button navigation internally
   useEffect(() => {
@@ -202,6 +219,7 @@ const App = () => {
       if (path === '/' || path === '') {
         setIsHomepage(true);
         setShowSettings(false);
+        setShowNotifications(false);
         setViewingImage(null);
         setViewingProfile(null);
         setSearchQuery('');
@@ -212,6 +230,11 @@ const App = () => {
         hasSynced.current = false; // Force recharge the main gallery if necessary
       } else if (path.startsWith('/settings')) {
         setShowSettings(true);
+        setShowNotifications(false);
+        setIs404(false);
+      } else if (path.startsWith('/notifications')) {
+        setShowNotifications(true);
+        setShowSettings(false);
         setIs404(false);
       } else if (path.startsWith('/search')) {
         const q = params.get('q') || '*';
@@ -227,6 +250,7 @@ const App = () => {
         setViewingImage(null);
         setViewingProfile(null);
         setShowSettings(false);
+        setShowNotifications(false);
         setIs404(false);
         hasSynced.current = false; // Force reload the search
       } else {
@@ -241,6 +265,7 @@ const App = () => {
           if (acc) {
             setIsHomepage(false);
             setShowSettings(false);
+            setShowNotifications(false);
             setIs404(false);
 
             if (imgMatch) {
@@ -429,11 +454,13 @@ const App = () => {
       const results = await Promise.all(syncPromises);
       const mainSync = results[0];
 
-      setPageLimit(mainSync.syncLimit);
-      setTotalPages(Math.max(1, Math.ceil(mainSync.totalCount / mainSync.syncLimit)));
+      if (mainSync) {
+        setPageLimit(mainSync.syncLimit);
+        setTotalPages(Math.max(1, Math.ceil(mainSync.totalCount / mainSync.syncLimit)));
+      }
 
       await loadLocalData(
-        mainSync.syncLimit,
+        mainSync ? mainSync.syncLimit : 50,
         currentPage,
         queryToUse,
         boorusToUse,
@@ -475,7 +502,7 @@ const App = () => {
         setIsDbReady(true);
       }
 
-      if (!showSettings && isDbReady && !hasSynced.current) {
+      if (!showSettings && !showNotifications && isDbReady && !hasSynced.current) {
         hasSynced.current = true;
         setIsSearching(true);
 
@@ -504,6 +531,11 @@ const App = () => {
           if (isFirstLoad.current) {
             if (path.startsWith('/settings')) {
               setShowSettings(true);
+              isDeepLinkSpecial = true;
+              skipMainSync = true;
+              setIs404(false);
+            } else if (path.startsWith('/notifications')) {
+              setShowNotifications(true);
               isDeepLinkSpecial = true;
               skipMainSync = true;
               setIs404(false);
@@ -640,6 +672,7 @@ const App = () => {
   }, [
     isDbReady,
     showSettings,
+    showNotifications,
     currentPage,
     searchQuery,
     isHomepage,
@@ -689,7 +722,7 @@ const App = () => {
           window.dispatchEvent(new CustomEvent('appFocusRefresh'));
 
           // Dispatches a global event that ImageViewer and UserProfile can listen to
-          if (!viewingProfile && !viewingImage && !is404) refreshHomepage();
+          if (!viewingProfile && !viewingImage && !is404 && !showNotifications) refreshHomepage();
         }
         hiddenTimestamp = 0;
       }
@@ -708,6 +741,7 @@ const App = () => {
     sortField,
     sortDirection,
     is404,
+    showNotifications,
   ]);
 
   /**
@@ -715,6 +749,14 @@ const App = () => {
    */
   const handleCloseSettings = () => {
     setShowSettings(false);
+    hasSynced.current = false;
+  };
+
+  /**
+   * @returns {void}
+   */
+  const handleCloseNotifications = () => {
+    setShowNotifications(false);
     hasSynced.current = false;
   };
 
@@ -727,6 +769,7 @@ const App = () => {
     setSearchQuery(newQuery);
     setCurrentPage(1);
     setViewingImage(null);
+    setShowNotifications(false);
     setIs404(false);
     hasSynced.current = false;
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -781,6 +824,7 @@ const App = () => {
     // Check if React will fire the useEffect naturally
     const willUseEffectTrigger =
       showSettings !== false ||
+      showNotifications !== false ||
       currentPage !== 1 ||
       searchQuery !== '' ||
       isHomepage !== true ||
@@ -795,6 +839,7 @@ const App = () => {
     setViewingImage(null);
     setViewingProfile(null);
     setShowSettings(false);
+    setShowNotifications(false);
     setIs404(false);
 
     if (willUseEffectTrigger) {
@@ -812,6 +857,7 @@ const App = () => {
   const handleOpenImage = (img) => {
     setViewingProfile(null);
     setViewingImage(img);
+    setShowNotifications(false);
     setIs404(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -819,6 +865,7 @@ const App = () => {
   const handleOpenProfile = (booruUrl, username, id) => {
     setViewingImage(null);
     setViewingProfile({ booruUrl, username, id });
+    setShowNotifications(false);
     setIs404(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -921,7 +968,7 @@ const App = () => {
             </div>
 
             <div className="offcanvas-body align-items-lg-center">
-              {!showSettings && !is404 && (
+              {!showSettings && !showNotifications && !is404 && (
                 <div className="mx-lg-3 my-3 my-lg-0 flex-grow-1" style={{ maxWidth: '600px' }}>
                   <SearchBar
                     onSearchSubmit={(q) => {
@@ -1045,6 +1092,20 @@ const App = () => {
                 </div>
 
                 <button
+                  className={`btn btn-sm text-nowrap w-100 w-lg-auto me-lg-2 mb-2 mb-lg-0 fw-bold ${showNotifications ? 'btn-warning' : 'btn-outline-warning'}`}
+                  onClick={() => {
+                    if (!showNotifications) {
+                      hasSynced.current = false;
+                      setIs404(false);
+                      setShowSettings(false);
+                    }
+                    setShowNotifications(!showNotifications);
+                  }}
+                >
+                  {showNotifications ? 'Back to Gallery' : '🔔 Notifications'}
+                </button>
+
+                <button
                   className="btn btn-sm btn-outline-light text-nowrap w-100 w-lg-auto"
                   data-bs-dismiss="offcanvas"
                   style={{ borderColor: 'var(--app-navbar-text)', color: 'var(--app-navbar-text)' }}
@@ -1052,6 +1113,7 @@ const App = () => {
                     if (!showSettings) {
                       hasSynced.current = false;
                       setIs404(false);
+                      setShowNotifications(false);
                     }
                     setShowSettings(!showSettings);
                   }}
@@ -1066,6 +1128,13 @@ const App = () => {
 
       {is404 ? (
         <Error404 onClick={goToHome} />
+      ) : showNotifications ? (
+        <NotificationsMode
+          accounts={connectedAccounts || []}
+          visibleBoorus={visibleBoorus}
+          onClose={handleCloseNotifications}
+          onGoHome={goToHome}
+        />
       ) : showSettings ? (
         <SettingsPanel isDark={isDark} onClose={handleCloseSettings} />
       ) : viewingProfile ? (
