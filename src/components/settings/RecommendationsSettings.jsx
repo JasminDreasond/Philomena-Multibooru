@@ -11,6 +11,12 @@ export const RecommendationsSettings = () => {
     return parseInt(localStorage.getItem('app_recTagLimit') || '5', 10);
   });
 
+  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  const [recDaysLimit, setRecDaysLimit] = useState(() => {
+    const saved = localStorage.getItem('app_recDaysLimit');
+    return saved ? parseInt(saved, 10) : 3;
+  });
+
   useEffect(() => {
     localStorage.setItem('app_enableRecs', enableRecs.toString());
   }, [enableRecs]);
@@ -18,6 +24,10 @@ export const RecommendationsSettings = () => {
   useEffect(() => {
     localStorage.setItem('app_recTagLimit', recTagLimit.toString());
   }, [recTagLimit]);
+
+  useEffect(() => {
+    localStorage.setItem('app_recDaysLimit', recDaysLimit.toString());
+  }, [recDaysLimit]);
 
   return (
     <div className="p-3">
@@ -58,6 +68,32 @@ export const RecommendationsSettings = () => {
           value={recTagLimit}
           onChange={(e) => setRecTagLimit(parseInt(e.target.value, 10))}
         />
+      </div>
+
+      <div className="mb-4">
+        <label className="form-label fw-bold" style={{ color: 'var(--app-text)' }}>
+          Recent Days Limit
+        </label>
+        <div className="input-group">
+          <input
+            type="number"
+            className="form-control"
+            min="1"
+            disabled={!enableRecs}
+            value={recDaysLimit}
+            onChange={(e) => setRecDaysLimit(Math.max(1, parseInt(e.target.value, 10) || 1))}
+            style={{ backgroundColor: 'var(--app-bg)', color: 'var(--app-text)' }}
+          />
+          <span
+            className="input-group-text"
+            style={{ backgroundColor: 'var(--app-surface)', color: 'var(--app-text)' }}
+          >
+            days ago
+          </span>
+        </div>
+        <div className="form-text" style={{ color: 'var(--app-text)' }}>
+          Only recommends images uploaded within this number of days.
+        </div>
       </div>
     </div>
   );

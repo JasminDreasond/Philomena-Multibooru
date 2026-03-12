@@ -1265,7 +1265,12 @@ const App = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) =>
-                            handleQuickLinkClick(e, 'first_seen_at.gt:3 days ago', 'wilson_score', 'desc')
+                            handleQuickLinkClick(
+                              e,
+                              'first_seen_at.gt:3 days ago',
+                              'wilson_score',
+                              'desc',
+                            )
                           }
                           className="btn btn-link text-white text-decoration-none small p-0 align-baseline"
                         >

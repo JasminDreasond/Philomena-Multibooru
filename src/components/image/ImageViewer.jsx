@@ -299,7 +299,9 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
           }
 
           // Global filters
-          queryParts.push('first_seen_at.gt:3 days ago');
+          queryParts.push(
+            `first_seen_at.gt:${parseInt(localStorage.getItem('app_recDaysLimit') || '3')} days ago`,
+          );
           if (recVideoMode) queryParts.push('video');
 
           // The comma between static ratings and the OR group acts as AND
