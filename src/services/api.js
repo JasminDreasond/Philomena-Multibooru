@@ -643,10 +643,44 @@ const syncGalleryPage = async (
   if (typeof syncTimes[booruUrl] !== 'number') syncTimes[booruUrl] = 0;
   syncTimes[booruUrl]++;
   const time = syncTimes[booruUrl];
+
   try {
     const data = await searchImagesApi(booruUrl, apiKey, query, page, perPage, sd, sf);
     /** @type {string} */
     const normalizedQuery = normalizeQueryString(query);
+
+    // Grab the local images that currently map to this page range BEFORE upserting
+    const localPageImages = await searchImages({
+      query,
+      limit: perPage || 50,
+      page,
+      allowedBoorus: [booruUrl],
+      sd,
+      sf,
+    });
+
+    /** @type {number[]} */
+    const localImageIds = localPageImages.map((img) => img.id);
+    /** @type {number[]} */
+    const fetchedImageIds = data.images.map((img) => img.id);
+
+    // Identify images that were previously on this page but vanished (hidden, deleted or shifted)
+    const staleImageIds = localImageIds.filter((id) => !fetchedImageIds.includes(id));
+
+    if (staleImageIds.length > 0) {
+      await dbConnection.remove({
+        from: 'Images',
+        where: { booruUrl: booruUrl, id: { in: staleImageIds } },
+      });
+      await dbConnection.remove({
+        from: 'Interactions',
+        where: { booruUrl: booruUrl, imageId: { in: staleImageIds } },
+      });
+      await dbConnection.remove({
+        from: 'Queries',
+        where: { booruUrl: booruUrl, imageId: { in: staleImageIds } },
+      });
+    }
 
     /** @type {ImageObj[]} */
     const formattedImages = data.images.map((img) => parseImageData(booruUrl, img));
@@ -662,8 +696,6 @@ const syncGalleryPage = async (
       });
     }
 
-    /** @type {number[]} */
-    const fetchedImageIds = data.images.map((img) => img.id);
     /** @type {number[]} */
     const interactedImageIds = data.interactions.map((int) => int.image_id);
     /** @type {number[]} */
