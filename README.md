@@ -82,6 +82,10 @@ Open the app in your browser, head to the **Settings** panel, and add your favor
 
 - Arts to replace AI Images in the project.
 
+## 🦄 Note to the Philomena Team
+
+You are completely free to copy, adapt, or implement any part of this project into the official Philomena version. Credits aren't required, but receiving them would honestly make me feel so grateful and happy.
+
 ---
 
 Enjoy your unified browsing experience! If you run into any issues or have feature requests (that the API allows!), feel free to open an issue.
