@@ -4,6 +4,7 @@ import { alert } from '../../tools/BootstrapDialogs';
 import { fetchComments, getAccountBooruApi } from '../../services/api';
 import { CommentBody } from '../utils/CommentBody';
 import { Loading } from '../utils/Loading';
+import { ProfileLink } from './ProfileLink';
 
 const tags = [
   // Roles
@@ -313,8 +314,6 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
     }
   };
 
-  const openProfileInApp = localStorage.getItem('app_inAppProfileViewer') === 'true';
-  const hostname = new URL(image.booruUrl).hostname;
   const sources = image.sourceUrls ? image.sourceUrls : image.sourceUrl ? [image.sourceUrl] : [];
 
   const bbcodeFull = `[img]${image.representations.full}[/img]\n[url=${image.booruUrl}/images/${image.id}]View on Booru[/url] - [url=${sources[0] || ''}]Original source[/url]`;
@@ -390,21 +389,18 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
         Uploaded {timeSince(uploadDate)} by{' '}
         <strong>
           {image.uploaderId ? (
-            <a
-              rel="noopener noreferrer"
-              target="_blank"
+            <ProfileLink
+              booruUrl={image.booruUrl}
+              username={uploaderName}
+              userId={image.uploaderId}
               className="btn-tool"
-              href={
-                openProfileInApp
-                  ? `/${hostname}/profiles/${image.uploaderId}`
-                  : `${image.booruUrl}/profiles/${uploaderName}`
-              }
               onClick={(e) =>
                 handleProfileClick(e, image.booruUrl, image.uploader, image.uploaderId)
               }
+              openProfile={(booruUrl, username, id) => onOpenProfile(booruUrl, username, id)}
             >
               {uploaderName}
-            </a>
+            </ProfileLink>
           ) : (
             <span className="px-2">{uploaderName}</span>
           )}
@@ -683,20 +679,19 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
                   <div className="d-flex justify-content-between border-bottom pb-1 mb-2">
                     <span className="fw-bold fs-5" style={{ color: 'var(--app-text)' }}>
                       {comment.userId ? (
-                        <a
-                          rel="noopener noreferrer"
-                          target="_blank"
-                          href={
-                            openProfileInApp
-                              ? `/${hostname}/profiles/${comment.userId}`
-                              : `${image.booruUrl}/profiles/${comment.author}`
-                          }
+                        <ProfileLink
+                          booruUrl={image.booruUrl}
+                          username={comment.author}
+                          userId={comment.userId}
                           onClick={(e) =>
                             handleProfileClick(e, image.booruUrl, comment.author, comment.userId)
                           }
+                          openProfile={(booruUrl, username, id) =>
+                            onOpenProfile(booruUrl, username, id)
+                          }
                         >
                           {comment.author}
-                        </a>
+                        </ProfileLink>
                       ) : (
                         (comment.author ?? 'Anonymous')
                       )}

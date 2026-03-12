@@ -7,6 +7,7 @@ import {
   getAccountBooru,
 } from '../../services/api';
 import { Image } from '../image/ImageGallery';
+import { ProfileLink } from '../image/ProfileLink';
 import { CommentBody } from '../utils/CommentBody';
 import { openImageLink } from '../../tools/utils';
 
@@ -166,7 +167,6 @@ export const UserProfile = ({
   /** @type {UserProfileData} */
   const profile = pf;
   const openImagesInApp = localStorage.getItem('app_inAppViewer') === 'true';
-  const openProfileInApp = localStorage.getItem('app_inAppProfileViewer') === 'true';
 
   return (
     <div className="fade-in">
@@ -177,7 +177,7 @@ export const UserProfile = ({
         </button>
         <div className="ms-auto d-flex flex-wrap gap-1">
           <a
-            href={`${booruUrl}/profiles/${profile.name}`}
+            href={`${booruUrl}/profiles/${encodeURIComponent(profile.name.replace(/ /g, '+'))}`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-tool"
@@ -511,23 +511,20 @@ export const UserProfile = ({
                         <div className="flex-grow-1">
                           <div className="fw-bold mb-1 d-flex justify-content-between">
                             {comment.userId ? (
-                              <a
-                                rel="noopener noreferrer"
-                                target="_blank"
-                                href={
-                                  openProfileInApp
-                                    ? `/${new URL(booruUrl).hostname}/profiles/${comment.userId}`
-                                    : `${booruUrl}/profiles/${comment.author}`
-                                }
+                              <ProfileLink
+                                booruUrl={booruUrl}
+                                username={comment.author}
+                                userId={comment.userId}
                                 onClick={(e) => {
                                   if (localStorage.getItem('app_inAppProfileViewer') !== 'true')
                                     return;
                                   e.preventDefault();
                                   onOpenProfile(booruUrl, comment.author, comment.userId);
                                 }}
+                                openProfile={onOpenProfile}
                               >
                                 {comment.author}
-                              </a>
+                              </ProfileLink>
                             ) : (
                               <span style={{ color: 'var(--app-primary)' }}>
                                 {comment.author ?? 'Anonymous'}
