@@ -1,56 +1,100 @@
 /** @type {ServiceWorkerGlobalScope} */
 const sw = self;
 
+/**
+ * @param {URL} url
+ * @returns {boolean}
+ */
+const isValidRoute = (url) => {
+  /** @type {string} */
+  const pathname = url.pathname;
+
+  // Static routes matching
+  /** @type {string[]} */
+  const staticRoutes = ['/', '/notifications', '/settings', '/search'];
+  if (staticRoutes.includes(pathname)) return true;
+
+  // Dynamic route pattern: /<any.hostname.com>/images/<id> or /<any.hostname.com>/profiles/<id>
+  // This regex matches a domain-like string in the first segment
+  /** @type {RegExp} */
+  const dynamicRoutePattern = /^\/([a-z0-9.-]+\.[a-z]{2,})\/(images|profiles)\/[^/]+$/i;
+
+  return dynamicRoutePattern.test(pathname);
+};
+
+/**
+ * @returns {Response}
+ */
+const index404 = () => {
+  /** @type {string} */
+  const body = 'Not Found';
+  /** @type {number} */
+  const status = 404;
+
+  return new Response(body, { status });
+};
+
 sw.addEventListener('fetch', (event) => {
-    /** @type {FetchEvent} */
-    const ev = event;
-    /** @type {Request} */
-    const request = ev.request;
+  /** @type {FetchEvent} */
+  const ev = event;
+  /** @type {Request} */
+  const request = ev.request;
 
-    // We only intercept navigation requests (HTML)
-    if (request.mode === 'navigate') {
-        /** @type {string} */
-        const originalUrl = request.url;
+  // We only intercept navigation requests (HTML)
+  if (request.mode === 'navigate') {
+    /** @type {URL} */
+    const url = new URL(request.url);
 
-        console.log(`[ServiceWorker] Intercepting navigation for: ${originalUrl}`);
-        console.log(`[ServiceWorker] Redirecting internal route to: /index.html`);
+    if (isValidRoute(url)) {
+      console.log(`[ServiceWorker] Valid route: ${url.pathname}.`);
+      ev.respondWith(fetch('/index.html').catch(index404));
+    } else {
+      console.warn(`[ServiceWorker] 404 - Route not found: ${url.pathname}`);
 
-        ev.respondWith(
-            fetch('/index.html').catch((error) => {
-                /** @type {Error} */
-                const err = error;
-                console.error(`[ServiceWorker] Failed to fetch index.html:`, err);
-                return Response.error();
-            })
-        );
+      // Simulating Apache2 ErrorDocument 404 behavior by serving index.html with a 404 status
+      ev.respondWith(
+        fetch('/index.html')
+          .then((response) => {
+            /** @type {Response} */
+            const res = response;
+
+            return new Response(res.body, {
+              status: 404,
+              statusText: 'Not Found',
+              headers: res.headers,
+            });
+          })
+          .catch(index404),
+      );
     }
+  }
 });
 
 sw.addEventListener('activate', (event) => {
-    /** @type {ExtendableEvent} */
-    const ev = event;
-    ev.waitUntil(sw.clients.claim());
-    console.log('[ServiceWorker] Active and claiming clients.');
+  /** @type {ExtendableEvent} */
+  const ev = event;
+  ev.waitUntil(sw.clients.claim());
+  console.log('[ServiceWorker] Active and claiming clients.');
 });
 
 // Broadcast messages across all open tabs of our application
 sw.addEventListener('message', (event) => {
-    /** @type {ExtendableMessageEvent} */
-    const ev = event;
-    const data = ev.data;
+  /** @type {ExtendableMessageEvent} */
+  const ev = event;
+  const data = ev.data;
 
-    if (data && data.type === 'FAVICON_UPDATE') {
-        console.log(`[ServiceWorker] Broadcasting favicon update: ${data.icon}`);
-        
-        ev.waitUntil(
-            sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-                clientList.forEach((client) => {
-                    client.postMessage({
-                        type: 'FAVICON_UPDATE',
-                        icon: data.icon
-                    });
-                });
-            })
-        );
-    }
+  if (data && data.type === 'FAVICON_UPDATE') {
+    console.log(`[ServiceWorker] Broadcasting favicon update: ${data.icon}`);
+
+    ev.waitUntil(
+      sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        clientList.forEach((client) => {
+          client.postMessage({
+            type: 'FAVICON_UPDATE',
+            icon: data.icon,
+          });
+        });
+      }),
+    );
+  }
 });

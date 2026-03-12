@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "fix:prettier": "prettier --write ./src/* && prettier --write ./vite.config.js  && prettier --write ./eslint.config.js && prettier --write ./index.html",
+    "fix:prettier": "prettier --write ./src/* && prettier --write ./vite.config.js  && prettier --write ./eslint.config.js && prettier --write ./index.html && prettier --write ./public/sw.js",
     "preview": "vite preview"
   },
   "dependencies": {
