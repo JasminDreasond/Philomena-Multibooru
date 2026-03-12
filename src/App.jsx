@@ -399,7 +399,7 @@ const App = () => {
         query: parseQueryResults('first_seen_at.gt:3 days ago'),
         limit: 20,
         allowedBoorus: boorusToUse,
-        sf: 'score',
+        sf: 'wilson_score',
         sd: 'desc',
       });
 
@@ -443,7 +443,7 @@ const App = () => {
             query: parseQueryResults('first_seen_at.gt:3 days ago'),
             allowedBoorus: boorusToUse,
             perPage: 20,
-            sf: 'score',
+            sf: 'wilson_score',
             sd: 'desc',
           }),
         );
@@ -624,7 +624,7 @@ const App = () => {
                   query: parseQueryResults('first_seen_at.gt:3 days ago'),
                   allowedBoorus: activeUrls,
                   perPage: 20,
-                  sf: 'score',
+                  sf: 'wilson_score',
                   sd: 'desc',
                 }),
               );
@@ -1261,11 +1261,11 @@ const App = () => {
                       <div className="card-header fw-bold d-flex justify-content-between align-items-center">
                         <span>Trending Images</span>
                         <a
-                          href={`/search?q=first_seen_at.gt%3A3+days+ago&sf=score`}
+                          href={`/search?q=first_seen_at.gt%3A3+days+ago&sf=wilson_score`}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) =>
-                            handleQuickLinkClick(e, 'first_seen_at.gt:3 days ago', 'score', 'desc')
+                            handleQuickLinkClick(e, 'first_seen_at.gt:3 days ago', 'wilson_score', 'desc')
                           }
                           className="btn btn-link text-white text-decoration-none small p-0 align-baseline"
                         >

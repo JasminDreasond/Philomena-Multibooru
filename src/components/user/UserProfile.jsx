@@ -457,7 +457,7 @@ export const UserProfile = ({
               <div className="philo-panel-header justify-content-between">
                 <span>Recent Favorites</span>
                 <a
-                  href={`/search?q=uploader%3A${profile.name}&sf=score`}
+                  href={`/search?q=faved_by:${profile.name}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) =>

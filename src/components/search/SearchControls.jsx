@@ -23,6 +23,7 @@ export const SearchControls = ({ sf, sd, onSortChange }) => {
         <option value="created_at">Created</option>
         <option value="updated_at">Updated</option>
         <option value="first_seen_at">First Seen</option>
+        <option value="wilson_score">Wilson Score</option>
         <option value="score">Score</option>
         <option value="upvotes">Upvotes</option>
         <option value="downvotes">Downvotes</option>
