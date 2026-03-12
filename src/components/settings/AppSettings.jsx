@@ -203,10 +203,10 @@ export const AppSettings = ({
               htmlFor="videoModeCheck"
               style={{ color: 'var(--app-text)' }}
             >
-              Video Mode
+              Video Mode (Beta)
             </label>
             <div className="form-text" style={{ color: 'var(--app-text)' }}>
-              Appends the "video" tag to force video recommendations.
+              Appends the "video" tag to force video recommendations (Requires a page restart).
             </div>
           </div>
         </div>
