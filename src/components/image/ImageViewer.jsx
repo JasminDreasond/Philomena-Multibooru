@@ -58,11 +58,24 @@ const formatBytes = (bytes) => {
 };
 
 /**
- * @param {{ image: ImageResult|null, onClose: () => void, onSearch: (query: string) => void, onOpenImage: (img: ImageResult) => void, onOpenProfile: (booruUrl: string, username: string, id: number) => void }} props
+ * @param {{ image: ImageResult|null, onClose: () => void, onSearch: (query: string) => void, onOpenImage: (img: ImageResult) => void, onOpenProfile: (booruUrl: string, username: string, id: number) => void, onNavigateImage: (direction: 'prev'|'next') => Promise<void> }} props
  */
-export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenImage }) => {
+export const ImageViewer = ({
+  image,
+  onClose,
+  onSearch,
+  onOpenProfile,
+  onOpenImage,
+  onNavigateImage,
+}) => {
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isLoading, setIsLoading] = useState(false);
+
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isInteractionReady, setIsInteractionReady] = useState(true);
 
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isZoomed, setIsZoomed] = useState(false);
@@ -105,6 +118,8 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
   const observerTarget = useRef(null);
   /** @type {import('react').MutableRefObject<number>} */
   const lastFetchTime = useRef(0); // Tracks the timestamp of the last fetch start
+  /** @type {import('react').MutableRefObject<boolean>} */
+  const pendingNavigation = useRef(false);
 
   /** @type {import('react').MutableRefObject<HTMLElement>} */
   const videoRef = useRef(null);
@@ -150,7 +165,34 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
     return () => window.removeEventListener('appFocusRefresh', onRefresh);
   }, []);
 
-  // Reset core states when viewing a new image
+  // Quick Navigation Handler
+  const handleNavigation = async (dir) => {
+    if (isNavigating) return;
+    setIsNavigating(true);
+    pendingNavigation.current = true;
+    await onNavigateImage(dir);
+    setIsNavigating(false);
+  };
+
+  // Setup Keyboard Shortcuts for Fast Navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ignore key events originating from form elements like <input> or <textarea>
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handleNavigation('prev');
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNavigation('next');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [image?.id, isNavigating]);
+
+  // Reset Core States When a New Image is Loaded
   useEffect(() => {
     setIsMediaLoaded(false);
     setRecommendations([]);
@@ -160,11 +202,45 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
     setIsRateLimited(false);
     currentRecQuery.current = '';
     lastFetchTime.current = 0;
+
+    // Checks if we got here via quick navigation to engage the Lazy Load lock
+    if (pendingNavigation.current) {
+      setIsInteractionReady(false);
+      pendingNavigation.current = false;
+    } else {
+      setIsInteractionReady(true);
+    }
   }, [image?.id]);
+
+  // Interaction Unlocker for Lazy Loading network-heavy tasks
+  useEffect(() => {
+    if (isInteractionReady) return;
+
+    const unlock = (e) => {
+      // Don't unlock if the user is just holding down the quick nav arrow keys
+      if (e.type === 'keydown' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) return;
+      setIsInteractionReady(true);
+    };
+
+    const options = { capture: true, passive: true };
+    window.addEventListener('scroll', unlock, options);
+    window.addEventListener('wheel', unlock, options);
+    window.addEventListener('click', unlock, { capture: true, once: true });
+    window.addEventListener('touchstart', unlock, options);
+    window.addEventListener('keydown', unlock, { capture: true });
+
+    return () => {
+      window.removeEventListener('scroll', unlock, options);
+      window.removeEventListener('wheel', unlock, options);
+      window.removeEventListener('click', unlock, { capture: true });
+      window.removeEventListener('touchstart', unlock, options);
+      window.removeEventListener('keydown', unlock, { capture: true });
+    };
+  }, [isInteractionReady]);
 
   // Plyr Setup
   useEffect(() => {
-    if (videoRef.current && isVideo) {
+    if (videoRef.current && isVideo && !isLoading && !isNavigating) {
       const p = new Plyr(videoRef.current, {
         autoplay: plyrAutoplay,
         muted: plyrMuted,
@@ -182,8 +258,10 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
     }
   }, [image, isVideo, plyrAutoplay, plyrMuted, plyrLoop, plyrHideControls, plyrStorage]);
 
-  // Fetch Comments
+  // Fetch Comments (Lazy Loaded via isInteractionReady)
   useEffect(() => {
+    if (!isInteractionReady || !image) return;
+
     let isMounted = true;
     const getComments = async () => {
       setIsLoadingComments(true);
@@ -201,13 +279,13 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
       }
     };
 
-    if (image) getComments();
+    getComments();
     return () => {
       isMounted = false;
     };
-  }, [image, refreshTrigger]);
+  }, [image, refreshTrigger, isInteractionReady]);
 
-  // Determine if the user has focused on the tab to allow fetching
+  // Focus and visibility trigger check
   useEffect(() => {
     if (!enableRecs || !image) return;
 
@@ -230,8 +308,10 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
     };
   }, [image?.id, enableRecs]);
 
-  // Fetch Recommendations Logic (Handles initial load + pagination)
+  // Fetch Recommendations (Lazy Loaded via isInteractionReady)
   useEffect(() => {
+    if (!isInteractionReady) return;
+
     let isMounted = true;
 
     /**
@@ -354,7 +434,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
     return () => {
       isMounted = false;
     };
-  }, [image, enableRecs, isAllowedToFetch, recPage]);
+  }, [image, enableRecs, isAllowedToFetch, recPage, isInteractionReady]);
 
   // Infinite Scroll Observer for Recommendations with Anti-Spam protection
   useEffect(() => {
@@ -546,13 +626,33 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
   return (
     <div className="fade-in position-relative">
       {/* Global Loading Overlay for general application state */}
-      {isLoading && <Loading />}
+      {(isLoading || isNavigating) && <Loading />}
 
       {/* Top Toolbar */}
       <div className="viewer-toolbar d-flex flex-wrap align-items-center px-3 py-1 gap-3">
-        <button onClick={onClose} className="ms-auto btn-tool" title="Back to Gallery">
-          &laquo; Back
-        </button>
+        {/* Quick Navigation and Back controls */}
+        <div className="ms-auto d-flex gap-1 align-items-center">
+          <button
+            onClick={() => handleNavigation('prev')}
+            className="btn-tool fw-bold px-3 py-1"
+            disabled={isNavigating}
+            title="Previous (Left Arrow)"
+          >
+            &lt;
+          </button>
+          <button onClick={onClose} className="btn-tool px-3 py-1 fw-bold" title="Back to Gallery">
+            Back
+          </button>
+          <button
+            onClick={() => handleNavigation('next')}
+            className="btn-tool fw-bold px-3 py-1"
+            disabled={isNavigating}
+            title="Next (Right Arrow)"
+          >
+            &gt;
+          </button>
+        </div>
+
         <div className="d-flex align-items-center gap-3 ms-1 fw-bold">
           <span
             className={`active-fave${isFav ? ' px-2 rounded' : ''}`}
@@ -685,308 +785,333 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
         <div className={`row justify-content-center ${enableRecs ? 'g-4' : ''}`}>
           {/* Main Left Content */}
           <div className={enableRecs ? 'col-12 col-md-9' : 'col-12'}>
-            {/* Description Panel */}
-            <div className="philo-panel">
-              <div className="philo-panel-header">📄 Description</div>
-              <div className="philo-panel-body text-muted p-2">
-                {image.description ? (
-                  <CommentBody
-                    body={image.description}
-                    booruUrl={image.booruUrl}
-                    imageId={image.id}
-                    imageReps={image.representations}
-                    onOpenProfileLink={onOpenProfile}
-                    onOpenImageLink={onOpenImage}
-                    setIsLoading={setIsLoading}
-                  />
-                ) : (
-                  <i>No description provided.</i>
-                )}
-              </div>
-            </div>
-
-            {/* Tags Panel */}
-            <div className="philo-panel">
-              <div className="philo-panel-header">
-                🏷️ Tags{' '}
-                <a
-                  className="text-muted ms-auto fw-normal text-sm"
-                  href={`${image.booruUrl}/images/${image.id}/tag_changes`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  History ({image.tags?.length || 0} tags)
-                </a>
-              </div>
-              <div className="philo-panel-body p-2">
-                <div className="philo-tag-container">
-                  {image.tags?.map((tag, idx) => (
-                    <div
-                      key={idx}
-                      className={`philo-tag ${getTagClass(tag)}`}
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => onSearch(tag)}
-                      title={`Search for ${tag}`}
-                    >
-                      <span className={'philo-tag-name'}>{tag}</span>
-                    </div>
-                  ))}
+            {/* Lazy Load Block Visual (shows if the user fast-navigated and hasn't interacted yet) */}
+            {!isInteractionReady && (
+              <div
+                className="alert text-center fw-bold shadow-sm border-0 d-flex flex-column justify-content-center"
+                style={{
+                  backgroundColor: 'var(--app-surface)',
+                  color: 'var(--app-text-muted)',
+                  minHeight: '200px',
+                  borderLeft: '4px solid var(--app-primary) !important',
+                }}
+              >
+                <div className="mb-2 fs-3">
+                  <i className="bi bi-mouse3"></i>
                 </div>
-              </div>
-            </div>
-
-            {/* Source Panel */}
-            <div className="philo-panel">
-              <div className="philo-panel-header">🔗 Sources</div>
-              <div className="philo-panel-body p-2">
-                {sources.length > 0 ? (
-                  sources.map((sourceUrl, i) => (
-                    <a
-                      key={i}
-                      href={sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="d-block text-truncate"
-                    >
-                      {sourceUrl}
-                    </a>
-                  ))
-                ) : (
-                  <i className="text-muted">No source provided.</i>
-                )}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="d-flex gap-2 mb-4">
-              <a
-                className="btn btn-sm btn-secondary fw-bold px-3"
-                href={`${image.booruUrl}/images/${image.id}/reports/new`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                ⚠️ Report
-              </a>
-              <button
-                className={`btn btn-sm fw-bold px-3 ${showShare ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => setShowShare(!showShare)}
-              >
-                ➡️ Share
-              </button>
-            </div>
-
-            {/* Share Panel */}
-            {showShare && (
-              <div className="philo-panel mb-4 shadow-sm">
-                <div className="philo-panel-body p-2">
-                  <div className="mb-3 d-flex align-items-center">
-                    <label className="fw-bold me-2" style={{ width: '120px' }}>
-                      Small thumbnail
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control form-control-sm me-2 bg-dark text-light border-secondary"
-                      value={`>>${image.id}s`}
-                      readOnly
-                    />
-                    <button
-                      className="btn btn-sm btn-outline-secondary"
-                      onClick={() => copyToClipboard(`>>${image.id}s`)}
-                    >
-                      📋 Copy
-                    </button>
-                  </div>
-                  <div className="mb-3 d-flex align-items-center">
-                    <label className="fw-bold me-2" style={{ width: '120px' }}>
-                      Thumbnail
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control form-control-sm me-2 bg-dark text-light border-secondary"
-                      value={`>>${image.id}t`}
-                      readOnly
-                    />
-                    <button
-                      className="btn btn-sm btn-outline-secondary"
-                      onClick={() => copyToClipboard(`>>${image.id}t`)}
-                    >
-                      📋 Copy
-                    </button>
-                  </div>
-                  <div
-                    className="mb-4 d-flex align-items-center border-bottom pb-4"
-                    style={{ borderColor: '#333' }}
-                  >
-                    <label className="fw-bold me-2" style={{ width: '120px' }}>
-                      Preview
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control form-control-sm me-2 bg-dark text-light border-secondary"
-                      value={`>>${image.id}p`}
-                      readOnly
-                    />
-                    <button
-                      className="btn btn-sm btn-outline-secondary"
-                      onClick={() => copyToClipboard(`>>${image.id}p`)}
-                    >
-                      📋 Copy
-                    </button>
-                  </div>
-
-                  <h6 className="fw-normal mb-3">BBCode</h6>
-                  <div className="mb-3">
-                    <div className="d-flex justify-content-between mb-1">
-                      <label className="fw-bold fs-6">Full size BBCode</label>
-                      <button
-                        className="btn btn-sm btn-link text-decoration-none text-muted p-0"
-                        onClick={() => copyToClipboard(bbcodeFull)}
-                      >
-                        📋 Copy
-                      </button>
-                    </div>
-                    <textarea
-                      className="form-control form-control-sm bg-dark text-light border-secondary"
-                      rows="3"
-                      readOnly
-                      value={bbcodeFull}
-                    ></textarea>
-                  </div>
-                  <div className="mb-2">
-                    <div className="d-flex justify-content-between mb-1">
-                      <label className="fw-bold fs-6">Thumbnailed BBCode</label>
-                      <button
-                        className="btn btn-sm btn-link text-decoration-none text-muted p-0"
-                        onClick={() => copyToClipboard(bbcodeThumb)}
-                      >
-                        📋 Copy
-                      </button>
-                    </div>
-                    <textarea
-                      className="form-control form-control-sm bg-dark text-light border-secondary"
-                      rows="3"
-                      readOnly
-                      value={bbcodeThumb}
-                    ></textarea>
-                  </div>
+                <div>Extra details are paused during quick navigation.</div>
+                <div className="small fw-normal mt-1">
+                  Move your mouse, click, or scroll to load comments and tags!
                 </div>
               </div>
             )}
 
-            {/* Comments Section */}
-            <div
-              className="d-flex align-items-center mb-3 border-bottom pb-2"
-              style={{ borderColor: 'var(--app-border)' }}
-            >
-              <h5 className="fw-bold mb-0 me-3">{comments.length} comments posted</h5>
-              <button
-                className="btn btn-sm btn-outline-secondary"
-                onClick={() => setRefreshTrigger((prev) => prev + 1)}
-              >
-                🔄 Refresh
-              </button>
-            </div>
+            {isInteractionReady && (
+              <>
+                {/* Description Panel */}
+                <div className="philo-panel">
+                  <div className="philo-panel-header">📄 Description</div>
+                  <div className="philo-panel-body text-muted p-2">
+                    {image.description ? (
+                      <CommentBody
+                        body={image.description}
+                        booruUrl={image.booruUrl}
+                        imageId={image.id}
+                        imageReps={image.representations}
+                        onOpenProfileLink={onOpenProfile}
+                        onOpenImageLink={onOpenImage}
+                        setIsLoading={setIsLoading}
+                      />
+                    ) : (
+                      <i>No description provided.</i>
+                    )}
+                  </div>
+                </div>
 
-            {isLoadingComments ? (
-              <div className="text-center py-4">
-                <div className="spinner-border text-primary" role="status"></div>
-              </div>
-            ) : comments.length === 0 ? (
-              <div className="text-center">No comments yet.</div>
-            ) : (
-              <div className="d-flex flex-column gap-3">
-                {comments.map((comment) => (
-                  <div
-                    key={comment.id}
-                    className="philo-panel mb-0 d-flex flex-column flex-sm-row p-3"
-                  >
-                    {/* Avatar Left Box */}
-                    <div
-                      className="me-3 mb-2 mb-sm-0 text-center"
-                      style={{ width: '80px', flexShrink: 0 }}
+                {/* Tags Panel */}
+                <div className="philo-panel">
+                  <div className="philo-panel-header">
+                    🏷️ Tags{' '}
+                    <a
+                      className="text-muted ms-auto fw-normal text-sm"
+                      href={`${image.booruUrl}/images/${image.id}/tag_changes`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
-                      <div
-                        className="bg-secondary rounded mb-1"
-                        style={{
-                          width: '80px',
-                          height: '80px',
-                          backgroundImage: `url(${comment.avatar})`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                        }}
-                      ></div>
+                      History ({image.tags?.length || 0} tags)
+                    </a>
+                  </div>
+                  <div className="philo-panel-body p-2">
+                    <div className="philo-tag-container">
+                      {image.tags?.map((tag, idx) => (
+                        <div
+                          key={idx}
+                          className={`philo-tag ${getTagClass(tag)}`}
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => onSearch(tag)}
+                          title={`Search for ${tag}`}
+                        >
+                          <span className={'philo-tag-name'}>{tag}</span>
+                        </div>
+                      ))}
                     </div>
+                  </div>
+                </div>
 
-                    {/* Comment Content */}
-                    <div className="flex-grow-1">
-                      <div className="d-flex justify-content-between border-bottom pb-1 mb-2">
-                        <span className="fw-bold fs-5" style={{ color: 'var(--app-text)' }}>
-                          {comment.userId ? (
-                            <ProfileLink
-                              booruUrl={image.booruUrl}
-                              username={comment.author}
-                              userId={comment.userId}
-                              onClick={(e) =>
-                                handleProfileClick(
-                                  e,
-                                  image.booruUrl,
-                                  comment.author,
-                                  comment.userId,
-                                )
-                              }
-                              openProfile={(booruUrl, username, id) =>
-                                onOpenProfile(booruUrl, username, id)
-                              }
-                            >
-                              {comment.author}
-                            </ProfileLink>
-                          ) : (
-                            (comment.author ?? 'Anonymous')
-                          )}
-                        </span>
-                      </div>
-                      <div className="mb-3" style={{ fontSize: '0.95rem' }}>
-                        <CommentBody
-                          body={comment.body}
-                          booruUrl={image.booruUrl}
-                          imageId={image.id}
-                          imageReps={image.representations}
-                          onOpenProfileLink={onOpenProfile}
-                          onOpenImageLink={onOpenImage}
-                          setIsLoading={setIsLoading}
+                {/* Source Panel */}
+                <div className="philo-panel">
+                  <div className="philo-panel-header">🔗 Sources</div>
+                  <div className="philo-panel-body p-2">
+                    {sources.length > 0 ? (
+                      sources.map((sourceUrl, i) => (
+                        <a
+                          key={i}
+                          href={sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="d-block text-truncate"
+                        >
+                          {sourceUrl}
+                        </a>
+                      ))
+                    ) : (
+                      <i className="text-muted">No source provided.</i>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="d-flex gap-2 mb-4">
+                  <a
+                    className="btn btn-sm btn-secondary fw-bold px-3"
+                    href={`${image.booruUrl}/images/${image.id}/reports/new`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    ⚠️ Report
+                  </a>
+                  <button
+                    className={`btn btn-sm fw-bold px-3 ${showShare ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setShowShare(!showShare)}
+                  >
+                    ➡️ Share
+                  </button>
+                </div>
+
+                {/* Share Panel */}
+                {showShare && (
+                  <div className="philo-panel mb-4 shadow-sm">
+                    <div className="philo-panel-body p-2">
+                      <div className="mb-3 d-flex align-items-center">
+                        <label className="fw-bold me-2" style={{ width: '120px' }}>
+                          Small thumbnail
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control form-control-sm me-2 bg-dark text-light border-secondary"
+                          value={`>>${image.id}s`}
+                          readOnly
                         />
+                        <button
+                          className="btn btn-sm btn-outline-secondary"
+                          onClick={() => copyToClipboard(`>>${image.id}s`)}
+                        >
+                          📋 Copy
+                        </button>
+                      </div>
+                      <div className="mb-3 d-flex align-items-center">
+                        <label className="fw-bold me-2" style={{ width: '120px' }}>
+                          Thumbnail
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control form-control-sm me-2 bg-dark text-light border-secondary"
+                          value={`>>${image.id}t`}
+                          readOnly
+                        />
+                        <button
+                          className="btn btn-sm btn-outline-secondary"
+                          onClick={() => copyToClipboard(`>>${image.id}t`)}
+                        >
+                          📋 Copy
+                        </button>
                       </div>
                       <div
-                        className="d-flex justify-content-between text-muted"
-                        style={{ fontSize: '0.75rem' }}
+                        className="mb-4 d-flex align-items-center border-bottom pb-4"
+                        style={{ borderColor: '#333' }}
                       >
-                        <div>
-                          Posted {timeSince(comment.createdAt)}
-                          <br />
-                          <a
-                            href={`${image.booruUrl}/images/${image.id}/comments/${comment.id}/reports/new`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-muted text-decoration-none"
+                        <label className="fw-bold me-2" style={{ width: '120px' }}>
+                          Preview
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control form-control-sm me-2 bg-dark text-light border-secondary"
+                          value={`>>${image.id}p`}
+                          readOnly
+                        />
+                        <button
+                          className="btn btn-sm btn-outline-secondary"
+                          onClick={() => copyToClipboard(`>>${image.id}p`)}
+                        >
+                          📋 Copy
+                        </button>
+                      </div>
+
+                      <h6 className="fw-normal mb-3">BBCode</h6>
+                      <div className="mb-3">
+                        <div className="d-flex justify-content-between mb-1">
+                          <label className="fw-bold fs-6">Full size BBCode</label>
+                          <button
+                            className="btn btn-sm btn-link text-decoration-none text-muted p-0"
+                            onClick={() => copyToClipboard(bbcodeFull)}
                           >
-                            ⚑ Report
-                          </a>
+                            📋 Copy
+                          </button>
                         </div>
-                        <div className="d-flex align-items-end gap-2">
-                          <a
-                            href={`${image.booruUrl}/images/${image.id}#comment_${comment.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-muted text-decoration-none"
+                        <textarea
+                          className="form-control form-control-sm bg-dark text-light border-secondary"
+                          rows="3"
+                          readOnly
+                          value={bbcodeFull}
+                        ></textarea>
+                      </div>
+                      <div className="mb-2">
+                        <div className="d-flex justify-content-between mb-1">
+                          <label className="fw-bold fs-6">Thumbnailed BBCode</label>
+                          <button
+                            className="btn btn-sm btn-link text-decoration-none text-muted p-0"
+                            onClick={() => copyToClipboard(bbcodeThumb)}
                           >
-                            🔗 Link
-                          </a>
+                            📋 Copy
+                          </button>
                         </div>
+                        <textarea
+                          className="form-control form-control-sm bg-dark text-light border-secondary"
+                          rows="3"
+                          readOnly
+                          value={bbcodeThumb}
+                        ></textarea>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                )}
+
+                {/* Comments Section */}
+                <div
+                  className="d-flex align-items-center mb-3 border-bottom pb-2"
+                  style={{ borderColor: 'var(--app-border)' }}
+                >
+                  <h5 className="fw-bold mb-0 me-3">{comments.length} comments posted</h5>
+                  <button
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => setRefreshTrigger((prev) => prev + 1)}
+                  >
+                    🔄 Refresh
+                  </button>
+                </div>
+
+                {isLoadingComments ? (
+                  <div className="text-center py-4">
+                    <div className="spinner-border text-primary" role="status"></div>
+                  </div>
+                ) : comments.length === 0 ? (
+                  <div className="text-center">No comments yet.</div>
+                ) : (
+                  <div className="d-flex flex-column gap-3">
+                    {comments.map((comment) => (
+                      <div
+                        key={comment.id}
+                        className="philo-panel mb-0 d-flex flex-column flex-sm-row p-3"
+                      >
+                        {/* Avatar Left Box */}
+                        <div
+                          className="me-3 mb-2 mb-sm-0 text-center"
+                          style={{ width: '80px', flexShrink: 0 }}
+                        >
+                          <div
+                            className="bg-secondary rounded mb-1"
+                            style={{
+                              width: '80px',
+                              height: '80px',
+                              backgroundImage: `url(${comment.avatar})`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                            }}
+                          ></div>
+                        </div>
+
+                        {/* Comment Content */}
+                        <div className="flex-grow-1">
+                          <div className="d-flex justify-content-between border-bottom pb-1 mb-2">
+                            <span className="fw-bold fs-5" style={{ color: 'var(--app-text)' }}>
+                              {comment.userId ? (
+                                <ProfileLink
+                                  booruUrl={image.booruUrl}
+                                  username={comment.author}
+                                  userId={comment.userId}
+                                  onClick={(e) =>
+                                    handleProfileClick(
+                                      e,
+                                      image.booruUrl,
+                                      comment.author,
+                                      comment.userId,
+                                    )
+                                  }
+                                  openProfile={(booruUrl, username, id) =>
+                                    onOpenProfile(booruUrl, username, id)
+                                  }
+                                >
+                                  {comment.author}
+                                </ProfileLink>
+                              ) : (
+                                (comment.author ?? 'Anonymous')
+                              )}
+                            </span>
+                          </div>
+                          <div className="mb-3" style={{ fontSize: '0.95rem' }}>
+                            <CommentBody
+                              body={comment.body}
+                              booruUrl={image.booruUrl}
+                              imageId={image.id}
+                              imageReps={image.representations}
+                              onOpenProfileLink={onOpenProfile}
+                              onOpenImageLink={onOpenImage}
+                              setIsLoading={setIsLoading}
+                            />
+                          </div>
+                          <div
+                            className="d-flex justify-content-between text-muted"
+                            style={{ fontSize: '0.75rem' }}
+                          >
+                            <div>
+                              Posted {timeSince(comment.createdAt)}
+                              <br />
+                              <a
+                                href={`${image.booruUrl}/images/${image.id}/comments/${comment.id}/reports/new`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-muted text-decoration-none"
+                              >
+                                ⚑ Report
+                              </a>
+                            </div>
+                            <div className="d-flex align-items-end gap-2">
+                              <a
+                                href={`${image.booruUrl}/images/${image.id}#comment_${comment.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-muted text-decoration-none"
+                              >
+                                🔗 Link
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -1000,7 +1125,14 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
                 You may also like...
               </h5>
 
-              {isLoadingRecs && recommendations.length === 0 ? (
+              {!isInteractionReady ? (
+                <div
+                  className="text-muted text-center p-3 border rounded border-dashed"
+                  style={{ borderColor: 'var(--app-border)' }}
+                >
+                  Waiting for interaction...
+                </div>
+              ) : isLoadingRecs && recommendations.length === 0 ? (
                 <div className="text-center py-5">
                   <div className="spinner-border text-primary" role="status"></div>
                 </div>
@@ -1024,7 +1156,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
               )}
 
               {/* Security Alert if Rate Limited */}
-              {isRateLimited && (
+              {isRateLimited && isInteractionReady && (
                 <div
                   className="alert p-3 mb-0 rounded shadow-sm border-0 mt-3"
                   style={{
@@ -1046,18 +1178,21 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
               )}
 
               {/* Infinite Scroll Trigger Element */}
-              {hasMoreRecs && !isRateLimited && recommendations.length > 0 && (
-                <div ref={observerTarget} className="text-center py-3 w-100 mt-2">
-                  {isLoadingRecs ? (
-                    <div
-                      className="spinner-border text-primary spinner-border-sm"
-                      role="status"
-                    ></div>
-                  ) : (
-                    <span className="text-muted small fw-semibold">Scroll for more...</span>
-                  )}
-                </div>
-              )}
+              {hasMoreRecs &&
+                !isRateLimited &&
+                recommendations.length > 0 &&
+                isInteractionReady && (
+                  <div ref={observerTarget} className="text-center py-3 w-100 mt-2">
+                    {isLoadingRecs ? (
+                      <div
+                        className="spinner-border text-primary spinner-border-sm"
+                        role="status"
+                      ></div>
+                    ) : (
+                      <span className="text-muted small fw-semibold">Scroll for more...</span>
+                    )}
+                  </div>
+                )}
             </div>
           )}
         </div>

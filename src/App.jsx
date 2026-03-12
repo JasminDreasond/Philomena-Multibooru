@@ -26,6 +26,7 @@ import { Error404 } from './components/errors/404';
 import { PaginationBar } from './components/utils/PaginationBar';
 import { SearchControls } from './components/search/SearchControls';
 import { geString, parseQueryResults } from './queries/globalTags';
+import { alert } from './tools/BootstrapDialogs';
 
 /** @typedef {import('./services/api').ImageResult} ImageResult */
 /** @typedef {import('./services/api').ImageObj} ImageObj */
@@ -853,6 +854,107 @@ const App = () => {
   }, [isInfiniteScroll, currentPage, totalPages, isSearching, isFetchingMore, galleryRateLimited]);
 
   /**
+   * Helper function for ImageViewer Quick Navigation.
+   * Modifies the viewingImage safely, handling edge pagination cases.
+   * @param {'prev'|'next'} direction
+   * @returns {Promise<void>}
+   */
+  const handleNavigateImage = async (direction) => {
+    if (!viewingImage) return;
+
+    let sourceArray = currentImages;
+    let idx = sourceArray.findIndex((img) => img.id === viewingImage.id);
+
+    // Fallbacks if the user opened an image from the sidebar
+    if (idx === -1) {
+      sourceArray = trendingImages;
+      idx = sourceArray.findIndex((img) => img.id === viewingImage.id);
+    }
+    if (idx === -1) {
+      sourceArray = watchedImages;
+      idx = sourceArray.findIndex((img) => img.id === viewingImage.id);
+    }
+
+    if (idx === -1) {
+      alert('It is not possible to navigate from this image as it is not on the current list.');
+      return;
+    }
+
+    if (direction === 'next') {
+      if (idx < sourceArray.length - 1) {
+        handleOpenImage(sourceArray[idx + 1]);
+      } else if (sourceArray === currentImages && currentPage < totalPages) {
+        const nextPage = currentPage + 1;
+        const queryToUse = searchQuery.trim() === '' ? geString : searchQuery;
+        try {
+          const newImages = await searchImages({
+            query: parseQueryResults(queryToUse),
+            limit: pageLimit,
+            page: nextPage,
+            allowedBoorus: visibleBoorus,
+            sd: sortDirection,
+            sf: sortField,
+          });
+
+          if (isInfiniteScroll) {
+            setCurrentImages((prev) => {
+              const prevIds = new Set(prev.map((p) => p.id));
+              const uniqueNew = newImages.filter((f) => !prevIds.has(f.id));
+              return [...prev, ...uniqueNew];
+            });
+          } else {
+            setCurrentImages(newImages);
+          }
+          setCurrentPage(nextPage);
+          if (newImages.length > 0) {
+            handleOpenImage(newImages[0]);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      } else {
+        alert('There are no more images to display in this direction.');
+      }
+    } else if (direction === 'prev') {
+      if (idx > 0) {
+        handleOpenImage(sourceArray[idx - 1]);
+      } else if (sourceArray === currentImages && currentPage > 1) {
+        const prevPage = currentPage - 1;
+        const queryToUse = searchQuery.trim() === '' ? geString : searchQuery;
+        try {
+          const newImages = await searchImages({
+            query: parseQueryResults(queryToUse),
+            limit: pageLimit,
+            page: prevPage,
+            allowedBoorus: visibleBoorus,
+            sd: sortDirection,
+            sf: sortField,
+          });
+
+          if (isInfiniteScroll) {
+            // If using infinite scroll, scrolling upwards essentially pre-pends to the master list
+            setCurrentImages((prev) => {
+              const prevIds = new Set(prev.map((p) => p.id));
+              const uniqueNew = newImages.filter((f) => !prevIds.has(f.id));
+              return [...uniqueNew, ...prev];
+            });
+          } else {
+            setCurrentImages(newImages);
+          }
+          setCurrentPage(prevPage);
+          if (newImages.length > 0) {
+            handleOpenImage(newImages[newImages.length - 1]);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      } else {
+        alert('There are no more images to display in this direction.');
+      }
+    }
+  };
+
+  /**
    * @returns {void}
    */
   const handleCloseSettings = () => {
@@ -1329,6 +1431,7 @@ const App = () => {
           onSearch={handleSearchSubmit}
           onOpenProfile={handleOpenProfile}
           onOpenImage={handleOpenImage}
+          onNavigateImage={handleNavigateImage}
         />
       ) : (
         <div className="container-fluid px-4 mt-4">
