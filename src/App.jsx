@@ -28,6 +28,7 @@ import { SearchControls } from './components/search/SearchControls';
 import { geString, parseQueryResults } from './queries/globalTags';
 import { alert } from './tools/BootstrapDialogs';
 import { WatchedImages } from './components/home/WatchedImages';
+import { updateEmbedMetadata } from './tools/utils';
 
 /** @typedef {import('./services/api').ImageResult} ImageResult */
 /** @typedef {import('./services/api').ImageObj} ImageObj */
@@ -203,26 +204,43 @@ const App = () => {
   // Synchronizes document <title> with the active view
   useEffect(() => {
     const baseTitle = 'Philomena Multi-Booru';
+    let description = 'Run philomena multibooru instances in a single page.';
+    let img = `${location.origin}/img/repository-open-graph-template.jpg`;
 
     if (is404) {
       document.title = `Page Not Found - ${baseTitle}`;
+      description =
+        'The URL you requested does not exist or it belongs to a Booru account that is not currently connected in your settings.';
     } else if (showSettings) {
       document.title = `Settings - ${baseTitle}`;
+      description = 'The settings page.';
     } else if (showNotifications) {
       document.title = `Notifications Mode - ${baseTitle}`;
+      description = 'The notifications page.';
     } else if (viewingProfile) {
       document.title = `${viewingProfile.username}'s Profile - ${baseTitle}`;
+      // if (viewingProfile.avatarUrl) img = viewingProfile.avatarUrl;
     } else if (viewingImage) {
       const tagSnippet =
         viewingImage.tags && viewingImage.tags.length > 0
           ? ` - ${viewingImage.tags.join(', ')}`
           : '';
       document.title = `Image #${viewingImage.id}${tagSnippet} - ${baseTitle}`;
+      description = `The image page of ${viewingImage.uploader}.`;
+      if (viewingImage.representations.thumb) img = viewingImage.representations.thumb;
     } else if (!isHomepage && searchQuery && searchQuery !== geString) {
       document.title = `Search: ${searchQuery} - ${baseTitle}`;
+      description = `The search page.`;
     } else {
       document.title = baseTitle;
     }
+
+    updateEmbedMetadata({
+      url: location.href,
+      title: document.title,
+      description,
+      image: img,
+    });
   }, [
     showSettings,
     showNotifications,

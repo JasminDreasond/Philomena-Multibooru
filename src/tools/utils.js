@@ -103,8 +103,13 @@ const setMetaTag = (property, content) => {
  */
 export const updateEmbedMetadata = ({ title, description, image, url }) => {
   setMetaTag('og:title', title);
+  setMetaTag('title', title);
   setMetaTag('twitter:title', title);
   setMetaTag('og:description', description);
+  setMetaTag('twitter:description', description);
+  setMetaTag('description', description);
   setMetaTag('og:image', image);
+  setMetaTag('twitter:image', image);
   setMetaTag('og:url', url);
+  setMetaTag('twitter:url', url);
 };
