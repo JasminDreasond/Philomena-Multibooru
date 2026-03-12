@@ -111,7 +111,7 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
               sendNotification(
                 acc.booruUrl,
                 `New Images on ${new URL(acc.booruUrl).hostname}!`,
-                `A new image (#${latestImage.id}) has just been uploaded. Click to view.`,
+                `Yay! Fresh new images have just landed in the gallery!`,
               );
             }
 
