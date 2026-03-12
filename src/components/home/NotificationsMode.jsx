@@ -131,6 +131,14 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
                   : `Yay! Fresh new images have just landed in the gallery!`;
 
               sendNotification(acc.booruUrl, title, body);
+
+              // Tell the Service Worker to broadcast the alert icon to all tabs
+              if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                  type: 'FAVICON_UPDATE',
+                  icon: 'alert',
+                });
+              }
             }
 
             lastSeenIds.current[trackerKey] = latestImage.id;

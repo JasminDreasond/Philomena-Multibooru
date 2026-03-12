@@ -32,3 +32,25 @@ sw.addEventListener('activate', (event) => {
     ev.waitUntil(sw.clients.claim());
     console.log('[ServiceWorker] Active and claiming clients.');
 });
+
+// Broadcast messages across all open tabs of our application
+sw.addEventListener('message', (event) => {
+    /** @type {ExtendableMessageEvent} */
+    const ev = event;
+    const data = ev.data;
+
+    if (data && data.type === 'FAVICON_UPDATE') {
+        console.log(`[ServiceWorker] Broadcasting favicon update: ${data.icon}`);
+        
+        ev.waitUntil(
+            sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+                clientList.forEach((client) => {
+                    client.postMessage({
+                        type: 'FAVICON_UPDATE',
+                        icon: data.icon
+                    });
+                });
+            })
+        );
+    }
+});
