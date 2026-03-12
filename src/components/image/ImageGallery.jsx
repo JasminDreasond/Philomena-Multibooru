@@ -29,7 +29,6 @@ const ContextMenuGroup = ({ icon, label, url, openLeft }) => {
         style={{
           fontSize: '0.85rem',
           padding: '0.4rem 1rem',
-          color: 'var(--app-text)',
           cursor: 'default',
         }}
         onClick={(e) => e.preventDefault()}
@@ -59,7 +58,7 @@ const ContextMenuGroup = ({ icon, label, url, openLeft }) => {
         >
           <button
             className="dropdown-item fw-semibold rounded py-1"
-            style={{ fontSize: '0.85rem', color: 'var(--app-text)' }}
+            style={{ fontSize: '0.85rem' }}
             onClick={handleCopy}
           >
             <i className="fa-solid fa-copy me-2" style={{ width: '16px', textAlign: 'center' }}></i>{' '}
@@ -67,7 +66,7 @@ const ContextMenuGroup = ({ icon, label, url, openLeft }) => {
           </button>
           <button
             className="dropdown-item fw-semibold rounded py-1"
-            style={{ fontSize: '0.85rem', color: 'var(--app-text)' }}
+            style={{ fontSize: '0.85rem' }}
             onClick={handleOpenTab}
           >
             <i
@@ -78,7 +77,7 @@ const ContextMenuGroup = ({ icon, label, url, openLeft }) => {
           </button>
           <button
             className="dropdown-item fw-semibold rounded py-1"
-            style={{ fontSize: '0.85rem', color: 'var(--app-text)' }}
+            style={{ fontSize: '0.85rem' }}
             onClick={handleOpenWindow}
           >
             <i
@@ -123,7 +122,11 @@ const ContextMenu = ({ x, y, img, onClose }) => {
 
   if (hasProfile) {
     groups.push({ icon: 'fa-solid fa-id-badge', label: 'Author Profile', url: appProfileUrl });
-    groups.push({ icon: 'fa-solid fa-user-circle', label: 'Author Profile (Booru)', url: booruProfileUrl });
+    groups.push({
+      icon: 'fa-solid fa-user-circle',
+      label: 'Author Profile (Booru)',
+      url: booruProfileUrl,
+    });
   }
 
   const openLeft = x > window.innerWidth - 380;
@@ -245,7 +248,7 @@ export const Image = ({ img, className, onOpenImage }) => {
     <>
       <div
         className="card h-100 shadow-sm border-0 interaction-card"
-        style={{ backgroundColor: 'var(--app-surface)', color: 'var(--app-text)' }}
+        style={{ backgroundColor: 'var(--app-surface)' }}
         onContextMenu={handleContextMenu}
       >
         <a

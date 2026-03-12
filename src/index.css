@@ -106,6 +106,14 @@ a:not(.btn):not(.btn-tool):hover {
   color: var(--app-primary-hover);
 }
 
+.dropdown-item {
+  color: #ffffff;
+}
+
+.dropdown-item:hover {
+  color: #000000;
+}
+
 /* =========================================
    Cards e Superfícies
    ========================================= */

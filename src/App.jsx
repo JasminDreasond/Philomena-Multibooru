@@ -1029,7 +1029,6 @@ const App = () => {
                                 );
                               else setVisibleBoorus([...visibleBoorus, acc.booruUrl]);
                             }}
-                            style={{ color: 'var(--app-text)' }}
                           >
                             <input
                               type="checkbox"
