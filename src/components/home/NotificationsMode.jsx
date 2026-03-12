@@ -294,13 +294,13 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
           </div>
         )}
 
-        <div class="alert alert-warning d-flex align-items-center mt-3 shadow-sm" role="alert">
+        <div className="alert alert-warning d-flex align-items-center mt-3 shadow-sm" role="alert">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
             height="24"
             fill="currentColor"
-            class="bi bi-exclamation-triangle-fill flex-shrink-0 me-2"
+            className="bi bi-exclamation-triangle-fill flex-shrink-0 me-2"
             viewBox="0 0 16 16"
             role="img"
             aria-label="Warning:"
