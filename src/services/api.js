@@ -312,7 +312,7 @@ export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => 
  * @param {string} [sf] Sort field (e.g., 'created_at').
  * @returns {Promise<{ total: number; interactions: any[]; images: any[] }>} Raw API response data.
  */
-const searchImagesApi = async (booruUrl, apiKey, query, page, perPage, sd, sf) => {
+export const searchImagesApi = async (booruUrl, apiKey, query, page, perPage, sd, sf) => {
   /** @type {Record<string, any>} */
   const data = { q: query };
 

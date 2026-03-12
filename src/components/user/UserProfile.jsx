@@ -10,6 +10,7 @@ import { Image } from '../image/ImageGallery';
 import { ProfileLink } from '../image/ProfileLink';
 import { CommentBody } from '../utils/CommentBody';
 import { openImageLink } from '../../tools/utils';
+import { parseQueryResults } from '../../queries/globalTags';
 
 /**
  * @typedef {import('../../services/api').UserProfileData} UserProfileData
@@ -102,13 +103,13 @@ export const UserProfile = ({
           // await clearImageCache();
           await Promise.all([
             syncUserGalleryPages({
-              query: uploaderQuery,
+              query: parseQueryResults(uploaderQuery),
               allowedBoorus,
               perPage: 4,
               account,
             }),
             syncUserGalleryPages({
-              query: favedQuery,
+              query: parseQueryResults(favedQuery),
               allowedBoorus,
               perPage: 4,
               account,
@@ -116,8 +117,16 @@ export const UserProfile = ({
           ]);
 
           const [uploadsRes, favesRes, commentsRes] = await Promise.all([
-            searchImages({ query: uploaderQuery, limit: 4, allowedBoorus: allowedBoorus }),
-            searchImages({ query: favedQuery, limit: 4, allowedBoorus: allowedBoorus }),
+            searchImages({
+              query: parseQueryResults(uploaderQuery),
+              limit: 4,
+              allowedBoorus: allowedBoorus,
+            }),
+            searchImages({
+              query: parseQueryResults(favedQuery),
+              limit: 4,
+              allowedBoorus: allowedBoorus,
+            }),
             fetchComments(booruUrl, account.apiKey, `user_id:${userId}`, 1),
           ]);
 

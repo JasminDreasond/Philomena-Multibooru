@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { alert } from '../../tools/BootstrapDialogs';
 import { updateSystemSettings } from '../../services/api';
@@ -33,6 +33,12 @@ export const AppSettings = ({
   const [plyrAutoplay, setPlyrAutoplay] = useState(
     localStorage.getItem('app_plyrAutoplay') !== 'false',
   );
+
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [recVideoMode, setRecVideoMode] = useState(() => {
+    return localStorage.getItem('app_recVideoMode') === 'true';
+  });
+
   const [plyrMuted, setPlyrMuted] = useState(localStorage.getItem('app_plyrMuted') !== 'false');
   const [plyrLoop, setPlyrLoop] = useState(localStorage.getItem('app_plyrLoop') !== 'false');
   const [plyrHideControls, setPlyrHideControls] = useState(
@@ -89,6 +95,10 @@ export const AppSettings = ({
     setMaxItemsLimit(val);
     await updateSystemSettings(val, isPersistent ? 1 : 0);
   };
+
+  useEffect(() => {
+    localStorage.setItem('app_recVideoMode', recVideoMode.toString());
+  }, [recVideoMode]);
 
   return (
     <div className="fade-in pt-3">
@@ -178,6 +188,25 @@ export const AppSettings = ({
             <div className="form-text text-muted small">
               If enabled, the app will automatically fetch new images when you return to the tab
               after 60 seconds of inactivity.
+            </div>
+          </div>
+          <div className="form-check form-switch mb-4">
+            <input
+              type="checkbox"
+              className="form-check-input"
+              id="videoModeCheck"
+              checked={recVideoMode}
+              onChange={(e) => setRecVideoMode(e.target.checked)}
+            />
+            <label
+              className="form-check-label fw-bold"
+              htmlFor="videoModeCheck"
+              style={{ color: 'var(--app-text)' }}
+            >
+              Video Mode
+            </label>
+            <div className="form-text" style={{ color: 'var(--app-text)' }}>
+              Appends the "video" tag to force video recommendations.
             </div>
           </div>
         </div>

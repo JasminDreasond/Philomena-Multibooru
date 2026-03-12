@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { fetchPhilomena } from '../../services/api';
+import { searchImagesApi } from '../../services/api';
+import { geString, parseQueryResults } from '../../queries/globalTags';
 
 /**
  * @param {{ accounts: import('../../services/api').Account[], visibleBoorus: string[], onClose: () => void, onGoHome: () => void }} props
@@ -102,16 +103,19 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
       if (visibleBoorus.length === 0 || accounts.length === 0) return;
 
       const activeAccounts = accounts.filter((a) => visibleBoorus.includes(a.booruUrl));
-      const query = searchType === 'watched' ? 'my:watched' : '*';
+      const query = searchType === 'watched' ? 'my:watched' : geString;
 
       for (const acc of activeAccounts) {
         try {
-          const data = await fetchPhilomena(acc.booruUrl, 'search/images', acc.apiKey, {
-            q: query,
-            per_page: 1,
-            sf: 'created_at',
-            sd: 'desc',
-          });
+          const data = await searchImagesApi(
+            acc.booruUrl,
+            acc.apiKey,
+            parseQueryResults(query),
+            1,
+            1,
+            'desc',
+            'created_at',
+          );
 
           if (data && data.images && data.images.length > 0) {
             const latestImage = data.images[0];

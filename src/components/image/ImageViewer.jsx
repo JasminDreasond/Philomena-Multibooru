@@ -5,7 +5,7 @@ import { alert } from '../../tools/BootstrapDialogs';
 import {
   fetchComments,
   getAccountBooruApi,
-  fetchPhilomena,
+  searchImagesApi,
   parseImageData,
   fixImageObj,
 } from '../../services/api';
@@ -14,10 +14,11 @@ import { Loading } from '../utils/Loading';
 import { ProfileLink } from './ProfileLink';
 import { Image } from './ImageGallery';
 
-import CORE_TAGS from './tags/core';
-import BLACKLIST_TAGS from './tags/blacklistTags';
-import BLACKLIST_PREFIXES from './tags/blacklistPrefixes';
-import tagsPrefixCssList from './tags/tagsPrefixCssList';
+import CORE_TAGS from '../../queries/core';
+import BLACKLIST_TAGS from '../../queries/blacklistTags';
+import BLACKLIST_PREFIXES from '../../queries/blacklistPrefixes';
+import tagsPrefixCssList from '../../queries/tagsPrefixCssList';
+import { parseQueryResults } from '../../queries/globalTags';
 
 /**
  * @typedef {import('../../services/api').ImageResult} ImageResult
@@ -305,13 +306,15 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
           currentRecQuery.current = queryParts.join(', ');
         }
 
-        const data = await fetchPhilomena(image.booruUrl, 'search/images', apiKey, {
-          q: currentRecQuery.current,
-          sf: 'wilson_score',
-          sd: 'desc',
-          per_page: 20,
-          page: recPage,
-        });
+        const data = await searchImagesApi(
+          image.booruUrl,
+          apiKey,
+          parseQueryResults(currentRecQuery.current),
+          recPage,
+          20,
+          'desc',
+          'wilson_score',
+        );
 
         if (isMounted && data && data.images) {
           // If the API returns less than requested, we reached the end

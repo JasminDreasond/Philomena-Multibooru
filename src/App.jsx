@@ -25,6 +25,7 @@ import { Welcome } from './components/home/Welcome';
 import { Error404 } from './components/errors/404';
 import { PaginationBar } from './components/utils/PaginationBar';
 import { SearchControls } from './components/search/SearchControls';
+import { geString, parseQueryResults } from './queries/globalTags';
 
 /** @typedef {import('./services/api').ImageResult} ImageResult */
 /** @typedef {import('./services/api').ImageObj} ImageObj */
@@ -147,7 +148,7 @@ const App = () => {
     } else if (!isHomepage) {
       newPath = '/search';
       const searchParams = new URLSearchParams();
-      if (searchQuery && searchQuery !== '*') searchParams.set('q', searchQuery);
+      if (searchQuery && searchQuery !== geString) searchParams.set('q', searchQuery);
       if (sortField !== 'created_at') searchParams.set('sf', sortField);
       if (sortDirection !== 'desc') searchParams.set('sd', sortDirection);
       if (currentPage > 1) searchParams.set('page', currentPage.toString());
@@ -195,7 +196,7 @@ const App = () => {
           ? ` - ${viewingImage.tags.join(', ')}`
           : '';
       document.title = `Image #${viewingImage.id}${tagSnippet} - ${baseTitle}`;
-    } else if (!isHomepage && searchQuery && searchQuery !== '*') {
+    } else if (!isHomepage && searchQuery && searchQuery !== geString) {
       document.title = `Search: ${searchQuery} - ${baseTitle}`;
     } else {
       document.title = baseTitle;
@@ -237,7 +238,7 @@ const App = () => {
         setShowSettings(false);
         setIs404(false);
       } else if (path.startsWith('/search')) {
-        const q = params.get('q') || '*';
+        const q = params.get('q') || geString;
         const sfParam = params.get('sf') || 'created_at';
         const sdParam = params.get('sd') || 'desc';
         const pParam = parseInt(params.get('page') || '1', 10);
@@ -379,7 +380,7 @@ const App = () => {
   const loadLocalData = async (limitToUse, pageToUse, queryToUse, boorusToUse, sd, sf) => {
     /** @type {ImageResult[]} */
     const mainResults = await searchImages({
-      query: queryToUse,
+      query: parseQueryResults(queryToUse),
       limit: limitToUse,
       page: pageToUse,
       allowedBoorus: boorusToUse,
@@ -389,13 +390,13 @@ const App = () => {
     setCurrentImages(mainResults);
 
     /** @type {boolean} */
-    const isSpecialSearch = queryToUse.trim() !== '' && queryToUse.trim() !== '*';
+    const isSpecialSearch = queryToUse.trim() !== '' && queryToUse.trim() !== geString;
 
     // Only load special content if on Page 1 and no search query
     if (!isSpecialSearch && isHomepage) {
       /** @type {ImageResult[]} */
       const trendingResults = await searchImages({
-        query: 'first_seen_at.gt:3 days ago',
+        query: parseQueryResults('first_seen_at.gt:3 days ago'),
         limit: 20,
         allowedBoorus: boorusToUse,
         sf: 'score',
@@ -406,7 +407,7 @@ const App = () => {
 
       /** @type {ImageResult[]} */
       const watchedResults = await searchImages({
-        query: 'my:watched',
+        query: parseQueryResults('my:watched'),
         limit: limitToUse,
         allowedBoorus: boorusToUse,
       });
@@ -421,14 +422,14 @@ const App = () => {
   const executeBackgroundSync = async (boorusToUse) => {
     try {
       /** @type {string} */
-      const queryToUse = searchQuery.trim() === '' ? '*' : searchQuery;
+      const queryToUse = searchQuery.trim() === '' ? geString : searchQuery;
       /** @type {boolean} */
-      const isSpecialSearch = queryToUse !== '*';
+      const isSpecialSearch = queryToUse !== geString;
 
       // await clearImageCache();
       const syncPromises = [
         syncUserGalleryPages({
-          query: queryToUse,
+          query: parseQueryResults(queryToUse),
           page: currentPage,
           allowedBoorus: boorusToUse,
           sd: sortDirection,
@@ -439,7 +440,7 @@ const App = () => {
       if (!isSpecialSearch && isHomepage) {
         syncPromises.push(
           syncUserGalleryPages({
-            query: 'first_seen_at.gt:3 days ago',
+            query: parseQueryResults('first_seen_at.gt:3 days ago'),
             allowedBoorus: boorusToUse,
             perPage: 20,
             sf: 'score',
@@ -447,7 +448,10 @@ const App = () => {
           }),
         );
         syncPromises.push(
-          syncUserGalleryPages({ query: 'my:watched', allowedBoorus: boorusToUse }),
+          syncUserGalleryPages({
+            query: parseQueryResults('my:watched'),
+            allowedBoorus: boorusToUse,
+          }),
         );
       }
 
@@ -520,7 +524,7 @@ const App = () => {
           // === DEEP LINK PARSING ON INITIAL LOAD ===
           const path = window.location.pathname;
           const params = new URLSearchParams(window.location.search);
-          let initialQuery = searchQuery.trim() === '' ? '*' : searchQuery;
+          let initialQuery = searchQuery.trim() === '' ? geString : searchQuery;
           let isDeepLinkSpecial = false;
           let skipMainSync = false; // Lock to prevent unnecessary API calls at boot
 
@@ -540,7 +544,7 @@ const App = () => {
               skipMainSync = true;
               setIs404(false);
             } else if (path.startsWith('/search')) {
-              const q = params.get('q') || '*';
+              const q = params.get('q') || geString;
               initialSf = params.get('sf') || 'created_at';
               initialSd = params.get('sd') || 'desc';
               initialPage = parseInt(params.get('page') || '1', 10);
@@ -603,10 +607,10 @@ const App = () => {
           // If we have an active deep link, we skip the massive fetch of the Homepage here!
           if (!skipMainSync) {
             // await clearImageCache();
-            const isSpecialSearch = initialQuery !== '*';
+            const isSpecialSearch = initialQuery !== geString;
             const syncPromises = [
               syncUserGalleryPages({
-                query: initialQuery,
+                query: parseQueryResults(initialQuery),
                 page: initialPage,
                 allowedBoorus: activeUrls,
                 sd: initialSd,
@@ -617,7 +621,7 @@ const App = () => {
             if (!isSpecialSearch && isHomepage && !isDeepLinkSpecial) {
               syncPromises.push(
                 syncUserGalleryPages({
-                  query: 'first_seen_at.gt:3 days ago',
+                  query: parseQueryResults('first_seen_at.gt:3 days ago'),
                   allowedBoorus: activeUrls,
                   perPage: 20,
                   sf: 'score',
@@ -625,7 +629,10 @@ const App = () => {
                 }),
               );
               syncPromises.push(
-                syncUserGalleryPages({ query: 'my:watched', allowedBoorus: activeUrls }),
+                syncUserGalleryPages({
+                  query: parseQueryResults('my:watched'),
+                  allowedBoorus: activeUrls,
+                }),
               );
             }
 
@@ -878,7 +885,7 @@ const App = () => {
 
     setIsRandomizing(true);
     try {
-      const queryToUse = searchQuery.trim() === '' ? '*' : searchQuery;
+      const queryToUse = searchQuery.trim() === '' ? geString : searchQuery;
       const activeAccounts = connectedAccounts.filter((a) => visibleBoorus.includes(a.booruUrl));
 
       if (activeAccounts.length > 0) {
@@ -896,7 +903,7 @@ const App = () => {
 
   /** @type {boolean} */
   const showSpecialContent =
-    (searchQuery.trim() === '' || searchQuery.trim() === '*') && isHomepage;
+    (searchQuery.trim() === '' || searchQuery.trim() === geString) && isHomepage;
 
   // Global listener for Favicon Sync across tabs
   useEffect(() => {
@@ -1312,7 +1319,7 @@ const App = () => {
                         </div>
                         <a
                           href={`/search?sf=score&sd=desc`}
-                          onClick={(e) => handleQuickLinkClick(e, '*', 'score', 'desc')}
+                          onClick={(e) => handleQuickLinkClick(e, geString, 'score', 'desc')}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="list-group-item list-group-item-action fw-semibold"

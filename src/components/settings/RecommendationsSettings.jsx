@@ -6,11 +6,6 @@ export const RecommendationsSettings = () => {
     return localStorage.getItem('app_enableRecs') === 'true';
   });
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
-  const [recVideoMode, setRecVideoMode] = useState(() => {
-    return localStorage.getItem('app_recVideoMode') === 'true';
-  });
-
   /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
   const [recTagLimit, setRecTagLimit] = useState(() => {
     return parseInt(localStorage.getItem('app_recTagLimit') || '5', 10);
@@ -19,10 +14,6 @@ export const RecommendationsSettings = () => {
   useEffect(() => {
     localStorage.setItem('app_enableRecs', enableRecs.toString());
   }, [enableRecs]);
-
-  useEffect(() => {
-    localStorage.setItem('app_recVideoMode', recVideoMode.toString());
-  }, [recVideoMode]);
 
   useEffect(() => {
     localStorage.setItem('app_recTagLimit', recTagLimit.toString());
@@ -51,27 +42,6 @@ export const RecommendationsSettings = () => {
         </label>
         <div className="form-text" style={{ color: 'var(--app-text)' }}>
           Shows a "Theater Mode" sidebar with similar content when viewing an image.
-        </div>
-      </div>
-
-      <div className="form-check form-switch mb-4">
-        <input
-          type="checkbox"
-          className="form-check-input"
-          id="videoModeCheck"
-          checked={recVideoMode}
-          disabled={!enableRecs}
-          onChange={(e) => setRecVideoMode(e.target.checked)}
-        />
-        <label
-          className="form-check-label fw-bold"
-          htmlFor="videoModeCheck"
-          style={{ color: 'var(--app-text)' }}
-        >
-          Video Mode
-        </label>
-        <div className="form-text" style={{ color: 'var(--app-text)' }}>
-          Appends the "video" tag to force video recommendations.
         </div>
       </div>
 
