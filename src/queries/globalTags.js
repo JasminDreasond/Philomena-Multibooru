@@ -1,3 +1,9 @@
+/**
+ * Always use geString when comparing a query against '*'.
+ * Additionally, ensure parseQueryResults is used whenever executing a query within a script.
+ * This ensures the tagging system remains consistent with the user's settings.
+ */
+
 // Video tags
 export const videoTags = ['video'];
 
