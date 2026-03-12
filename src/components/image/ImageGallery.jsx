@@ -16,7 +16,7 @@ const ContextMenuGroup = ({ icon, label, url, openLeft }) => {
   const handleCopy = () => navigator.clipboard.writeText(url);
   const handleOpenTab = () => window.open(url, '_blank', 'noopener,noreferrer');
   const handleOpenWindow = () =>
-    window.open(url, '_blank', 'width=800,height=600,noopener,noreferrer');
+    window.open(url, '_blank', 'width=900,height=600,noopener,noreferrer');
 
   return (
     <div
