@@ -201,8 +201,8 @@ export const ImageViewer = ({
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
       const now = Date.now();
-      // Security: 200ms debounce for navigation keys to prevent glitches
-      if (now - lastNavActionTime.current < 200) return;
+      // Security: 800ms debounce for navigation keys to prevent glitches
+      if (now - lastNavActionTime.current < 800) return;
 
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
@@ -252,8 +252,8 @@ export const ImageViewer = ({
       if (e.type === 'keydown' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) return;
 
       const now = Date.now();
-      // Security: 200ms debounce for navigation keys to prevent glitches
-      if (now - lastNavActionTime.current < 200) return;
+      // Security: 800ms debounce for navigation keys to prevent glitches
+      if (now - lastNavActionTime.current < 800) return;
       setIsInteractionReady(true);
     };
 

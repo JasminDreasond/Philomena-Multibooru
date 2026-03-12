@@ -888,6 +888,15 @@ const App = () => {
         const nextPage = currentPage + 1;
         const queryToUse = searchQuery.trim() === '' ? geString : searchQuery;
         try {
+          await syncUserGalleryPages({
+            query: parseQueryResults(queryToUse),
+            limit: pageLimit,
+            page: nextPage,
+            allowedBoorus: visibleBoorus,
+            sd: sortDirection,
+            sf: sortField,
+          });
+
           const newImages = await searchImages({
             query: parseQueryResults(queryToUse),
             limit: pageLimit,
@@ -923,6 +932,15 @@ const App = () => {
         const prevPage = currentPage - 1;
         const queryToUse = searchQuery.trim() === '' ? geString : searchQuery;
         try {
+          await syncUserGalleryPages({
+            query: parseQueryResults(queryToUse),
+            limit: pageLimit,
+            page: prevPage,
+            allowedBoorus: visibleBoorus,
+            sd: sortDirection,
+            sf: sortField,
+          });
+
           const newImages = await searchImages({
             query: parseQueryResults(queryToUse),
             limit: pageLimit,
