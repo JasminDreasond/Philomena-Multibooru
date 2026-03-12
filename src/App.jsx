@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import TinySimpleDice from 'tiny-essentials/libs/TinySimpleDice';
-import { shuffleArray } from 'tiny-essentials/basics';
+import { shuffleArray } from 'tiny-essentials/basics/array';
 import { initDatabase } from './db/connection';
 import {
   syncUserGalleryPages,

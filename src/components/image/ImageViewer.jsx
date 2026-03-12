@@ -1,10 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
+import { shuffleArray } from 'tiny-essentials/basics/array';
 import Plyr from 'plyr';
 import { alert } from '../../tools/BootstrapDialogs';
-import { fetchComments, getAccountBooruApi } from '../../services/api';
+import {
+  fetchComments,
+  getAccountBooruApi,
+  fetchPhilomena,
+  parseImageData,
+  fixImageObj,
+} from '../../services/api';
 import { CommentBody } from '../utils/CommentBody';
 import { Loading } from '../utils/Loading';
 import { ProfileLink } from './ProfileLink';
+import { Image } from './ImageGallery';
 
 const tags = [
   // Roles
@@ -89,10 +97,41 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
   /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  // State to control the loading visual of the main image/video
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isMediaLoaded, setIsMediaLoaded] = useState(false);
+
+  // Recommendations States
+  /** @type {[ImageResult[], import('react').Dispatch<import('react').SetStateAction<ImageResult[]>>]} */
+  const [recommendations, setRecommendations] = useState([]);
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isLoadingRecs, setIsLoadingRecs] = useState(false);
+  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  const [recPage, setRecPage] = useState(1);
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [hasMoreRecs, setHasMoreRecs] = useState(true);
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isAllowedToFetch, setIsAllowedToFetch] = useState(false);
+
+  // Security Anti-Spam State
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isRateLimited, setIsRateLimited] = useState(false);
+
+  /** @type {import('react').MutableRefObject<string>} */
+  const currentRecQuery = useRef('');
+  /** @type {import('react').MutableRefObject<number|null>} */
+  const observerTarget = useRef(null);
+  /** @type {import('react').MutableRefObject<number>} */
+  const lastFetchTime = useRef(0); // Tracks the timestamp of the last fetch start
+
   /** @type {import('react').MutableRefObject<HTMLElement>} */
   const videoRef = useRef(null);
   /** @type {[HTMLElement|null, import('react').Dispatch<import('react').SetStateAction<HTMLElement>>]} */
   const [, setPlayer] = useState(null);
+
+  const enableRecs = localStorage.getItem('app_enableRecs') === 'true';
+  const recVideoMode = localStorage.getItem('app_recVideoMode') === 'true';
+  const recTagLimit = parseInt(localStorage.getItem('app_recTagLimit') || '5', 10);
 
   const isVideo = image && image.mimeType && image.mimeType.startsWith('video/');
   const imageSrc = image
@@ -129,6 +168,19 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
     return () => window.removeEventListener('appFocusRefresh', onRefresh);
   }, []);
 
+  // Reset core states when viewing a new image
+  useEffect(() => {
+    setIsMediaLoaded(false);
+    setRecommendations([]);
+    setRecPage(1);
+    setHasMoreRecs(true);
+    setIsAllowedToFetch(false);
+    setIsRateLimited(false);
+    currentRecQuery.current = '';
+    lastFetchTime.current = 0;
+  }, [image?.id]);
+
+  // Plyr Setup
   useEffect(() => {
     if (videoRef.current && isVideo) {
       const p = new Plyr(videoRef.current, {
@@ -146,8 +198,9 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
       });
       setPlayer(p);
     }
-  }, []);
+  }, [image, isVideo, plyrAutoplay, plyrMuted, plyrLoop, plyrHideControls, plyrStorage]);
 
+  // Fetch Comments
   useEffect(() => {
     let isMounted = true;
     const getComments = async () => {
@@ -171,6 +224,141 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
       isMounted = false;
     };
   }, [image, refreshTrigger]);
+
+  // Determine if the user has focused on the tab to allow fetching
+  useEffect(() => {
+    if (!enableRecs || !image) return;
+
+    const checkFocus = () => {
+      if (!document.hidden && document.hasFocus()) {
+        setIsAllowedToFetch(true);
+      }
+    };
+
+    if (!document.hidden && document.hasFocus()) {
+      setIsAllowedToFetch(true);
+    } else {
+      window.addEventListener('focus', checkFocus);
+      document.addEventListener('visibilitychange', checkFocus);
+    }
+
+    return () => {
+      window.removeEventListener('focus', checkFocus);
+      document.removeEventListener('visibilitychange', checkFocus);
+    };
+  }, [image?.id, enableRecs]);
+
+  // Fetch Recommendations Logic (Handles initial load + pagination)
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadRecommendations = async () => {
+      if (
+        !image ||
+        !enableRecs ||
+        !hasMoreRecs ||
+        !isAllowedToFetch ||
+        isLoadingRecs ||
+        isRateLimited
+      )
+        return;
+
+      setIsLoadingRecs(true);
+      lastFetchTime.current = Date.now(); // Record the exact moment the API request starts
+
+      try {
+        const apiKey = await getAccountBooruApi(image.booruUrl);
+
+        // Generate query ONLY on the first page to keep pagination stable
+        if (recPage === 1 && !currentRecQuery.current) {
+          const shuffledTags = shuffleArray(image.tags || []);
+          const selectedTags = shuffledTags.slice(0, recTagLimit);
+
+        // Build the query using Philomena's correct syntax for OR grouping
+          let queryParts = [`(${selectedTags.join(' OR ')})`, 'first_seen_at.gt:3 days ago'];
+          if (recVideoMode) queryParts.push('video');
+
+          currentRecQuery.current = queryParts.join(', ');
+        }
+
+        const data = await fetchPhilomena(image.booruUrl, 'search/images', apiKey, {
+          q: currentRecQuery.current,
+          sf: 'wilson_score',
+          sd: 'desc',
+          per_page: 20,
+          page: recPage,
+        });
+
+        if (isMounted && data && data.images) {
+          // If the API returns less than requested, we reached the end
+          if (data.images.length < 20) {
+            setHasMoreRecs(false);
+          }
+
+          let formatted = data.images
+            .filter((img) => img.id !== image.id) // Exclude current viewing image
+            .map((img) => fixImageObj(parseImageData(image.booruUrl, img)));
+
+          // Shuffle the newly fetched batch so the grid looks organic
+          formatted = shuffleArray(formatted);
+
+          setRecommendations((prev) => {
+            // Prevent duplicates using a Set (just in case the API overlaps pages)
+            const prevIds = new Set(prev.map((p) => p.id));
+            const uniqueNew = formatted.filter((f) => !prevIds.has(f.id));
+            return [...prev, ...uniqueNew];
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch recommendations:', err);
+        if (isMounted) setHasMoreRecs(false); // Stop trying if the API fails
+      } finally {
+        if (isMounted) setIsLoadingRecs(false);
+      }
+    };
+
+    loadRecommendations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [image, enableRecs, isAllowedToFetch, recPage]);
+
+  // Infinite Scroll Observer for Recommendations with Anti-Spam protection
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          hasMoreRecs &&
+          !isLoadingRecs &&
+          isAllowedToFetch &&
+          !isRateLimited
+        ) {
+          const now = Date.now();
+
+          // Anti-Spam Protection: If this trigger happens less than 2000ms after the last fetch started, lock it.
+          if (lastFetchTime.current > 0 && now - lastFetchTime.current < 2000) {
+            console.warn(
+              '⚠️ Security Lock: API request spam detected in recommendations. Infinite scroll paused.',
+            );
+            setIsRateLimited(true);
+            setHasMoreRecs(false);
+            return;
+          }
+
+          setRecPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMoreRecs, isLoadingRecs, isAllowedToFetch, isRateLimited]);
 
   if (!image) {
     return (
@@ -302,7 +490,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
   };
 
   /**
-   * @param {MouseEvent} e
+   * @param {import('react').MouseEvent} e
    * @param {string} booruUrl
    * @param {string} username
    * @param {number} id
@@ -325,7 +513,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
 
   return (
     <div className="fade-in position-relative">
-      {/* Global Loading Overlay */}
+      {/* Global Loading Overlay for general application state */}
       {isLoading && <Loading />}
 
       {/* Top Toolbar */}
@@ -411,7 +599,7 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
 
       {/* Image Area */}
       <div
-        className="d-flex justify-content-center align-items-center bg-black mb-4 mx-auto shadow-sm"
+        className="position-relative d-flex justify-content-center align-items-center bg-black mb-4 mx-auto shadow-sm"
         style={{
           minHeight: '400px',
           cursor: isVideo ? 'default' : isZoomed ? 'zoom-out' : 'zoom-in',
@@ -419,6 +607,16 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
         }}
         onClick={() => !isVideo && setIsZoomed(!isZoomed)}
       >
+        {/* Visual Loading State overlay for the media box */}
+        {!isMediaLoaded && (
+          <div
+            className="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-black"
+            style={{ zIndex: 5 }}
+          >
+            <div className="spinner-border text-primary" role="status"></div>
+          </div>
+        )}
+
         {isVideo ? (
           <video
             ref={videoRef}
@@ -428,318 +626,409 @@ export const ImageViewer = ({ image, onClose, onSearch, onOpenProfile, onOpenIma
             autoPlay={plyrAutoplay}
             loop={plyrLoop}
             muted={plyrMuted}
+            onLoadedData={() => setIsMediaLoaded(true)}
+            style={{ opacity: isMediaLoaded ? 1 : 0, transition: 'opacity 0.2s ease-in' }}
           />
         ) : (
           <img
             src={imageSrc}
             alt={image.tags?.join(', ')}
+            onLoad={() => setIsMediaLoaded(true)}
             style={{
               maxWidth: '100%',
               maxHeight: isZoomed ? 'none' : '85vh',
               objectFit: 'contain',
-              transition: 'max-height 0.2s ease-in-out',
+              transition: 'max-height 0.2s ease-in-out, opacity 0.2s ease-in',
+              opacity: isMediaLoaded ? 1 : 0,
             }}
           />
         )}
       </div>
 
       {/* Content Area */}
-      <div className="container" style={{ maxWidth: '980px' }}>
-        {/* Description Panel */}
-        <div className="philo-panel">
-          <div className="philo-panel-header">📄 Description</div>
-          <div className="philo-panel-body text-muted p-2">
-            {image.description ? (
-              <CommentBody
-                body={image.description}
-                booruUrl={image.booruUrl}
-                imageId={image.id}
-                imageReps={image.representations}
-                onOpenProfileLink={onOpenProfile}
-                onOpenImageLink={onOpenImage}
-                setIsLoading={setIsLoading}
-              />
-            ) : (
-              <i>No description provided.</i>
-            )}
-          </div>
-        </div>
-
-        {/* Tags Panel */}
-        <div className="philo-panel">
-          <div className="philo-panel-header">
-            🏷️ Tags{' '}
-            <a
-              className="text-muted ms-auto fw-normal text-sm"
-              href={`${image.booruUrl}/images/${image.id}/tag_changes`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              History ({image.tags?.length || 0} tags)
-            </a>
-          </div>
-          <div className="philo-panel-body p-2">
-            <div className="philo-tag-container">
-              {image.tags?.map((tag, idx) => (
-                <div
-                  key={idx}
-                  className={`philo-tag ${getTagClass(tag)}`}
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => onSearch(tag)}
-                  title={`Search for ${tag}`}
-                >
-                  <span className={'philo-tag-name'}>{tag}</span>
-                </div>
-              ))}
+      <div
+        className="container-fluid"
+        style={{ maxWidth: enableRecs ? '1600px' : '980px', transition: 'max-width 0.3s ease' }}
+      >
+        <div className={`row justify-content-center ${enableRecs ? 'g-4' : ''}`}>
+          {/* Main Left Content */}
+          <div className={enableRecs ? 'col-12 col-md-9' : 'col-12'}>
+            {/* Description Panel */}
+            <div className="philo-panel">
+              <div className="philo-panel-header">📄 Description</div>
+              <div className="philo-panel-body text-muted p-2">
+                {image.description ? (
+                  <CommentBody
+                    body={image.description}
+                    booruUrl={image.booruUrl}
+                    imageId={image.id}
+                    imageReps={image.representations}
+                    onOpenProfileLink={onOpenProfile}
+                    onOpenImageLink={onOpenImage}
+                    setIsLoading={setIsLoading}
+                  />
+                ) : (
+                  <i>No description provided.</i>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Source Panel */}
-        <div className="philo-panel">
-          <div className="philo-panel-header">🔗 Sources</div>
-          <div className="philo-panel-body p-2">
-            {sources.length > 0 ? (
-              sources.map((sourceUrl, i) => (
+            {/* Tags Panel */}
+            <div className="philo-panel">
+              <div className="philo-panel-header">
+                🏷️ Tags{' '}
                 <a
-                  key={i}
-                  href={sourceUrl}
+                  className="text-muted ms-auto fw-normal text-sm"
+                  href={`${image.booruUrl}/images/${image.id}/tag_changes`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="d-block text-truncate"
                 >
-                  {sourceUrl}
+                  History ({image.tags?.length || 0} tags)
                 </a>
-              ))
-            ) : (
-              <i className="text-muted">No source provided.</i>
-            )}
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="d-flex gap-2 mb-4">
-          <a
-            className="btn btn-sm btn-secondary fw-bold px-3"
-            href={`${image.booruUrl}/images/${image.id}/reports/new`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            ⚠️ Report
-          </a>
-          <button
-            className={`btn btn-sm fw-bold px-3 ${showShare ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setShowShare(!showShare)}
-          >
-            ➡️ Share
-          </button>
-        </div>
-
-        {/* Share Panel */}
-        {showShare && (
-          <div className="philo-panel mb-4 shadow-sm">
-            <div className="philo-panel-body p-2">
-              <div className="mb-3 d-flex align-items-center">
-                <label className="fw-bold me-2" style={{ width: '120px' }}>
-                  Small thumbnail
-                </label>
-                <input
-                  type="text"
-                  className="form-control form-control-sm me-2 bg-dark text-light border-secondary"
-                  value={`>>${image.id}s`}
-                  readOnly
-                />
-                <button
-                  className="btn btn-sm btn-outline-secondary"
-                  onClick={() => copyToClipboard(`>>${image.id}s`)}
-                >
-                  📋 Copy
-                </button>
               </div>
-              <div className="mb-3 d-flex align-items-center">
-                <label className="fw-bold me-2" style={{ width: '120px' }}>
-                  Thumbnail
-                </label>
-                <input
-                  type="text"
-                  className="form-control form-control-sm me-2 bg-dark text-light border-secondary"
-                  value={`>>${image.id}t`}
-                  readOnly
-                />
-                <button
-                  className="btn btn-sm btn-outline-secondary"
-                  onClick={() => copyToClipboard(`>>${image.id}t`)}
-                >
-                  📋 Copy
-                </button>
-              </div>
-              <div
-                className="mb-4 d-flex align-items-center border-bottom pb-4"
-                style={{ borderColor: '#333' }}
-              >
-                <label className="fw-bold me-2" style={{ width: '120px' }}>
-                  Preview
-                </label>
-                <input
-                  type="text"
-                  className="form-control form-control-sm me-2 bg-dark text-light border-secondary"
-                  value={`>>${image.id}p`}
-                  readOnly
-                />
-                <button
-                  className="btn btn-sm btn-outline-secondary"
-                  onClick={() => copyToClipboard(`>>${image.id}p`)}
-                >
-                  📋 Copy
-                </button>
-              </div>
-
-              <h6 className="fw-normal mb-3">BBCode</h6>
-              <div className="mb-3">
-                <div className="d-flex justify-content-between mb-1">
-                  <label className="fw-bold fs-6">Full size BBCode</label>
-                  <button
-                    className="btn btn-sm btn-link text-decoration-none text-muted p-0"
-                    onClick={() => copyToClipboard(bbcodeFull)}
-                  >
-                    📋 Copy
-                  </button>
+              <div className="philo-panel-body p-2">
+                <div className="philo-tag-container">
+                  {image.tags?.map((tag, idx) => (
+                    <div
+                      key={idx}
+                      className={`philo-tag ${getTagClass(tag)}`}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => onSearch(tag)}
+                      title={`Search for ${tag}`}
+                    >
+                      <span className={'philo-tag-name'}>{tag}</span>
+                    </div>
+                  ))}
                 </div>
-                <textarea
-                  className="form-control form-control-sm bg-dark text-light border-secondary"
-                  rows="3"
-                  readOnly
-                  value={bbcodeFull}
-                ></textarea>
-              </div>
-              <div className="mb-2">
-                <div className="d-flex justify-content-between mb-1">
-                  <label className="fw-bold fs-6">Thumbnailed BBCode</label>
-                  <button
-                    className="btn btn-sm btn-link text-decoration-none text-muted p-0"
-                    onClick={() => copyToClipboard(bbcodeThumb)}
-                  >
-                    📋 Copy
-                  </button>
-                </div>
-                <textarea
-                  className="form-control form-control-sm bg-dark text-light border-secondary"
-                  rows="3"
-                  readOnly
-                  value={bbcodeThumb}
-                ></textarea>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Comments Section */}
-        <div
-          className="d-flex align-items-center mb-3 border-bottom pb-2"
-          style={{ borderColor: 'var(--app-border)' }}
-        >
-          <h5 className="fw-bold mb-0 me-3">{comments.length} comments posted</h5>
-          <button
-            className="btn btn-sm btn-outline-secondary"
-            onClick={() => setRefreshTrigger((prev) => prev + 1)}
-          >
-            🔄 Refresh
-          </button>
-        </div>
+            {/* Source Panel */}
+            <div className="philo-panel">
+              <div className="philo-panel-header">🔗 Sources</div>
+              <div className="philo-panel-body p-2">
+                {sources.length > 0 ? (
+                  sources.map((sourceUrl, i) => (
+                    <a
+                      key={i}
+                      href={sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="d-block text-truncate"
+                    >
+                      {sourceUrl}
+                    </a>
+                  ))
+                ) : (
+                  <i className="text-muted">No source provided.</i>
+                )}
+              </div>
+            </div>
 
-        {isLoadingComments ? (
-          <div className="text-center py-4">
-            <div className="spinner-border text-primary" role="status"></div>
-          </div>
-        ) : comments.length === 0 ? (
-          <div className="text-center">No comments yet.</div>
-        ) : (
-          <div className="d-flex flex-column gap-3">
-            {comments.map((comment) => (
-              <div key={comment.id} className="philo-panel mb-0 d-flex flex-column flex-sm-row p-3">
-                {/* Avatar Left Box */}
-                <div
-                  className="me-3 mb-2 mb-sm-0 text-center"
-                  style={{ width: '80px', flexShrink: 0 }}
-                >
-                  <div
-                    className="bg-secondary rounded mb-1"
-                    style={{
-                      width: '80px',
-                      height: '80px',
-                      backgroundImage: `url(${comment.avatar})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }}
-                  ></div>
-                </div>
+            {/* Action Buttons */}
+            <div className="d-flex gap-2 mb-4">
+              <a
+                className="btn btn-sm btn-secondary fw-bold px-3"
+                href={`${image.booruUrl}/images/${image.id}/reports/new`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                ⚠️ Report
+              </a>
+              <button
+                className={`btn btn-sm fw-bold px-3 ${showShare ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setShowShare(!showShare)}
+              >
+                ➡️ Share
+              </button>
+            </div>
 
-                {/* Comment Content */}
-                <div className="flex-grow-1">
-                  <div className="d-flex justify-content-between border-bottom pb-1 mb-2">
-                    <span className="fw-bold fs-5" style={{ color: 'var(--app-text)' }}>
-                      {comment.userId ? (
-                        <ProfileLink
-                          booruUrl={image.booruUrl}
-                          username={comment.author}
-                          userId={comment.userId}
-                          onClick={(e) =>
-                            handleProfileClick(e, image.booruUrl, comment.author, comment.userId)
-                          }
-                          openProfile={(booruUrl, username, id) =>
-                            onOpenProfile(booruUrl, username, id)
-                          }
-                        >
-                          {comment.author}
-                        </ProfileLink>
-                      ) : (
-                        (comment.author ?? 'Anonymous')
-                      )}
-                    </span>
-                  </div>
-                  <div className="mb-3" style={{ fontSize: '0.95rem' }}>
-                    <CommentBody
-                      body={comment.body}
-                      booruUrl={image.booruUrl}
-                      imageId={image.id}
-                      imageReps={image.representations}
-                      onOpenProfileLink={onOpenProfile}
-                      onOpenImageLink={onOpenImage}
-                      setIsLoading={setIsLoading}
+            {/* Share Panel */}
+            {showShare && (
+              <div className="philo-panel mb-4 shadow-sm">
+                <div className="philo-panel-body p-2">
+                  <div className="mb-3 d-flex align-items-center">
+                    <label className="fw-bold me-2" style={{ width: '120px' }}>
+                      Small thumbnail
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control form-control-sm me-2 bg-dark text-light border-secondary"
+                      value={`>>${image.id}s`}
+                      readOnly
                     />
+                    <button
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => copyToClipboard(`>>${image.id}s`)}
+                    >
+                      📋 Copy
+                    </button>
+                  </div>
+                  <div className="mb-3 d-flex align-items-center">
+                    <label className="fw-bold me-2" style={{ width: '120px' }}>
+                      Thumbnail
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control form-control-sm me-2 bg-dark text-light border-secondary"
+                      value={`>>${image.id}t`}
+                      readOnly
+                    />
+                    <button
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => copyToClipboard(`>>${image.id}t`)}
+                    >
+                      📋 Copy
+                    </button>
                   </div>
                   <div
-                    className="d-flex justify-content-between text-muted"
-                    style={{ fontSize: '0.75rem' }}
+                    className="mb-4 d-flex align-items-center border-bottom pb-4"
+                    style={{ borderColor: '#333' }}
                   >
-                    <div>
-                      Posted {timeSince(comment.createdAt)}
-                      <br />
-                      <a
-                        href={`${image.booruUrl}/images/${image.id}/comments/${comment.id}/reports/new`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-muted text-decoration-none"
+                    <label className="fw-bold me-2" style={{ width: '120px' }}>
+                      Preview
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control form-control-sm me-2 bg-dark text-light border-secondary"
+                      value={`>>${image.id}p`}
+                      readOnly
+                    />
+                    <button
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => copyToClipboard(`>>${image.id}p`)}
+                    >
+                      📋 Copy
+                    </button>
+                  </div>
+
+                  <h6 className="fw-normal mb-3">BBCode</h6>
+                  <div className="mb-3">
+                    <div className="d-flex justify-content-between mb-1">
+                      <label className="fw-bold fs-6">Full size BBCode</label>
+                      <button
+                        className="btn btn-sm btn-link text-decoration-none text-muted p-0"
+                        onClick={() => copyToClipboard(bbcodeFull)}
                       >
-                        ⚑ Report
-                      </a>
+                        📋 Copy
+                      </button>
                     </div>
-                    <div className="d-flex align-items-end gap-2">
-                      <a
-                        href={`${image.booruUrl}/images/${image.id}#comment_${comment.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-muted text-decoration-none"
+                    <textarea
+                      className="form-control form-control-sm bg-dark text-light border-secondary"
+                      rows="3"
+                      readOnly
+                      value={bbcodeFull}
+                    ></textarea>
+                  </div>
+                  <div className="mb-2">
+                    <div className="d-flex justify-content-between mb-1">
+                      <label className="fw-bold fs-6">Thumbnailed BBCode</label>
+                      <button
+                        className="btn btn-sm btn-link text-decoration-none text-muted p-0"
+                        onClick={() => copyToClipboard(bbcodeThumb)}
                       >
-                        🔗 Link
-                      </a>
+                        📋 Copy
+                      </button>
                     </div>
+                    <textarea
+                      className="form-control form-control-sm bg-dark text-light border-secondary"
+                      rows="3"
+                      readOnly
+                      value={bbcodeThumb}
+                    ></textarea>
                   </div>
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* Comments Section */}
+            <div
+              className="d-flex align-items-center mb-3 border-bottom pb-2"
+              style={{ borderColor: 'var(--app-border)' }}
+            >
+              <h5 className="fw-bold mb-0 me-3">{comments.length} comments posted</h5>
+              <button
+                className="btn btn-sm btn-outline-secondary"
+                onClick={() => setRefreshTrigger((prev) => prev + 1)}
+              >
+                🔄 Refresh
+              </button>
+            </div>
+
+            {isLoadingComments ? (
+              <div className="text-center py-4">
+                <div className="spinner-border text-primary" role="status"></div>
+              </div>
+            ) : comments.length === 0 ? (
+              <div className="text-center">No comments yet.</div>
+            ) : (
+              <div className="d-flex flex-column gap-3">
+                {comments.map((comment) => (
+                  <div
+                    key={comment.id}
+                    className="philo-panel mb-0 d-flex flex-column flex-sm-row p-3"
+                  >
+                    {/* Avatar Left Box */}
+                    <div
+                      className="me-3 mb-2 mb-sm-0 text-center"
+                      style={{ width: '80px', flexShrink: 0 }}
+                    >
+                      <div
+                        className="bg-secondary rounded mb-1"
+                        style={{
+                          width: '80px',
+                          height: '80px',
+                          backgroundImage: `url(${comment.avatar})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                        }}
+                      ></div>
+                    </div>
+
+                    {/* Comment Content */}
+                    <div className="flex-grow-1">
+                      <div className="d-flex justify-content-between border-bottom pb-1 mb-2">
+                        <span className="fw-bold fs-5" style={{ color: 'var(--app-text)' }}>
+                          {comment.userId ? (
+                            <ProfileLink
+                              booruUrl={image.booruUrl}
+                              username={comment.author}
+                              userId={comment.userId}
+                              onClick={(e) =>
+                                handleProfileClick(
+                                  e,
+                                  image.booruUrl,
+                                  comment.author,
+                                  comment.userId,
+                                )
+                              }
+                              openProfile={(booruUrl, username, id) =>
+                                onOpenProfile(booruUrl, username, id)
+                              }
+                            >
+                              {comment.author}
+                            </ProfileLink>
+                          ) : (
+                            (comment.author ?? 'Anonymous')
+                          )}
+                        </span>
+                      </div>
+                      <div className="mb-3" style={{ fontSize: '0.95rem' }}>
+                        <CommentBody
+                          body={comment.body}
+                          booruUrl={image.booruUrl}
+                          imageId={image.id}
+                          imageReps={image.representations}
+                          onOpenProfileLink={onOpenProfile}
+                          onOpenImageLink={onOpenImage}
+                          setIsLoading={setIsLoading}
+                        />
+                      </div>
+                      <div
+                        className="d-flex justify-content-between text-muted"
+                        style={{ fontSize: '0.75rem' }}
+                      >
+                        <div>
+                          Posted {timeSince(comment.createdAt)}
+                          <br />
+                          <a
+                            href={`${image.booruUrl}/images/${image.id}/comments/${comment.id}/reports/new`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted text-decoration-none"
+                          >
+                            ⚑ Report
+                          </a>
+                        </div>
+                        <div className="d-flex align-items-end gap-2">
+                          <a
+                            href={`${image.booruUrl}/images/${image.id}#comment_${comment.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted text-decoration-none"
+                          >
+                            🔗 Link
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Right Sidebar: Recommendations */}
+          {enableRecs && (
+            <div className="col-12 col-md-2 d-flex flex-column gap-3">
+              <h5
+                className="fw-bold mb-0 border-bottom pb-2"
+                style={{ borderColor: 'var(--app-border)' }}
+              >
+                You may also like...
+              </h5>
+
+              {isLoadingRecs && recommendations.length === 0 ? (
+                <div className="text-center py-5">
+                  <div className="spinner-border text-primary" role="status"></div>
+                </div>
+              ) : recommendations.length === 0 ? (
+                <div
+                  className="text-muted text-center p-3 border rounded border-dashed"
+                  style={{ borderColor: 'var(--app-border)' }}
+                >
+                  No similar recommendations found right now.
+                </div>
+              ) : (
+                <div className="row row-cols-2 row-cols-lg-1 g-3">
+                  {recommendations.map((recImg) => (
+                    <div className="col" key={`${recImg.booruUrl}_${recImg.id}`}>
+                      <div className="h-100">
+                        <Image img={recImg} onOpenImage={onOpenImage} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Security Alert if Rate Limited */}
+              {isRateLimited && (
+                <div
+                  className="alert p-3 mb-0 rounded shadow-sm border-0 mt-3"
+                  style={{
+                    backgroundColor: 'var(--app-surface)',
+                    color: 'var(--app-text)',
+                    borderLeft: '4px solid #dc3545 !important',
+                  }}
+                >
+                  <div className="d-flex flex-column text-center">
+                    <h6 className="fw-bold text-danger mb-2">
+                      <i className="fa-solid fa-shield-halved me-2"></i>Security Lock
+                    </h6>
+                    <span className="small fw-semibold text-muted">
+                      Auto-load disabled to prevent API spam. Your screen resolution triggered the
+                      anti-spam protection.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Infinite Scroll Trigger Element */}
+              {hasMoreRecs && !isRateLimited && recommendations.length > 0 && (
+                <div ref={observerTarget} className="text-center py-3 w-100 mt-2">
+                  {isLoadingRecs ? (
+                    <div
+                      className="spinner-border text-primary spinner-border-sm"
+                      role="status"
+                    ></div>
+                  ) : (
+                    <span className="text-muted small fw-semibold">Scroll for more...</span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

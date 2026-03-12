@@ -182,7 +182,7 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
       style={{ color: 'var(--app-text)' }}
     >
       <div
-        className="card shadow-lg border-0 p-5 text-center"
+        className="card no-anim shadow-lg border-0 p-5 text-center"
         style={{
           backgroundColor: 'var(--app-surface)',
           maxWidth: '500px',

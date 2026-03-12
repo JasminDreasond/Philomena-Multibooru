@@ -8,6 +8,7 @@ import { AppSettings } from './AppSettings';
 import { FactoryReset } from './FactoryReset';
 import { Filters } from './Filters';
 import { Accounts } from './Accounts';
+import { RecommendationsSettings } from './RecommendationsSettings';
 
 /**
  * @typedef {import('../../services/api').Account} Account
@@ -68,10 +69,14 @@ export const SettingsPanel = ({ isDark }) => {
           className="card-header border-bottom-0 pt-3 pb-0"
           style={{ backgroundColor: 'transparent' }}
         >
-          <ul className="nav nav-tabs border-bottom" style={{ borderColor: 'var(--app-border)' }}>
+          <ul
+            className="nav nav-tabs flex-wrap border-bottom"
+            style={{ borderColor: 'var(--app-border)' }}
+          >
             {[
               { name: 'Accounts', value: 'accounts' },
               { name: 'Filters', value: 'filters' },
+              { name: 'Recommendations', value: 'recs' },
               { name: 'App & Storage', value: 'app' },
               { name: 'Theme', value: 'theme' },
               { name: 'About & FAQ', value: 'about' },
@@ -110,6 +115,9 @@ export const SettingsPanel = ({ isDark }) => {
         {activeTab === 'filters' && (
           <Filters loadAccounts={loadAccounts} accounts={accounts} activeTab={activeTab} />
         )}
+
+        {/* RECOMMENDATIONS TAB */}
+        {activeTab === 'recs' && <RecommendationsSettings />}
 
         {/* APP TAB */}
         {activeTab === 'app' && (
