@@ -21,6 +21,7 @@ console.log(`Your global query is "${geString}".`);
  */
 export const parseQueryResults = (query) => {
   if (query === geString || !query) return geString;
+  if (geString === '*') return query;
   return `${geString}, ${query}`;
 };
 
