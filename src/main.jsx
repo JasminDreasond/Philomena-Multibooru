@@ -12,18 +12,12 @@ import './tags.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import './tools/BootstrapDialogs.js';
 
+import ServiceWorkerSync from './components/utils/ReactRounter';
 import App from './App.jsx';
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(() => {
-      console.log('ServiceWorker registered');
-    });
-  });
-}
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
+    <ServiceWorkerSync />
     <App />
   </StrictMode>,
 );

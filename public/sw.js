@@ -98,3 +98,25 @@ sw.addEventListener('message', (event) => {
     );
   }
 });
+
+sw.addEventListener('message', (event) => {
+  /** @type {ExtendableMessageEvent} */
+  const ev = event;
+  /** @type {any} */
+  const data = ev.data;
+
+  if (data?.type === 'VALIDATE_ROUTE') {
+    /** @type {URL} */
+    const mockUrl = new URL(data.path, `https://${data.hostname}`);
+
+    if (!isValidRoute(mockUrl)) {
+      console.error(`[ServiceWorker] Internal route is invalid: ${data.path}`);
+
+      // You can notify the client back to show a UI error
+      ev.source.postMessage({
+        type: 'ROUTE_INVALID',
+        path: data.path,
+      });
+    }
+  }
+});
