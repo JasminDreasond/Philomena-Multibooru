@@ -255,10 +255,7 @@ export const ImageViewer = ({
   useEffect(() => {
     if (isInteractionReady) return;
 
-    const unlock = (e) => {
-      // Don't unlock if the user is just holding down the quick nav arrow keys
-      if (e.type === 'keydown' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) return;
-
+    const unlock = () => {
       const now = Date.now();
       // Security: 800ms debounce for navigation keys to prevent glitches
       if (now - lastNavActionTime.current < 500) return;
@@ -268,16 +265,10 @@ export const ImageViewer = ({
     const options = { capture: true, passive: true };
     window.addEventListener('scroll', unlock, options);
     window.addEventListener('wheel', unlock, options);
-    window.addEventListener('click', unlock, { capture: true, once: true });
-    window.addEventListener('touchstart', unlock, options);
-    window.addEventListener('keydown', unlock, { capture: true });
 
     return () => {
       window.removeEventListener('scroll', unlock, options);
       window.removeEventListener('wheel', unlock, options);
-      window.removeEventListener('click', unlock, { capture: true });
-      window.removeEventListener('touchstart', unlock, options);
-      window.removeEventListener('keydown', unlock, { capture: true });
     };
   }, [isInteractionReady]);
 
@@ -836,9 +827,7 @@ export const ImageViewer = ({
                   <i className="bi bi-mouse3"></i>
                 </div>
                 <div>Extra details are paused during quick navigation.</div>
-                <div className="small fw-normal mt-1">
-                  Move your mouse, click, or scroll to load comments and tags!
-                </div>
+                <div className="small fw-normal mt-1">Scroll to load comments and tags!</div>
               </div>
             )}
 
