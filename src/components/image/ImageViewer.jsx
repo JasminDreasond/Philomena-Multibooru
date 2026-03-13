@@ -200,9 +200,16 @@ export const ImageViewer = ({
       // Ignore key events originating from form elements like <input> or <textarea>
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
+      // Listen for the ESC key to close the viewer
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
       const now = Date.now();
       // Security: 800ms debounce for navigation keys to prevent glitches
-      if (now - lastNavActionTime.current < 800) return;
+      if (now - lastNavActionTime.current < 500) return;
 
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
@@ -214,9 +221,10 @@ export const ImageViewer = ({
         handleNavigation('next');
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [image?.id, isNavigating]);
+  }, [image?.id, isNavigating, onClose]);
 
   // Reset Core States When a New Image is Loaded
   useEffect(() => {
@@ -253,7 +261,7 @@ export const ImageViewer = ({
 
       const now = Date.now();
       // Security: 800ms debounce for navigation keys to prevent glitches
-      if (now - lastNavActionTime.current < 800) return;
+      if (now - lastNavActionTime.current < 500) return;
       setIsInteractionReady(true);
     };
 
