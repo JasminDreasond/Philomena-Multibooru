@@ -168,6 +168,16 @@ const App = () => {
     } else if (viewingImage) {
       const host = new URL(viewingImage.booruUrl).hostname;
       newPath = `/${host}/images/${viewingImage.id}`;
+
+      // Memory persistence: Safely attach background gallery context to the Image URL
+      const searchParams = new URLSearchParams();
+      if (searchQuery && searchQuery !== geString) searchParams.set('q', searchQuery);
+      if (sortField !== 'created_at') searchParams.set('sf', sortField);
+      if (sortDirection !== 'desc') searchParams.set('sd', sortDirection);
+      if (currentPage > 1) searchParams.set('page', currentPage.toString());
+
+      const searchStr = searchParams.toString();
+      if (searchStr) newSearch = `?${searchStr}`;
     } else if (!isHomepage) {
       newPath = '/search';
       const searchParams = new URLSearchParams();
@@ -314,6 +324,22 @@ const App = () => {
             setIs404(false);
 
             if (imgMatch) {
+              // Restore memory query variables silently for background gallery contexts
+              const q = params.get('q') || geString;
+              const sfParam = params.get('sf') || 'created_at';
+              const sdParam = params.get('sd') || 'desc';
+              const pParam = parseInt(params.get('page') || '1', 10);
+
+              setSearchQuery(q);
+              setSortField(sfParam);
+              setSortDirection(sdParam);
+              setCurrentPage(pParam);
+
+              // Determines correct background display state for when the user closes the image
+              setIsHomepage(
+                q === geString && sfParam === 'created_at' && sdParam === 'desc' && pParam === 1,
+              );
+
               const imgData = await fetchSingleImage(acc.booruUrl, acc.apiKey, imgMatch[2]);
               if (imgData) {
                 setViewingProfile(null);
@@ -660,6 +686,25 @@ const App = () => {
                   setIs404(false);
 
                   if (imgMatch) {
+                    // Pre-load memory of search navigation in case user exits image
+                    const q = params.get('q') || geString;
+                    initialSf = params.get('sf') || 'created_at';
+                    initialSd = params.get('sd') || 'desc';
+                    initialPage = parseInt(params.get('page') || '1', 10);
+
+                    setSearchQuery(q);
+                    setSortField(initialSf);
+                    setSortDirection(initialSd);
+                    setCurrentPage(initialPage);
+                    initialQuery = q;
+
+                    setIsHomepage(
+                      q === geString &&
+                        initialSf === 'created_at' &&
+                        initialSd === 'desc' &&
+                        initialPage === 1,
+                    );
+
                     const imgData = await fetchSingleImage(acc.booruUrl, acc.apiKey, imgMatch[2]);
                     if (imgData) setViewingImage(imgData);
                     else {
@@ -894,11 +939,55 @@ const App = () => {
       idx = sourceArray.findIndex((img) => img.id === viewingImage.id);
     }
 
+    // New smart fallback: Fetch the background context and continue the pagination flow!
     if (idx === -1) {
-      alert('It is not possible to navigate from this image as it is not on the current list.');
-      return;
+      const queryToUse = searchQuery.trim() === '' ? geString : searchQuery;
+      try {
+        // Ensure we know the limit and pages if they were lost during direct deep link entry
+        const syncData = await syncUserGalleryPages({
+          query: parseQueryResults(queryToUse),
+          limit: pageLimit,
+          page: currentPage,
+          allowedBoorus: visibleBoorus,
+          sd: sortDirection,
+          sf: sortField,
+        });
+
+        if (syncData) {
+          setPageLimit(syncData.syncLimit);
+          setTotalPages(Math.max(1, Math.ceil(syncData.totalCount / syncData.syncLimit)));
+        }
+
+        const newImages = await searchImages({
+          query: parseQueryResults(queryToUse),
+          limit: pageLimit,
+          page: currentPage,
+          allowedBoorus: visibleBoorus,
+          sd: sortDirection,
+          sf: sortField,
+        });
+
+        if (newImages.length > 0) {
+          setCurrentImages(newImages);
+          sourceArray = newImages;
+          idx = sourceArray.findIndex((img) => img.id === viewingImage.id);
+
+          // If the image shifted pages dynamically on the server, just start at 0
+          if (idx === -1) {
+            handleOpenImage(newImages[0]);
+            return;
+          }
+        } else {
+          alert('There are no images in the current query to navigate to.');
+          return;
+        }
+      } catch (e) {
+        console.error(e);
+        return;
+      }
     }
 
+    // Now that sourceArray and idx are cleanly restored, we run the normal robust logic!
     if (direction === 'next') {
       if (idx < sourceArray.length - 1) {
         handleOpenImage(sourceArray[idx + 1]);
