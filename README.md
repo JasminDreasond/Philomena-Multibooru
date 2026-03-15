@@ -19,7 +19,7 @@ If you regularly browse different boorus and want a seamless way to aggregate yo
 
 * **Multi-Instance Support:** Connect and seamlessly switch between multiple Derpibooru-style instances.
 * **Unified Searching & Pagination:** Browse through images from different boorus with a smart local cache system that keeps your pagination intact.
-* **Rich Media Player:** Integrated with Plyr for a smooth, customizable video playback experience (supports autoplay, loop, and mute settings).
+* **Rich Media Player:** Integrated with Vidstack for a smooth, customizable video playback experience (supports autoplay, loop, and mute settings).
 * **Deep Customization:** A built-in theme editor allows you to change global colors, text styles, and interaction symbols to match your aesthetic perfectly.
 * **Optional In-App Viewing:** Check out images, read comments, and explore user profiles without ever leaving the app.
 
@@ -75,7 +75,7 @@ Open the app in your browser, head to the **Settings** panel, and add your favor
 
 * [React](https://react.dev/)
 * [JsStore](https://jsstore.net/) (IndexedDB wrapper)
-* [Plyr](https://plyr.io/)
+* [Vidstack](https://vidstack.io/)
 * [Bootstrap](https://getbootstrap.com/)
 
 ### Available tasks in the project
