@@ -48,7 +48,7 @@ const App = () => {
   /** @type {[ImageResult[], import('react').Dispatch<import('react').SetStateAction<ImageResult[]>>]} */
   const [watchedImages, setWatchedImages] = useState([]);
 
-  /** @type {[{account: Account, image: ImageObj}|null, import('react').Dispatch<import('react').SetStateAction<{account: Account, image: ImageObj}[]>>]} */
+  /** @type {[{account: Account, image: ImageResult}|null, import('react').Dispatch<import('react').SetStateAction<{account: Account, image: ImageResult}[]>>]} */
   const [featuredImage, setFeaturedImage] = useState(null);
 
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
@@ -405,7 +405,7 @@ const App = () => {
 
       if (activeAccounts.length > 0) {
         const randomAcc = activeAccounts[TinySimpleDice.rollArrayIndex(activeAccounts)];
-        const feat = await getFeaturedImage(randomAcc.booruUrl);
+        const feat = await getFeaturedImage(randomAcc.booruUrl, randomAcc.apiKey);
         setFeaturedImage(feat ? { account: randomAcc, image: feat } : null);
 
         if (!selectedLinkAccount || !newBoorus.includes(selectedLinkAccount.booruUrl)) {
@@ -598,7 +598,7 @@ const App = () => {
       const activeAccounts = connectedAccounts.filter((a) => visibleBoorus.includes(a.booruUrl));
       if (activeAccounts.length > 0) {
         const acc = activeAccounts[TinySimpleDice.rollArrayIndex(activeAccounts)];
-        getFeaturedImage(acc.booruUrl).then((feat) => {
+        getFeaturedImage(acc.booruUrl, acc.apiKey).then((feat) => {
           setFeaturedImage(feat ? { account: acc, image: feat } : null);
           if (!selectedLinkAccount) setSelectedLinkAccount(acc);
         });
@@ -782,7 +782,7 @@ const App = () => {
               const filteredAccounts = accounts.filter((a) => activeUrls.includes(a.booruUrl));
               if (filteredAccounts.length > 0) {
                 const acc = filteredAccounts[TinySimpleDice.rollArrayIndex(filteredAccounts)];
-                const feat = await getFeaturedImage(acc.booruUrl);
+                const feat = await getFeaturedImage(acc.booruUrl, acc.apiKey);
                 setFeaturedImage(feat ? { account: acc, image: feat } : null);
 
                 if (!selectedLinkAccount) setSelectedLinkAccount(acc);

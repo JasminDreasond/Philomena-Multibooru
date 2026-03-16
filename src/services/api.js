@@ -1128,14 +1128,34 @@ export const factoryResetDatabase = async () => {
 /**
  * Fetches the featured image payload for the given booru URL.
  * @param {string} booruUrl The booru instance URL.
- * @returns {Promise<ImageObj | null>} Formatted featured image data.
+ * @param {string} apiKey User authentication key.
+ * @returns {Promise<ImageResult | null>} Formatted featured image data.
  */
-export const getFeaturedImage = async (booruUrl) => {
+export const getFeaturedImage = async (booruUrl, apiKey) => {
   try {
-    const response = await fetch(`${booruUrl}/api/v1/json/images/featured`);
-    if (!response.ok) return null;
-    const data = await response.json();
-    return data.image ? parseImageData(booruUrl, fixImageObj(data.image)) : null;
+    const data = await fetchPhilomena(booruUrl, `images/featured`, apiKey);
+    const formattedImage = data.image ? parseImageData(booruUrl, fixImageObj(data.image)) : null;
+    if (!formattedImage) return null;
+
+    const formattedInteractions = getInteractions(booruUrl, {
+      total: 1,
+      interactions: data.interactions,
+      images: [data.image],
+    });
+    if (formattedInteractions.length > 0) {
+      await dbConnection.insert({
+        into: 'Interactions',
+        values: formattedInteractions,
+        upsert: true,
+      });
+    }
+
+    /** @type {ImageResult} */
+    const imageResult = { ...formattedImage };
+    imageResult.interaction =
+      formattedInteractions.find((int) => int.imageId === formattedImage.id)?.value ?? null;
+
+    return imageResult;
   } catch (error) {
     console.error('Failed to fetch featured image:', error);
     return null;
@@ -1365,7 +1385,8 @@ export const fetchSingleImage = async (booruUrl, apiKey, imageId) => {
 
     /** @type {ImageResult} */
     const imageResult = { ...formattedImage };
-    imageResult.interaction = formattedInteractions.value ?? null;
+    imageResult.interaction =
+      formattedInteractions.find((int) => int.imageId === formattedImage.id)?.value ?? null;
 
     // Restores boolean fields for the React components
     return fixImageObj(imageResult);
