@@ -1414,27 +1414,49 @@ const App = () => {
                       </li>
                       {connectedAccounts?.map((acc) => {
                         const isVisible = visibleBoorus.includes(acc.booruUrl);
+                        const booruHostname = new URL(acc.booruUrl).hostname;
+
                         return (
-                          <li key={acc.id}>
-                            <button
-                              className="dropdown-item d-flex align-items-center gap-2"
+                          <li
+                            key={acc.id}
+                            className="dropdown-item d-flex align-items-center justify-content-between gap-2 px-3"
+                          >
+                            {/* Main toggle area for the Booru selection */}
+                            <div
+                              className="d-flex align-items-center gap-2 flex-grow-1"
+                              style={{ cursor: 'pointer' }}
                               onClick={(e) => {
                                 e.preventDefault();
-                                if (isVisible)
+                                if (isVisible) {
                                   setVisibleBoorus(
                                     visibleBoorus.filter((url) => url !== acc.booruUrl),
                                   );
-                                else setVisibleBoorus([...visibleBoorus, acc.booruUrl]);
+                                } else {
+                                  setVisibleBoorus([...visibleBoorus, acc.booruUrl]);
+                                }
                               }}
                             >
                               <input
                                 type="checkbox"
                                 className="form-check-input m-0"
+                                style={{ cursor: 'pointer' }}
                                 checked={isVisible}
                                 readOnly
                               />
-                              {new URL(acc.booruUrl).hostname}
-                            </button>
+                              <span className="text-truncate">{booruHostname}</span>
+                            </div>
+
+                            {/* Direct external link to the Booru instance */}
+                            <a
+                              href={acc.booruUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-muted text-decoration-none d-flex align-items-center px-1"
+                              title={`Visit ${booruHostname}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <i className="fa-solid fa-up-right-from-square" style={{ fontSize: '0.85rem' }}></i>
+                            </a>
                           </li>
                         );
                       })}
