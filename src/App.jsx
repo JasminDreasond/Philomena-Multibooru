@@ -1478,7 +1478,13 @@ const App = () => {
                     setShowNotifications(!showNotifications);
                   }}
                 >
-                  {showNotifications ? 'Back to Gallery' : '🔔 Notifications'}
+                  {showNotifications ? (
+                    'Back to Gallery'
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-bell"></i> <span> Notifications</span>
+                    </>
+                  )}
                 </button>
 
                 <button

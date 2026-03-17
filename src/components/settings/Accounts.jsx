@@ -69,7 +69,7 @@ export const Accounts = ({
     event.preventDefault();
     setErrorMessage('');
 
-    if (cleanHost && keyInput) {
+    if (cleanHost) {
       /** @type {string} */
       const normalizedUrl = fixBooruUrl(targetUrl);
 
@@ -87,7 +87,7 @@ export const Accounts = ({
       }
 
       setIsLoading(true);
-      await addAccount(normalizedUrl, keyInput);
+      await addAccount(normalizedUrl, keyInput.trim());
 
       setUrlInput('');
       setKeyInput('');
@@ -187,16 +187,28 @@ export const Accounts = ({
                   )}
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">API Key</label>
+                  <label className="form-label">
+                    API Key <span className="text-muted fw-normal">(Optional)</span>
+                  </label>
                   <input
                     type="password"
                     className="form-control"
-                    placeholder="Your Philomena API Key"
+                    placeholder="Leave blank for an anonymous session"
                     value={keyInput}
                     onChange={(e) => setKeyInput(e.target.value)}
-                    required
                     disabled={isLoading}
                   />
+                  <small className="form-text d-block mt-2 mb-1">
+                    {keyInput.trim().length > 0 ? (
+                      <span className="text-success fw-bold">
+                        <i className="fa-solid fa-check"></i> Adding as an API Account
+                      </span>
+                    ) : (
+                      <span className="text-primary fw-bold">
+                        <i className="fa-solid fa-user-secret"></i> Adding as an Anonymous Session
+                      </span>
+                    )}
+                  </small>
                   <small className="form-text text-muted d-block mt-1">
                     You can find your API key at:{' '}
                     {targetUrl ? (
@@ -275,6 +287,11 @@ export const Accounts = ({
                   >
                     <div className="text-truncate" style={{ maxWidth: '70%' }}>
                       <strong>{acc.booruUrl}</strong>
+                      {!acc.apiKey && (
+                        <span className="badge bg-secondary ms-2" style={{ fontSize: '0.7rem' }}>
+                          Anonymous
+                        </span>
+                      )}
                     </div>
                     <button
                       className="btn btn-sm btn-outline-danger"

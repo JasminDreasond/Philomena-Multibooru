@@ -8,14 +8,20 @@ import {
   saveBooruFilters,
 } from '../../services/api';
 
+/**
+ * @typedef {import('../../services/api').Account} Account
+ */
+
 export const Filters = ({ loadAccounts, accounts, activeTab }) => {
   /** @type {[FilterObj[], import('react').Dispatch<import('react').SetStateAction<FilterObj[]>>]} */
   const [systemFilters, setSystemFilters] = useState([]);
+
   /** @type {[FilterObj[], import('react').Dispatch<import('react').SetStateAction<FilterObj[]>>]} */
   const [userFilters, setUserFilters] = useState([]);
 
   /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
   const [sysPage, setSysPage] = useState(1);
+
   /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
   const [userPage, setUserPage] = useState(1);
 
@@ -34,6 +40,7 @@ export const Filters = ({ loadAccounts, accounts, activeTab }) => {
 
   useEffect(() => {
     loadAccounts();
+    /** @type {Record<string, number>} */
     const currentSavedFilters = JSON.parse(localStorage.getItem('app_booruFilters') || '{}');
     setSavedFilters(currentSavedFilters);
     setPendingFilters(currentSavedFilters);
@@ -42,6 +49,8 @@ export const Filters = ({ loadAccounts, accounts, activeTab }) => {
   useEffect(() => {
     if (accounts.length > 0 && !selectedFilterAccount) {
       setSelectedFilterAccount(accounts[0]);
+    } else if (accounts.length === 0 && selectedFilterAccount) {
+      setSelectedFilterAccount(null);
     }
   }, [activeTab, accounts, selectedFilterAccount]);
 
@@ -60,11 +69,16 @@ export const Filters = ({ loadAccounts, accounts, activeTab }) => {
   const loadFiltersData = async (account, sPage, uPage) => {
     setIsLoadingFilters(true);
     try {
+      /** @type {string} */
       const fixedUrl = fixBooruUrl(account.booruUrl);
-      const [sysRes, userRes] = await Promise.all([
-        fetchSystemFilters(fixedUrl, sPage).catch(() => ({ filters: [] })),
-        fetchUserFilters(fixedUrl, account.apiKey, uPage).catch(() => ({ filters: [] })),
-      ]);
+
+      const sysPromise = fetchSystemFilters(fixedUrl, sPage).catch(() => ({ filters: [] }));
+      const userPromise =
+        account.apiKey && account.apiKey.trim() !== ''
+          ? fetchUserFilters(fixedUrl, account.apiKey, uPage).catch(() => ({ filters: [] }))
+          : Promise.resolve({ filters: [] });
+
+      const [sysRes, userRes] = await Promise.all([sysPromise, userPromise]);
 
       setSystemFilters(sysRes.filters || []);
       setUserFilters(userRes.filters || []);
@@ -78,8 +92,10 @@ export const Filters = ({ loadAccounts, accounts, activeTab }) => {
   /**
    * @param {string} booruUrl
    * @param {number} filterId
+   * @returns {void}
    */
   const handleSelectFilter = (booruUrl, filterId) => {
+    /** @type {string} */
     const fixedUrl = fixBooruUrl(booruUrl);
     setPendingFilters((prev) => ({ ...prev, [fixedUrl]: filterId }));
   };
@@ -91,13 +107,14 @@ export const Filters = ({ loadAccounts, accounts, activeTab }) => {
     try {
       await saveBooruFilters(pendingFilters);
       setSavedFilters(pendingFilters);
-      alert('Filters saved successfully! Image cache has been cleared to apply new filters.');
+      await alert('Filters saved successfully! Image cache has been cleared to apply new filters.');
     } catch (err) {
       console.error('Failed to save filters', err);
-      alert('Error saving filters.');
+      await alert('Error saving filters.');
     }
   };
 
+  /** @type {boolean} */
   const hasUnsavedChanges = JSON.stringify(pendingFilters) !== JSON.stringify(savedFilters);
 
   return (
@@ -116,7 +133,7 @@ export const Filters = ({ loadAccounts, accounts, activeTab }) => {
         <div className="d-flex align-items-center gap-3 mt-3 mt-md-0">
           {hasUnsavedChanges && (
             <span className="badge bg-warning text-dark px-3 py-2 fw-bold animate-pulse">
-              ⚠️ You have unsaved changes!
+              <i className="fa-solid fa-triangle-exclamation"></i> You have unsaved changes!
             </span>
           )}
           <button
@@ -141,7 +158,7 @@ export const Filters = ({ loadAccounts, accounts, activeTab }) => {
               {accounts.map((acc) => (
                 <button
                   key={acc.id}
-                  className={`list-group-item list-group-item-action fw-semibold ${selectedFilterAccount?.id === acc.id ? 'active' : ''}`}
+                  className={`list-group-item list-group-item-action fw-semibold d-flex justify-content-between align-items-center ${selectedFilterAccount?.id === acc.id ? 'active' : ''}`}
                   style={
                     selectedFilterAccount?.id === acc.id
                       ? {}
@@ -157,7 +174,12 @@ export const Filters = ({ loadAccounts, accounts, activeTab }) => {
                     setUserPage(1);
                   }}
                 >
-                  {new URL(acc.booruUrl).hostname}
+                  <span className="text-truncate">{new URL(acc.booruUrl).hostname}</span>
+                  {(!acc.apiKey || acc.apiKey.trim() === '') && (
+                    <span className="badge bg-secondary" style={{ fontSize: '0.65rem' }}>
+                      Anon
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -205,6 +227,7 @@ export const Filters = ({ loadAccounts, accounts, activeTab }) => {
                       </div>
                     ) : (
                       systemFilters.map((filter) => {
+                        /** @type {boolean} */
                         const isSelected =
                           pendingFilters[fixBooruUrl(selectedFilterAccount.booruUrl)] === filter.id;
                         return (
@@ -245,18 +268,18 @@ export const Filters = ({ loadAccounts, accounts, activeTab }) => {
                 {/* USER FILTERS */}
                 <div className="col-12 col-md-6">
                   <div className="d-flex justify-content-between align-items-center mb-2">
-                    <h6 className="fw-bold m-0 text-success">User Filters (Requires API Key)</h6>
+                    <h6 className="fw-bold m-0 text-success">User Filters</h6>
                     <div className="btn-group btn-group-sm">
                       <button
                         className="btn btn-outline-secondary"
-                        disabled={userPage <= 1}
+                        disabled={userPage <= 1 || !selectedFilterAccount.apiKey}
                         onClick={() => setUserPage((p) => p - 1)}
                       >
                         Prev
                       </button>
                       <button
                         className="btn btn-outline-secondary"
-                        disabled={userFilters.length < 50}
+                        disabled={userFilters.length < 50 || !selectedFilterAccount.apiKey}
                         onClick={() => setUserPage((p) => p + 1)}
                       >
                         Next
@@ -268,17 +291,24 @@ export const Filters = ({ loadAccounts, accounts, activeTab }) => {
                     className="list-group shadow-sm border"
                     style={{ borderColor: 'var(--app-border)' }}
                   >
-                    {userFilters.length === 0 ? (
+                    {!selectedFilterAccount.apiKey || selectedFilterAccount.apiKey.trim() === '' ? (
+                      <div
+                        className="list-group-item text-muted text-center py-4"
+                        style={{ backgroundColor: 'var(--app-bg)' }}
+                      >
+                        <strong className="d-block mb-1">Anonymous Session</strong>
+                        <small>Add an API Key to view and select your custom filters.</small>
+                      </div>
+                    ) : userFilters.length === 0 ? (
                       <div
                         className="list-group-item text-muted text-center py-3"
                         style={{ backgroundColor: 'var(--app-bg)' }}
                       >
-                        {!selectedFilterAccount.apiKey
-                          ? 'Add an API Key to view your custom filters.'
-                          : 'No custom filters found.'}
+                        No custom filters found.
                       </div>
                     ) : (
                       userFilters.map((filter) => {
+                        /** @type {boolean} */
                         const isSelected =
                           pendingFilters[fixBooruUrl(selectedFilterAccount.booruUrl)] === filter.id;
                         return (

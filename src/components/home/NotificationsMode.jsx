@@ -365,8 +365,9 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
               placeholder="Ex: pony AND pudding"
             />
             <div className="form-text text-danger small mt-2 fw-bold">
-              ⚠️ Warning: Be careful with the size and complexity of your custom query! Very heavy
-              queries can result in your IP or Account being banned by the Booru.
+              <i className="fa-solid fa-triangle-exclamation"></i> Warning: Be careful with the size
+              and complexity of your custom query! Very heavy queries can result in your IP or
+              Account being banned by the Booru.
             </div>
           </div>
         )}
