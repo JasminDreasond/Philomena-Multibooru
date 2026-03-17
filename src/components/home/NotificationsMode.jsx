@@ -4,13 +4,15 @@ import { geString, parseQueryResults } from '../../queries/globalTags';
 
 /**
  * @param {{ accounts: import('../../services/api').Account[], visibleBoorus: string[], onClose: () => void, onGoHome: () => void }} props
+ * @returns {import('react').JSX.Element}
  */
 export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }) => {
-  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  /** @type {[NotificationPermission, import('react').Dispatch<import('react').SetStateAction<NotificationPermission>>]} */
   const [permission, setPermission] = useState(Notification.permission);
 
   /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
   const [intervalMinutes, setIntervalMinutes] = useState(() => {
+    /** @type {string | null} */
     const saved = localStorage.getItem('app_notifInterval');
     return saved ? Math.max(30, parseInt(saved, 10)) : 30;
   });
@@ -20,9 +22,16 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
     return localStorage.getItem('app_notifAction') === 'booru' ? 'booru' : 'app';
   });
 
-  /** @type {['default' | 'watched', import('react').Dispatch<import('react').SetStateAction<'default' | 'watched'>>]} */
+  /** @type {['default' | 'watched' | 'custom', import('react').Dispatch<import('react').SetStateAction<'default' | 'watched' | 'custom'>>]} */
   const [searchType, setSearchType] = useState(() => {
-    return localStorage.getItem('app_notifSearchType') === 'watched' ? 'watched' : 'default';
+    /** @type {string | null} */
+    const saved = localStorage.getItem('app_notifSearchType');
+    return saved === 'watched' || saved === 'custom' ? saved : 'default';
+  });
+
+  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  const [customQuery, setCustomQuery] = useState(() => {
+    return localStorage.getItem('app_notifCustomQuery') || '';
   });
 
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
@@ -55,7 +64,15 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
     localStorage.setItem('app_notifSearchType', searchType);
   }, [searchType]);
 
+  useEffect(() => {
+    localStorage.setItem('app_notifCustomQuery', customQuery);
+  }, [customQuery]);
+
+  /**
+   * @returns {Promise<void>}
+   */
   const requestPermission = async () => {
+    /** @type {NotificationPermission} */
     const result = await Notification.requestPermission();
     setPermission(result);
   };
@@ -64,11 +81,12 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
    * @param {string} booruUrl
    * @param {string} title
    * @param {string} body
+   * @returns {void}
    */
   const sendNotification = (booruUrl, title, body) => {
     if (enableSound) {
       try {
-        // REPLACE THIS PATH LATER WITH YOUR ACTUAL AUDIO FILE PATH
+        /** @type {HTMLAudioElement} */
         const audio = new Audio('/sounds/notification.mp3');
         audio.play().catch((err) => console.warn('Audio playback prevented by browser:', err));
       } catch (err) {
@@ -78,11 +96,15 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
 
     if (Notification.permission !== 'granted') return;
 
+    /** @type {Notification} */
     const notification = new Notification(title, {
       body,
       icon: '/icon/512.png',
     });
 
+    /**
+     * @param {Event} e
+     */
     notification.onclick = (e) => {
       e.preventDefault();
       notification.close();
@@ -99,11 +121,18 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
   useEffect(() => {
     if (!isActive || permission !== 'granted') return;
 
+    /**
+     * @returns {Promise<void>}
+     */
     const checkNewImages = async () => {
       if (visibleBoorus.length === 0 || accounts.length === 0) return;
 
+      /** @type {import('../../services/api').Account[]} */
       const activeAccounts = accounts.filter((a) => visibleBoorus.includes(a.booruUrl));
-      const query = searchType === 'watched' ? 'my:watched' : geString;
+
+      /** @type {string} */
+      const query =
+        searchType === 'custom' ? customQuery : searchType === 'watched' ? 'my:watched' : geString;
 
       for (const acc of activeAccounts) {
         try {
@@ -118,21 +147,30 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
           );
 
           if (data && data.images && data.images.length > 0) {
+            /** @type {any} */
             const latestImage = data.images[0];
+
+            /** @type {string} */
             const trackerKey = `${acc.booruUrl}_${searchType}`;
+
+            /** @type {number | undefined} */
             const previousId = lastSeenIds.current[trackerKey];
 
             if (previousId && latestImage.id > previousId) {
+              /** @type {string} */
               const booruName = new URL(acc.booruUrl).hostname;
-              const title =
-                searchType === 'watched'
-                  ? `New Watched Images on ${booruName}!`
-                  : `New Images on ${booruName}!`;
 
-              const body =
-                searchType === 'watched'
-                  ? `Yaaaaaaay! Fresh new images have just landed in the gallery matching your watched tags!`
-                  : `Yay! Fresh new images have just landed in the gallery!`;
+              /** @type {string} */
+              let title = `New Images on ${booruName}!`;
+              /** @type {string} */
+              let body = `Yay! Fresh new images have just landed in the gallery!`;
+
+              if (searchType === 'watched') {
+                title = `New Watched Images on ${booruName}!`;
+                body = `Yaaaaaaay! Fresh new images have just landed in the gallery matching your watched tags!`;
+              } else if (searchType === 'custom') {
+                body = `Yaaaaaaay! Fresh new images matching your custom query have landed!`;
+              }
 
               sendNotification(acc.booruUrl, title, body);
 
@@ -159,21 +197,29 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
     checkNewImages();
 
     // Set the interval
+    /** @type {number} */
     const ms = Math.max(30, intervalMinutes) * 60 * 1000;
+
+    /** @type {NodeJS.Timeout} */
     const intervalId = setInterval(checkNewImages, ms);
 
     return () => clearInterval(intervalId);
-  }, [isActive, intervalMinutes, permission, visibleBoorus, accounts, searchType]);
+  }, [isActive, intervalMinutes, permission, visibleBoorus, accounts, searchType, customQuery]);
 
   /**
    * @param {import('react').ChangeEvent<HTMLInputElement>} e
+   * @returns {void}
    */
   const handleIntervalChange = (e) => {
+    /** @type {number} */
     let val = parseInt(e.target.value, 10);
     if (isNaN(val)) val = 30;
     setIntervalMinutes(val);
   };
 
+  /**
+   * @returns {void}
+   */
   const enforceMinimum = () => {
     if (intervalMinutes < 30) {
       setIntervalMinutes(30);
@@ -222,13 +268,35 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
             className="form-select fw-semibold"
             style={{ backgroundColor: 'var(--app-bg)', color: 'var(--app-text)' }}
             value={searchType}
-            onChange={(e) => setSearchType(e.target.value)}
+            onChange={(e) =>
+              setSearchType(/** @type {'default' | 'watched' | 'custom'} */ (e.target.value))
+            }
             disabled={isActive}
           >
             <option value="default">Default Gallery (*)</option>
             <option value="watched">Watched List (my:watched)</option>
+            <option value="custom">Custom Query</option>
           </select>
         </div>
+
+        {searchType === 'custom' && (
+          <div className="mb-3 text-start">
+            <label className="form-label fw-bold">Custom Query</label>
+            <input
+              type="text"
+              className="form-control fw-semibold"
+              style={{ backgroundColor: 'var(--app-bg)', color: 'var(--app-text)' }}
+              value={customQuery}
+              onChange={(e) => setCustomQuery(e.target.value)}
+              disabled={isActive}
+              placeholder="Ex: pony AND pudding"
+            />
+            <div className="form-text text-danger small mt-2 fw-bold">
+              ⚠️ Warning: Be careful with the size and complexity of your custom query! Very heavy
+              queries can result in your IP or Account being banned by the Booru.
+            </div>
+          </div>
+        )}
 
         <div className="mb-3 text-start">
           <label className="form-label fw-bold">Check Interval (Minutes)</label>
@@ -255,7 +323,7 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
             className="form-select fw-semibold"
             style={{ backgroundColor: 'var(--app-bg)', color: 'var(--app-text)' }}
             value={clickAction}
-            onChange={(e) => setClickAction(e.target.value)}
+            onChange={(e) => setClickAction(/** @type {'app' | 'booru'} */ (e.target.value))}
             disabled={isActive}
           >
             <option value="app">Open in App Homepage</option>

@@ -1455,7 +1455,10 @@ const App = () => {
                               title={`Visit ${booruHostname}`}
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <i className="fa-solid fa-up-right-from-square" style={{ fontSize: '0.85rem' }}></i>
+                              <i
+                                className="fa-solid fa-up-right-from-square"
+                                style={{ fontSize: '0.85rem' }}
+                              ></i>
                             </a>
                           </li>
                         );
