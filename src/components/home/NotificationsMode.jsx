@@ -45,6 +45,12 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
   /** @type {[Date | null, import('react').Dispatch<import('react').SetStateAction<Date | null>>]} */
   const [lastChecked, setLastChecked] = useState(null);
 
+  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  const [swError, setSwError] = useState('');
+
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isWaitingSw, setIsWaitingSw] = useState(false);
+
   /** @type {import('react').MutableRefObject<Record<string, number>>} */
   const lastSeenIds = useRef({});
 
@@ -68,6 +74,44 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
     localStorage.setItem('app_notifCustomQuery', customQuery);
   }, [customQuery]);
 
+  useEffect(() => {
+    /**
+     * @param {MessageEvent} event
+     */
+    const handleSwMessage = (event) => {
+      if (event.data?.type === 'SCANNER_LIMIT_REACHED') {
+        setSwError('Security lock: A maximum of 3 tabs can run the scanner simultaneously.');
+        setIsActive(false);
+        setIsWaitingSw(false);
+      } else if (event.data?.type === 'SCANNER_STARTED') {
+        setIsActive(true);
+        setSwError('');
+        setIsWaitingSw(false);
+      } else if (event.data?.type === 'SCANNER_STOPPED') {
+        setIsActive(false);
+        setIsWaitingSw(false);
+      }
+    };
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handleSwMessage);
+    }
+
+    return () => {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (isActive && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'STOP_SCANNER' });
+      }
+    };
+  }, [isActive]);
+
   /**
    * @returns {Promise<void>}
    */
@@ -75,6 +119,29 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
     /** @type {NotificationPermission} */
     const result = await Notification.requestPermission();
     setPermission(result);
+  };
+
+  /**
+   * @returns {void}
+   */
+  const toggleScanner = () => {
+    setIsWaitingSw(true);
+
+    if (!isActive) {
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'REQUEST_START_SCANNER' });
+      } else {
+        setIsActive(true);
+        setIsWaitingSw(false);
+      }
+    } else {
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'STOP_SCANNER' });
+      } else {
+        setIsActive(false);
+        setIsWaitingSw(false);
+      }
+    }
   };
 
   /**
@@ -262,6 +329,12 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
           </div>
         )}
 
+        {swError && (
+          <div className="alert alert-danger py-2 px-3 text-sm fw-bold" role="alert">
+            {swError}
+          </div>
+        )}
+
         <div className="mb-3 text-start">
           <label className="form-label fw-bold">Search Type</label>
           <select
@@ -271,7 +344,7 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
             onChange={(e) =>
               setSearchType(/** @type {'default' | 'watched' | 'custom'} */ (e.target.value))
             }
-            disabled={isActive}
+            disabled={isActive || isWaitingSw}
           >
             <option value="default">Default Gallery (*)</option>
             <option value="watched">Watched List (my:watched)</option>
@@ -288,7 +361,7 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
               style={{ backgroundColor: 'var(--app-bg)', color: 'var(--app-text)' }}
               value={customQuery}
               onChange={(e) => setCustomQuery(e.target.value)}
-              disabled={isActive}
+              disabled={isActive || isWaitingSw}
               placeholder="Ex: pony AND pudding"
             />
             <div className="form-text text-danger small mt-2 fw-bold">
@@ -309,7 +382,7 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
               onChange={handleIntervalChange}
               onBlur={enforceMinimum}
               min="30"
-              disabled={isActive}
+              disabled={isActive || isWaitingSw}
             />
           </div>
           <div className="form-text small" style={{ color: 'var(--app-text)' }}>
@@ -324,7 +397,7 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
             style={{ backgroundColor: 'var(--app-bg)', color: 'var(--app-text)' }}
             value={clickAction}
             onChange={(e) => setClickAction(/** @type {'app' | 'booru'} */ (e.target.value))}
-            disabled={isActive}
+            disabled={isActive || isWaitingSw}
           >
             <option value="app">Open in App Homepage</option>
             <option value="booru">Open natively in the Booru</option>
@@ -339,7 +412,7 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
               id="enableSoundSwitch"
               checked={enableSound}
               onChange={(e) => setEnableSound(e.target.checked)}
-              disabled={isActive}
+              disabled={isActive || isWaitingSw}
             />
             <label className="form-check-label fw-bold" htmlFor="enableSoundSwitch">
               Play Sound Alert
@@ -350,9 +423,23 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
         {permission === 'granted' && (
           <button
             className={`btn fw-bold w-100 py-2 ${isActive ? 'btn-danger' : 'btn-success'}`}
-            onClick={() => setIsActive(!isActive)}
+            onClick={toggleScanner}
+            disabled={isWaitingSw}
           >
-            {isActive ? 'Stop Scanning' : 'Start Scanning'}
+            {isWaitingSw ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"
+                ></span>
+                Waiting...
+              </>
+            ) : isActive ? (
+              'Stop Scanning'
+            ) : (
+              'Start Scanning'
+            )}
           </button>
         )}
 
@@ -383,7 +470,11 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
 
         <hr className="my-4" style={{ borderColor: 'var(--app-border)' }} />
 
-        <button className="btn btn-outline-secondary btn-sm fw-bold w-100" onClick={onClose}>
+        <button
+          className="btn btn-outline-secondary btn-sm fw-bold w-100"
+          onClick={onClose}
+          disabled={isWaitingSw}
+        >
           Close Notifications Mode
         </button>
       </div>

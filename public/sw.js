@@ -1,6 +1,27 @@
 /** @type {ServiceWorkerGlobalScope} */
 const sw = self;
 
+/** @type {Set<string>} */
+const activeScanners = new Set();
+
+/**
+ * @returns {Promise<void>}
+ */
+const cleanGhostScanners = async () => {
+  /** @type {readonly WindowClient[]} */
+  const clientList = await sw.clients.matchAll({ type: 'window', includeUncontrolled: true });
+
+  /** @type {string[]} */
+  const activeClientIds = clientList.map((c) => c.id);
+
+  for (const id of activeScanners) {
+    if (!activeClientIds.includes(id)) {
+      activeScanners.delete(id);
+      console.log(`[ServiceWorker] Removed ghost scanner: ${id}`);
+    }
+  }
+};
+
 /**
  * @param {URL} url
  * @returns {boolean}
@@ -78,12 +99,32 @@ sw.addEventListener('activate', (event) => {
 });
 
 // Broadcast messages across all open tabs of our application
-sw.addEventListener('message', (event) => {
+sw.addEventListener('message', async (event) => {
   /** @type {ExtendableMessageEvent} */
   const ev = event;
+  /** @type {any} */
   const data = ev.data;
 
-  if (data && data.type === 'FAVICON_UPDATE') {
+  /** @type {string} */
+  const clientId = ev.source.id;
+
+  if (data?.type === 'REQUEST_START_SCANNER') {
+    await cleanGhostScanners();
+
+    if (activeScanners.size >= 3 && !activeScanners.has(clientId)) {
+      ev.source.postMessage({ type: 'SCANNER_LIMIT_REACHED' });
+    } else {
+      activeScanners.add(clientId);
+      ev.source.postMessage({ type: 'SCANNER_STARTED' });
+    }
+  }
+
+  if (data?.type === 'STOP_SCANNER') {
+    activeScanners.delete(clientId);
+    ev.source.postMessage({ type: 'SCANNER_STOPPED' });
+  }
+
+  if (data?.type === 'FAVICON_UPDATE') {
     console.log(`[ServiceWorker] Broadcasting favicon update: ${data.icon}`);
 
     ev.waitUntil(
@@ -97,13 +138,6 @@ sw.addEventListener('message', (event) => {
       }),
     );
   }
-});
-
-sw.addEventListener('message', (event) => {
-  /** @type {ExtendableMessageEvent} */
-  const ev = event;
-  /** @type {any} */
-  const data = ev.data;
 
   if (data?.type === 'VALIDATE_ROUTE') {
     /** @type {URL} */
