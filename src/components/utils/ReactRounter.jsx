@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import TinyDomReadyManager from 'tiny-essentials/libs/TinyDomReadyManager';
 
 /** @type {string} */
-const SW_VERSION = '1.0.0';
+const SW_VERSION = '1.1.0';
 
 /**
  * @returns {Promise<void>}

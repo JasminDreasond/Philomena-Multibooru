@@ -83,6 +83,12 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
         setSwError('Security lock: A maximum of 3 tabs can run the scanner simultaneously.');
         setIsActive(false);
         setIsWaitingSw(false);
+      } else if (event.data?.type === 'SCANNER_DUPLICATE_QUERY') {
+        setSwError(
+          'Security lock: Another tab is already running a scanner with this exact query.',
+        );
+        setIsActive(false);
+        setIsWaitingSw(false);
       } else if (event.data?.type === 'SCANNER_STARTED') {
         setIsActive(true);
         setSwError('');
@@ -129,7 +135,13 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
 
     if (!isActive) {
       if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({ type: 'REQUEST_START_SCANNER' });
+        /** @type {string} */
+        const queryKey = searchType === 'custom' ? `custom|${customQuery}` : searchType;
+
+        navigator.serviceWorker.controller.postMessage({
+          type: 'REQUEST_START_SCANNER',
+          queryKey,
+        });
       } else {
         setIsActive(true);
         setIsWaitingSw(false);

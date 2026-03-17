@@ -1,8 +1,8 @@
 /** @type {ServiceWorkerGlobalScope} */
 const sw = self;
 
-/** @type {Set<string>} */
-const activeScanners = new Set();
+/** @type {Map<string, string>} */
+const activeScanners = new Map();
 
 /**
  * @returns {Promise<void>}
@@ -14,7 +14,7 @@ const cleanGhostScanners = async () => {
   /** @type {string[]} */
   const activeClientIds = clientList.map((c) => c.id);
 
-  for (const id of activeScanners) {
+  for (const id of activeScanners.keys()) {
     if (!activeClientIds.includes(id)) {
       activeScanners.delete(id);
       console.log(`[ServiceWorker] Removed ghost scanner: ${id}`);
@@ -111,10 +111,25 @@ sw.addEventListener('message', async (event) => {
   if (data?.type === 'REQUEST_START_SCANNER') {
     await cleanGhostScanners();
 
-    if (activeScanners.size >= 3 && !activeScanners.has(clientId)) {
+    /** @type {string} */
+    const queryKey = data.queryKey || 'default';
+
+    /** @type {boolean} */
+    let isDuplicate = false;
+
+    for (const [id, q] of activeScanners.entries()) {
+      if (id !== clientId && q === queryKey) {
+        isDuplicate = true;
+        break;
+      }
+    }
+
+    if (isDuplicate) {
+      ev.source.postMessage({ type: 'SCANNER_DUPLICATE_QUERY' });
+    } else if (activeScanners.size >= 3 && !activeScanners.has(clientId)) {
       ev.source.postMessage({ type: 'SCANNER_LIMIT_REACHED' });
     } else {
-      activeScanners.add(clientId);
+      activeScanners.set(clientId, queryKey);
       ev.source.postMessage({ type: 'SCANNER_STARTED' });
     }
   }
