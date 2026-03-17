@@ -26,6 +26,9 @@ export const Accounts = ({
   const [urlInput, setUrlInput] = useState('');
 
   /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  const [urlProtocol, setUrlProtocol] = useState('https://');
+
+  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
   const [keyInput, setKeyInput] = useState('');
 
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
@@ -37,6 +40,31 @@ export const Accounts = ({
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [warnRisk, setWarnRisk] = useState(false);
 
+  /** @type {string} */
+  const cleanHost = urlInput.trim().replace(/\/$/, '');
+
+  /** @type {string} */
+  const targetUrl = cleanHost ? `${urlProtocol}${cleanHost}` : '';
+
+  /**
+   * @param {import('react').ChangeEvent<HTMLInputElement>} e
+   * @returns {void}
+   */
+  const handleUrlChange = (e) => {
+    /** @type {string} */
+    let val = e.target.value;
+
+    if (val.toLowerCase().startsWith('http://')) {
+      setUrlProtocol('http://');
+      val = val.substring(7);
+    } else if (val.toLowerCase().startsWith('https://')) {
+      setUrlProtocol('https://');
+      val = val.substring(8);
+    }
+
+    setUrlInput(val);
+  };
+
   /**
    * @param {import('react').FormEvent<HTMLFormElement>} event
    * @returns {Promise<void>}
@@ -45,17 +73,9 @@ export const Accounts = ({
     event.preventDefault();
     setErrorMessage('');
 
-    /** @type {string} */
-    const trimmedUrl = urlInput.trim();
-
-    if (!/^https?:\/\//i.test(trimmedUrl)) {
-      setErrorMessage('The Booru URL must start with http:// or https://');
-      return;
-    }
-
-    if (trimmedUrl && keyInput) {
+    if (cleanHost && keyInput) {
       /** @type {string} */
-      const normalizedUrl = fixBooruUrl(trimmedUrl.replace(/\/$/, ''));
+      const normalizedUrl = fixBooruUrl(targetUrl);
 
       /** @type {boolean} */
       const urlExists = accountsList.some(
@@ -74,6 +94,7 @@ export const Accounts = ({
       await addAccount(normalizedUrl, keyInput);
 
       setUrlInput('');
+      setUrlProtocol('https://');
       setKeyInput('');
       setAcceptRisk(false);
       setErrorMessage('');
@@ -133,12 +154,6 @@ export const Accounts = ({
     loadData();
   }, []);
 
-  /** @type {string} */
-  const cleanUrlInput = urlInput.trim().replace(/\/$/, '');
-
-  /** @type {boolean} */
-  const hasValidProtocol = /^https?:\/\//i.test(cleanUrlInput);
-
   return (
     <div className="fade-in">
       {isLoading && (
@@ -162,14 +177,19 @@ export const Accounts = ({
                 <div className="mb-3">
                   <label className="form-label">Booru URL</label>
                   <input
-                    type="url"
+                    type="text"
                     className="form-control"
-                    placeholder="https://derpibooru.org"
+                    placeholder="derpibooru.org"
                     value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
+                    onChange={handleUrlChange}
                     required
                     disabled={isLoading}
                   />
+                  {targetUrl && (
+                    <small className="form-text text-primary d-block mt-1 fw-semibold">
+                      Pointing to: {targetUrl}
+                    </small>
+                  )}
                 </div>
                 <div className="mb-3">
                   <label className="form-label">API Key</label>
@@ -184,16 +204,16 @@ export const Accounts = ({
                   />
                   <small className="form-text text-muted d-block mt-1">
                     You can find your API key at:{' '}
-                    {hasValidProtocol ? (
+                    {targetUrl ? (
                       <a
-                        href={`${cleanUrlInput}/registrations/edit`}
+                        href={`${targetUrl}/registrations/edit`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        {cleanUrlInput}/registrations/edit
+                        {targetUrl}/registrations/edit
                       </a>
                     ) : (
-                      <span>[Valid Booru URL]/registrations/edit</span>
+                      <span>[Booru URL]/registrations/edit</span>
                     )}
                   </small>
                 </div>
