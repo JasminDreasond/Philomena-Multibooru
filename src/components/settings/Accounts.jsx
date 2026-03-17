@@ -45,9 +45,17 @@ export const Accounts = ({
     event.preventDefault();
     setErrorMessage('');
 
-    if (urlInput && keyInput) {
+    /** @type {string} */
+    const trimmedUrl = urlInput.trim();
+
+    if (!/^https?:\/\//i.test(trimmedUrl)) {
+      setErrorMessage('The Booru URL must start with http:// or https://');
+      return;
+    }
+
+    if (trimmedUrl && keyInput) {
       /** @type {string} */
-      const normalizedUrl = fixBooruUrl(urlInput.trim().replace(/\/$/, ''));
+      const normalizedUrl = fixBooruUrl(trimmedUrl.replace(/\/$/, ''));
 
       /** @type {boolean} */
       const urlExists = accountsList.some(
@@ -125,6 +133,12 @@ export const Accounts = ({
     loadData();
   }, []);
 
+  /** @type {string} */
+  const cleanUrlInput = urlInput.trim().replace(/\/$/, '');
+
+  /** @type {boolean} */
+  const hasValidProtocol = /^https?:\/\//i.test(cleanUrlInput);
+
   return (
     <div className="fade-in">
       {isLoading && (
@@ -168,6 +182,20 @@ export const Accounts = ({
                     required
                     disabled={isLoading}
                   />
+                  <small className="form-text text-muted d-block mt-1">
+                    You can find your API key at:{' '}
+                    {hasValidProtocol ? (
+                      <a
+                        href={`${cleanUrlInput}/registrations/edit`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {cleanUrlInput}/registrations/edit
+                      </a>
+                    ) : (
+                      <span>[Valid Booru URL]/registrations/edit</span>
+                    )}
+                  </small>
                 </div>
                 <div className="mb-3">
                   <small className="text-muted">
