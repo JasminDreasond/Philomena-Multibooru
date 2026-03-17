@@ -1,15 +1,54 @@
 import { useEffect } from 'react';
+import TinyDomReadyManager from 'tiny-essentials/libs/TinyDomReadyManager';
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(() => {
-      console.log('ServiceWorker registered');
-    });
-  });
-}
+/** @type {string} */
+const SW_VERSION = '1.0.0';
+
+/**
+ * @returns {Promise<void>}
+ */
+const initServiceWorker = async () => {
+  if ('serviceWorker' in navigator) {
+    try {
+      /** @type {string | null} */
+      const savedVersion = localStorage.getItem('app_sw_version');
+
+      if (savedVersion !== SW_VERSION) {
+        console.log(
+          `[ServiceWorker] Version mismatch: ${savedVersion} -> ${SW_VERSION}. Cleaning up old workers...`,
+        );
+
+        /** @type {readonly ServiceWorkerRegistration[]} */
+        const registrations = await navigator.serviceWorker.getRegistrations();
+
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+
+        localStorage.setItem('app_sw_version', SW_VERSION);
+
+        if (savedVersion !== null) {
+          console.log('[ServiceWorker] Old workers removed. Reloading for a fresh start.');
+          window.location.reload();
+          return;
+        }
+      }
+
+      await navigator.serviceWorker.register('/sw.js');
+      console.log('[ServiceWorker] Registered and up to date.');
+    } catch (error) {
+      console.error('[ServiceWorker] Registration failed:', error);
+    }
+  }
+};
+
+const readyPage = new TinyDomReadyManager();
+readyPage.onReady(initServiceWorker, { once: true });
+readyPage.init();
 
 /**
  * Hook to synchronize and validate routes with the Service Worker
+ * @returns {void}
  */
 const ServiceWorkerSync = () => {
   // Global listener for Favicon Sync across tabs
@@ -22,9 +61,12 @@ const ServiceWorkerSync = () => {
       if (event.data && event.data.type === 'FAVICON_UPDATE') {
         // Change the URL depending on the requested state.
         // Note: You need a notification version of your icon here!
+        /** @type {string} */
         const targetIcon = event.data.icon === 'alert' ? '/icon/512-alert.png' : '/icon/512.png';
 
+        /** @type {HTMLLinkElement | null} */
         let link = document.querySelector("link[rel~='icon']");
+
         if (!link) {
           link = document.createElement('link');
           link.rel = 'icon';
