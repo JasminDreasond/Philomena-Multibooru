@@ -26,9 +26,6 @@ export const Accounts = ({
   const [urlInput, setUrlInput] = useState('');
 
   /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
-  const [urlProtocol, setUrlProtocol] = useState('https://');
-
-  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
   const [keyInput, setKeyInput] = useState('');
 
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
@@ -43,8 +40,14 @@ export const Accounts = ({
   /** @type {string} */
   const cleanHost = urlInput.trim().replace(/\/$/, '');
 
+  /** @type {boolean} */
+  const isLocal = /^(localhost|(\d{1,3}\.){3}\d{1,3})/i.test(cleanHost);
+
   /** @type {string} */
-  const targetUrl = cleanHost ? `${urlProtocol}${cleanHost}` : '';
+  const protocol = isLocal ? 'http://' : 'https://';
+
+  /** @type {string} */
+  const targetUrl = cleanHost ? `${protocol}${cleanHost}` : '';
 
   /**
    * @param {import('react').ChangeEvent<HTMLInputElement>} e
@@ -54,14 +57,7 @@ export const Accounts = ({
     /** @type {string} */
     let val = e.target.value;
 
-    if (val.toLowerCase().startsWith('http://')) {
-      setUrlProtocol('http://');
-      val = val.substring(7);
-    } else if (val.toLowerCase().startsWith('https://')) {
-      setUrlProtocol('https://');
-      val = val.substring(8);
-    }
-
+    val = val.replace(/^https?:\/\//i, '');
     setUrlInput(val);
   };
 
@@ -94,7 +90,6 @@ export const Accounts = ({
       await addAccount(normalizedUrl, keyInput);
 
       setUrlInput('');
-      setUrlProtocol('https://');
       setKeyInput('');
       setAcceptRisk(false);
       setErrorMessage('');
