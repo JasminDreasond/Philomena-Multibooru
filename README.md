@@ -95,5 +95,7 @@ Enjoy your unified browsing experience! If you run into any issues or have featu
 
 
 <div align="center">
+<a href="https://github.com/Tiny-Essentials/Tiny-Essentials/tree/main/test/img"><img src="./img/5ec92aff-7a9d-4b86-bcc3-fe715def537a.png" height="300" alt="tiny-jasmini-js" /></a>
+
 Made with tiny love! 🍮
 </div>
