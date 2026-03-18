@@ -25,6 +25,7 @@ export const CommentBody = ({
 }) => {
   const openImagesInApp = localStorage.getItem('app_inAppViewer') === 'true';
   const openProfileInApp = localStorage.getItem('app_inAppProfileViewer') === 'true';
+  const hostname = new URL(booruUrl).hostname;
 
   return (
     <ReactMarkdown
@@ -55,7 +56,7 @@ export const CommentBody = ({
                   <a
                     href={
                       openImagesInApp
-                        ? `/${new URL(booruUrl).hostname}/images/${refId}`
+                        ? `/${hostname}/images/${refId}`
                         : `${booruUrl}/images/${refId}`
                     }
                     target={openImagesInApp ? '_self' : '_blank'}
@@ -76,9 +77,7 @@ export const CommentBody = ({
               return (
                 <a
                   href={
-                    openImagesInApp
-                      ? `/${new URL(booruUrl).hostname}/images/${refId}`
-                      : `${booruUrl}/images/${refId}`
+                    openImagesInApp ? `/${hostname}/images/${refId}` : `${booruUrl}/images/${refId}`
                   }
                   target={openImagesInApp ? '_self' : '_blank'}
                   rel="noopener noreferrer"
@@ -132,7 +131,7 @@ export const CommentBody = ({
             <a
               href={
                 (isProfileLink && openProfileInApp) || (isImageLink && openImagesInApp)
-                  ? `/${new URL(booruUrl).hostname}/${isImageLink ? 'images' : isProfileLink ? 'profiles' : 'null'}/${matchTarget}`
+                  ? `/${hostname}/${isImageLink ? 'images' : isProfileLink ? 'profiles' : 'null'}/${matchTarget}`
                   : fullHref
               }
               target={

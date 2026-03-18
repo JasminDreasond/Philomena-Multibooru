@@ -103,11 +103,11 @@ const ContextMenuGroup = ({ id, icon, label, url, openLeft, onActionRecord, onCl
 };
 
 /**
- * @param {{ x: number, y: number, img: ImageResult, onClose: () => void, onOpenImage?: (img: ImageResult) => void }} props
+ * @param {{ x: number, y: number, img: ImageResult, onClose: () => void, onOpenImage?: (img: ImageResult) => void, hostname: string }} props
  */
-const ContextMenu = ({ x, y, img, onClose, onOpenImage }) => {
+const ContextMenu = ({ x, y, img, onClose, onOpenImage, hostname }) => {
   /** @type {string} */
-  const appImageUrl = `${window.location.origin}/${new URL(img.booruUrl).hostname}/images/${img.id}`;
+  const appImageUrl = `${window.location.origin}/${hostname}/images/${img.id}`;
   /** @type {string} */
   const booruImageUrl = `${img.booruUrl}/images/${img.id}`;
   /** @type {string | undefined} */
@@ -119,7 +119,7 @@ const ContextMenu = ({ x, y, img, onClose, onOpenImage }) => {
 
   /** @type {string} */
   const appProfileUrl = hasProfile
-    ? `${window.location.origin}/${new URL(img.booruUrl).hostname}/profiles/${img.uploaderId || img.uploader}`
+    ? `${window.location.origin}/${hostname}/profiles/${img.uploaderId || img.uploader}`
     : '';
 
   /** @type {string} */
@@ -427,6 +427,8 @@ export const Image = ({ img, className, onOpenImage }) => {
     setIsLocal(newStatus);
   };
 
+  const hostname = new URL(img.booruUrl).hostname;
+
   /** @type {string} */
   const targetUrl = `${img.booruUrl}/images/${img.id}`;
   /** @type {boolean} */
@@ -444,7 +446,7 @@ export const Image = ({ img, className, onOpenImage }) => {
   /** @type {boolean} */
   const isBlurry = img.spoilered && !unspoileredIds.has(img.id) ? true : false;
   /** @type {string} */
-  const title = `${img.booruUrl} - ${img.tags.join(', ')}`;
+  const title = `${hostname} - ${img.tags.join(', ')}`;
 
   return (
     <>
@@ -454,7 +456,7 @@ export const Image = ({ img, className, onOpenImage }) => {
         onContextMenu={handleContextMenu}
       >
         <a
-          href={openImagesInApp ? `/${new URL(img.booruUrl).hostname}/images/${img.id}` : targetUrl}
+          href={openImagesInApp ? `/${hostname}/images/${img.id}` : targetUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="text-decoration-none d-block h-100"
@@ -578,6 +580,7 @@ export const Image = ({ img, className, onOpenImage }) => {
 
       {contextMenu.visible && (
         <ContextMenu
+          hostname={hostname}
           x={contextMenu.x}
           y={contextMenu.y}
           img={img}

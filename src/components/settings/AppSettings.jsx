@@ -458,8 +458,8 @@ export const AppSettings = ({
               Enable Local Favorites
             </label>
             <div className="form-text text-muted small">
-              Allows you to fav images directly to your browser's local storage. Great for
-              anonymous accounts!
+              Allows you to fav images directly to your browser's local storage. Great for anonymous
+              accounts!
             </div>
           </div>
 
