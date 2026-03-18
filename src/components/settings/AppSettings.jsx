@@ -451,7 +451,7 @@ export const AppSettings = ({
       <div className="card no-anim mt-4">
         <div className="card-header fw-bold">Local Favorites Management</div>
         <div className="card-body">
-          <div className="form-check form-switch mb-4">
+          <div className={`form-check form-switch${localFavesEnabled ? ' mb-4' : ''}`}>
             <input
               className="form-check-input"
               type="checkbox"
