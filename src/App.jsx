@@ -1628,7 +1628,7 @@ const App = () => {
                               href={acc.booruUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-muted text-decoration-none d-flex align-items-center px-1"
+                              className="text-decoration-none d-flex align-items-center px-1"
                               title={`Visit ${booruHostname}`}
                               onClick={(e) => e.stopPropagation()}
                             >

@@ -49,6 +49,9 @@ export const ThemeSettings = ({ isDark }) => {
 
   /* Interactions */
   const [customFave, setCustomFave] = useState(localStorage.getItem('app_fave') || '');
+  const [customLocalFave, setCustomLocalFave] = useState(
+    localStorage.getItem('app_local_fave') || '',
+  );
   const [customUpvote, setCustomUpvote] = useState(localStorage.getItem('app_upvote') || '');
   const [customDownvote, setCustomDownvote] = useState(localStorage.getItem('app_downvote') || '');
 
@@ -92,6 +95,7 @@ export const ThemeSettings = ({ isDark }) => {
       'alert_danger_bg',
       'alert_danger_text',
       'app_fave',
+      'app_local_fave',
       'app_upvote',
       'app_downvote',
     ];
@@ -116,6 +120,7 @@ export const ThemeSettings = ({ isDark }) => {
     setAlertDangerBg('');
     setAlertDangerText('');
     setCustomFave('');
+    setCustomLocalFave('');
     setCustomUpvote('');
     setCustomDownvote('');
 
@@ -145,6 +150,7 @@ export const ThemeSettings = ({ isDark }) => {
       'alert_danger_bg',
       'alert_danger_text',
       'app_fave',
+      'app_local_fave',
       'app_upvote',
       'app_downvote',
     ];
@@ -196,6 +202,7 @@ export const ThemeSettings = ({ isDark }) => {
           'alert_danger_bg',
           'alert_danger_text',
           'app_fave',
+          'app_local_fave',
           'app_upvote',
           'app_downvote',
         ];
@@ -469,7 +476,7 @@ export const ThemeSettings = ({ isDark }) => {
 
           <h6 className="fw-bold mb-3 mt-4 border-bottom pb-2">Interaction Symbols</h6>
           <div className="row mb-4">
-            <div className="col-md-4 mb-2">
+            <div className="col-md-3 mb-2">
               <label className="form-label small fw-semibold text-warning">Favorite Symbol</label>
               <input
                 type="color"
@@ -478,7 +485,18 @@ export const ThemeSettings = ({ isDark }) => {
                 onChange={(e) => handleColorChange('app_fave', e.target.value, setCustomFave)}
               />
             </div>
-            <div className="col-md-4 mb-2">
+            <div className="col-md-3 mb-2">
+              <label className="form-label small fw-semibold text-info">Local Fave Symbol</label>
+              <input
+                type="color"
+                className="form-control form-control-color w-100"
+                value={customLocalFave || '#0dcaf0'}
+                onChange={(e) =>
+                  handleColorChange('app_local_fave', e.target.value, setCustomLocalFave)
+                }
+              />
+            </div>
+            <div className="col-md-3 mb-2">
               <label className="form-label small fw-semibold text-success">Upvote Symbol</label>
               <input
                 type="color"
@@ -487,7 +505,7 @@ export const ThemeSettings = ({ isDark }) => {
                 onChange={(e) => handleColorChange('app_upvote', e.target.value, setCustomUpvote)}
               />
             </div>
-            <div className="col-md-4 mb-2">
+            <div className="col-md-3 mb-2">
               <label className="form-label small fw-semibold text-danger">Downvote Symbol</label>
               <input
                 type="color"

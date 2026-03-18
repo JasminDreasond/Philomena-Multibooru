@@ -28,6 +28,7 @@
   --alert-danger-text: #991b1b;
 
   /* Variáveis Exclusivas de Interação */
+  --local-fave-color: #0dcaf0;
   --fave-color: #f59e0b;
   --upvote-color: #10b981;
   --downvote-color: #ef4444;
@@ -110,8 +111,25 @@ a:not(.btn):not(.btn-tool):hover {
   color: #ffffff;
 }
 
+.dropdown-item a {
+  color: #ffffff !important;
+}
+
 .dropdown-item:hover {
   color: #000000;
+}
+
+.dropdown-item:hover a {
+  color: #000000 !important;
+}
+
+.dropdown-item:active {
+  color: #ffffff !important;
+  background-color: var(--app-primary-hover) !important;
+}
+
+.dropdown-item:active a {
+  color: #ffffff !important;
 }
 
 /* =========================================
@@ -391,6 +409,11 @@ a:not(.btn):not(.btn-tool):hover {
 .active-fave {
   color: var(--fave-color);
   text-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+.active-local-fav {
+  color: var(--local-fave-color);
+  text-shadow: 0 0 8px rgba(13, 202, 240, 0.4);
 }
 
 .active-up {

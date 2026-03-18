@@ -105,6 +105,7 @@ export const applyThemeFromStorage = () => {
   applyColor('alert_danger_text', '--alert-danger-text');
 
   applyColor('app_fave', '--fave-color');
+  applyColor('app_local_fave', '--local-fave-color');
   applyColor('app_upvote', '--upvote-color');
   applyColor('app_downvote', '--downvote-color');
 
