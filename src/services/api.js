@@ -1618,7 +1618,48 @@ export const toggleLocalFave = async (img) => {
 };
 
 /**
- * Searches the local database for favorited images, applying pagination and tag filtering.
+ * Returns the total count of favorited images in the database for a specific query.
+ * @param {string} [query='*'] Search query to count.
+ * @param {string[]|null} [allowedBoorus=null] Optional booru whitelist.
+ * @returns {Promise<number>} Total items count.
+ */
+export const countLocalFaves = async (query = '*', allowedBoorus = null) => {
+  const whereClause =
+    Array.isArray(allowedBoorus) && allowedBoorus.length > 0
+      ? { booruUrl: { in: allowedBoorus } }
+      : undefined;
+
+  if (query === '*' || query.trim() === '') {
+    return await dbConnection.count({
+      where: whereClause,
+      from: 'LocalFaves',
+    });
+  }
+
+  // If there are specific tags, we have to fetch to filter accurately,
+  // but we only process exactly what matches.
+  const queryTags = query
+    .toLowerCase()
+    .split(',')
+    .map((t) => t.trim())
+    .filter((t) => t !== '');
+
+  /** @type {any[]} */
+  const allFaves = await dbConnection.select({
+    from: 'LocalFaves',
+    where: whereClause,
+  });
+
+  const matched = allFaves.filter((img) => {
+    const imgTags = img.tags.map((t) => t.toLowerCase());
+    return queryTags.every((qt) => imgTags.includes(qt));
+  });
+
+  return matched.length;
+};
+
+/**
+ * Searches the local database for favorited images, applying optimized pagination and tag filtering.
  * @param {Object} config
  * @param {string} [config.query='*']
  * @param {number} [config.limit=50]
@@ -1682,41 +1723,71 @@ export const searchLocalFaves = async ({
   /** @type {string} */
   const sortType = sd && sd.toLowerCase() === 'asc' ? 'asc' : 'desc';
 
-  /** @type {Object} */
-  const ops = {
-    from: 'LocalFaves',
-    order: { by: sortField, type: sortType },
-  };
+  const whereClause =
+    Array.isArray(boorusToUse) && boorusToUse.length > 0
+      ? { booruUrl: { in: boorusToUse } }
+      : undefined;
 
-  if (Array.isArray(boorusToUse) && boorusToUse.length > 0) {
-    ops.where = { booruUrl: { in: boorusToUse } };
-  }
+  /** @type {number} */
+  const total = await countLocalFaves(query, boorusToUse);
 
   /** @type {ImageObj[]} */
-  let results = await dbConnection.select(ops);
+  let results = [];
 
-  if (query !== '*' && query.trim() !== '') {
-    /** @type {string[]} */
+  if (query === '*' || query.trim() === '') {
+    /** @type {any[]} */
+    const dbResults = await dbConnection.select({
+      from: 'LocalFaves',
+      where: whereClause,
+      limit: limit,
+      skip: skipCount,
+      order: { by: sortField, type: sortType },
+    });
+
+    results = dbResults.map((item) => fixImageObj(item));
+  } else {
+    // Memory-safe batching loop when dealing with JS array intersection
     const queryTags = query
       .toLowerCase()
       .split(',')
       .map((t) => t.trim())
       .filter((t) => t !== '');
 
-    results = results.filter((img) => {
-      /** @type {string[]} */
-      const imgTags = img.tags.map((t) => t.toLowerCase());
-      return queryTags.every((qt) => imgTags.includes(qt));
-    });
+    const gatheredResults = [];
+    let currentDbSkip = 0;
+    const batchSize = Math.max(limit * 2, 100); // Fetch a safe buffer
+    let itemsToSkip = skipCount;
+
+    while (gatheredResults.length < limit) {
+      /** @type {any[]} */
+      const batch = await dbConnection.select({
+        from: 'LocalFaves',
+        where: whereClause,
+        order: { by: sortField, type: sortType },
+        limit: batchSize,
+        skip: currentDbSkip,
+      });
+
+      if (batch.length === 0) break; // Reached the end of the DB
+
+      currentDbSkip += batch.length;
+
+      const filteredBatch = batch.filter((img) => {
+        const imgTags = img.tags.map((t) => t.toLowerCase());
+        return queryTags.every((qt) => imgTags.includes(qt));
+      });
+
+      for (const item of filteredBatch) {
+        if (itemsToSkip > 0) {
+          itemsToSkip--;
+        } else if (gatheredResults.length < limit) {
+          gatheredResults.push(fixImageObj(item));
+        }
+      }
+    }
+
+    results = gatheredResults;
   }
 
-  /** @type {number} */
-  const total = results.length;
-
-  /** @type {ImageObj[]} */
-  const paginatedResults = results
-    .slice(skipCount, skipCount + limit)
-    .map((item) => fixImageObj(item));
-
-  return { images: paginatedResults, total };
+  return { images: results, total };
 };

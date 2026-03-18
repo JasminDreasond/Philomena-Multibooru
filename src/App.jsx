@@ -1082,7 +1082,7 @@ const App = () => {
 
           if (syncData) {
             setPageLimit(syncData.syncLimit);
-            setTotalItems(syncData.totalCount); // <-- Adicione esta linha
+            setTotalItems(syncData.totalCount);
             setTotalPages(Math.max(1, Math.ceil(syncData.totalCount / syncData.syncLimit)));
           }
 
