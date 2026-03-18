@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 
 /**
- * @param {{ currentPage: number, isHomepage: boolean, totalPages: number, onPageChange: (page: number) => void }} props
+ * @param {{ currentPage: number, isHomepage: boolean, totalPages: number, onPageChange: (page: number) => void, className?: string }} props
  */
-export const PaginationBar = ({ currentPage, isHomepage, totalPages, onPageChange }) => {
+export const PaginationBar = ({ currentPage, isHomepage, totalPages, onPageChange, className }) => {
   /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
   const [jumpValue, setJumpValue] = useState(currentPage.toString());
 
@@ -37,7 +37,7 @@ export const PaginationBar = ({ currentPage, isHomepage, totalPages, onPageChang
   const pages = getPageNumbers(totalPages, currentPage);
 
   return (
-    <div className="d-flex flex-column flex-md-row justify-content-center align-items-center my-4">
+    <div className={`d-flex flex-column flex-md-row justify-content-center align-items-center${className ? ` ${className}` : ''}`}>
       <ul className="pagination mb-0 me-md-3">
         <li className={`page-item ${isHomepage ? 'disabled' : ''}`}>
           <button

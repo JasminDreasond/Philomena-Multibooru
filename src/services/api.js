@@ -1618,21 +1618,82 @@ export const toggleLocalFave = async (img) => {
 };
 
 /**
+ * Searches the local database for favorited images, applying pagination and tag filtering.
  * @param {Object} config
  * @param {string} [config.query='*']
  * @param {number} [config.limit=50]
  * @param {number} [config.page=1]
- * @returns {Promise<any[]>}
+ * @param {string[]} [config.boorusToUse]
+ * @param {string} [config.sd='desc']
+ * @param {string} [config.sf='createdAt']
+ * @returns {Promise<{images: ImageObj[], total: number}>}
  */
-export const searchLocalFaves = async ({ query = '*', limit = 50, page = 1 }) => {
+export const searchLocalFaves = async ({
+  query = '*',
+  limit = 50,
+  page = 1,
+  boorusToUse,
+  sd = 'desc',
+  sf = 'createdAt',
+}) => {
   /** @type {number} */
   const skipCount = (page - 1) * limit;
 
-  /** @type {any[]} */
-  let results = await dbConnection.select({
+  /** @type {string} */
+  let sortField = 'createdAt';
+  switch (sf) {
+    case 'updated_at':
+      sortField = 'updatedAt';
+      break;
+    case 'first_seen_at':
+      sortField = 'firstSeenAt';
+      break;
+    case 'score':
+    case 'wilson_score':
+      sortField = 'wilsonScore';
+      break;
+    case 'upvotes':
+      sortField = 'upvotes';
+      break;
+    case 'downvotes':
+      sortField = 'downvotes';
+      break;
+    case 'faves':
+      sortField = 'faves';
+      break;
+    case 'comments':
+    case 'comment_count':
+      sortField = 'commentCount';
+      break;
+    case 'size':
+      sortField = 'size';
+      break;
+    case 'width':
+      sortField = 'width';
+      break;
+    case 'height':
+      sortField = 'height';
+      break;
+    default:
+      sortField = 'createdAt';
+      break;
+  }
+
+  /** @type {string} */
+  const sortType = sd && sd.toLowerCase() === 'asc' ? 'asc' : 'desc';
+
+  /** @type {Object} */
+  const ops = {
     from: 'LocalFaves',
-    order: { by: 'createdAt', type: 'desc' },
-  });
+    order: { by: sortField, type: sortType },
+  };
+
+  if (Array.isArray(boorusToUse) && boorusToUse.length > 0) {
+    ops.where = { booruUrl: { in: boorusToUse } };
+  }
+
+  /** @type {ImageObj[]} */
+  let results = await dbConnection.select(ops);
 
   if (query !== '*' && query.trim() !== '') {
     /** @type {string[]} */
@@ -1649,10 +1710,13 @@ export const searchLocalFaves = async ({ query = '*', limit = 50, page = 1 }) =>
     });
   }
 
-  /** @type {any[]} */
+  /** @type {number} */
+  const total = results.length;
+
+  /** @type {ImageObj[]} */
   const paginatedResults = results
     .slice(skipCount, skipCount + limit)
     .map((item) => fixImageObj(item));
 
-  return paginatedResults;
+  return { images: paginatedResults, total };
 };

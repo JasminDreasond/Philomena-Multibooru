@@ -12,6 +12,7 @@ import {
   fetchSingleImage,
   fetchProfile,
   randomImage,
+  searchLocalFaves,
 } from './services/api';
 import { applyThemeFromStorage } from './services/theme';
 
@@ -39,6 +40,9 @@ import { updateEmbedMetadata } from './tools/utils';
  */
 
 const App = () => {
+  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  const [totalItems, setTotalItems] = useState(0);
+
   /** @type {[ImageResult[], import('react').Dispatch<import('react').SetStateAction<ImageResult[]>>]} */
   const [currentImages, setCurrentImages] = useState([]);
 
@@ -84,6 +88,9 @@ const App = () => {
   /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
   const [searchQuery, setSearchQuery] = useState('');
 
+  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  const [searchMode, setSearchMode] = useState('api');
+
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isSearching, setIsSearching] = useState(false);
 
@@ -116,8 +123,10 @@ const App = () => {
   const [isInfiniteScroll, setIsInfiniteScroll] = useState(() => {
     return localStorage.getItem('app_infiniteScroll') === 'true';
   });
+
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isFetchingMore, setIsFetchingMore] = useState(false);
+
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [galleryRateLimited, setGalleryRateLimited] = useState(false);
 
@@ -137,6 +146,7 @@ const App = () => {
 
   /** @type {import('react').MutableRefObject<number|null>} */
   const galleryObserverTarget = useRef(null);
+
   /** @type {import('react').MutableRefObject<number>} */
   const lastGalleryFetchTime = useRef(0);
 
@@ -175,6 +185,7 @@ const App = () => {
       if (sortField !== 'created_at') searchParams.set('sf', sortField);
       if (sortDirection !== 'desc') searchParams.set('sd', sortDirection);
       if (currentPage > 1) searchParams.set('page', currentPage.toString());
+      if (searchMode !== 'api') searchParams.set('mode', searchMode);
 
       const searchStr = searchParams.toString();
       if (searchStr) newSearch = `?${searchStr}`;
@@ -185,6 +196,7 @@ const App = () => {
       if (sortField !== 'created_at') searchParams.set('sf', sortField);
       if (sortDirection !== 'desc') searchParams.set('sd', sortDirection);
       if (currentPage > 1) searchParams.set('page', currentPage.toString());
+      if (searchMode !== 'api') searchParams.set('mode', searchMode);
 
       const searchStr = searchParams.toString();
       if (searchStr) newSearch = `?${searchStr}`;
@@ -204,6 +216,7 @@ const App = () => {
     viewingImage,
     isHomepage,
     searchQuery,
+    searchMode,
     isDbReady,
     sortField,
     sortDirection,
@@ -282,6 +295,7 @@ const App = () => {
         setSortDirection('desc');
         setCurrentPage(1);
         setIs404(false);
+        setSearchMode('api');
         hasSynced.current = false; // Force recharge the main gallery if necessary
       } else if (path.startsWith('/settings')) {
         setShowSettings(true);
@@ -296,11 +310,13 @@ const App = () => {
         const sfParam = params.get('sf') || 'created_at';
         const sdParam = params.get('sd') || 'desc';
         const pParam = parseInt(params.get('page') || '1', 10);
+        const mParam = params.get('mode') || 'api';
 
         setSearchQuery(q);
         setSortField(sfParam);
         setSortDirection(sdParam);
         setCurrentPage(pParam);
+        setSearchMode(mParam);
         setIsHomepage(false);
         setViewingImage(null);
         setViewingProfile(null);
@@ -329,15 +345,21 @@ const App = () => {
               const sfParam = params.get('sf') || 'created_at';
               const sdParam = params.get('sd') || 'desc';
               const pParam = parseInt(params.get('page') || '1', 10);
+              const mParam = params.get('mode') || 'api';
 
               setSearchQuery(q);
               setSortField(sfParam);
               setSortDirection(sdParam);
               setCurrentPage(pParam);
+              setSearchMode(mParam);
 
               // Determines correct background display state for when the user closes the image
               setIsHomepage(
-                q === geString && sfParam === 'created_at' && sdParam === 'desc' && pParam === 1,
+                q === geString &&
+                  sfParam === 'created_at' &&
+                  sdParam === 'desc' &&
+                  pParam === 1 &&
+                  mParam === 'api',
               );
 
               const imgData = await fetchSingleImage(acc.booruUrl, acc.apiKey, imgMatch[2]);
@@ -448,9 +470,40 @@ const App = () => {
    * @param {string[]} boorusToUse
    * @param {string} sd
    * @param {string} sf
+   * @param {string} modeToUse
    * @returns {Promise<void>}
    */
-  const loadLocalData = async (limitToUse, pageToUse, queryToUse, boorusToUse, sd, sf) => {
+  const loadLocalData = async (
+    limitToUse,
+    pageToUse,
+    queryToUse,
+    boorusToUse,
+    sd,
+    sf,
+    modeToUse,
+  ) => {
+    if (modeToUse === 'local_fav') {
+      try {
+        const localResults = await searchLocalFaves({
+          boorusToUse,
+          query: queryToUse === geString ? '*' : queryToUse,
+          limit: limitToUse,
+          page: pageToUse,
+          sd,
+          sf,
+        });
+
+        setTotalItems(localResults.total);
+        setCurrentImages(localResults.images);
+        setTrendingImages([]);
+        setWatchedImages([]);
+        setTotalPages(Math.max(1, Math.ceil(localResults.total / limitToUse)));
+      } catch (e) {
+        console.error('Error loading local data:', e);
+      }
+      return;
+    }
+
     /** @type {ImageResult[]} */
     const mainResults = await searchImages({
       query: parseQueryResults(queryToUse),
@@ -498,6 +551,28 @@ const App = () => {
     const queryToUse = searchQuery.trim() === '' ? geString : searchQuery;
 
     try {
+      if (searchMode === 'local_fav') {
+        const localResults = await searchLocalFaves({
+          boorusToUse: visibleBoorus,
+          query: queryToUse === geString ? geString : parseQueryResults(queryToUse),
+          limit: pageLimit,
+          page: nextPage,
+          sd: sortDirection,
+          sf: sortField,
+        });
+
+        setTotalItems(localResults.total);
+        setCurrentImages((prev) => {
+          const prevIds = new Set(prev.map((p) => p.id));
+          const uniqueNew = localResults.images.filter((f) => !prevIds.has(f.id));
+          return [...prev, ...uniqueNew];
+        });
+
+        setTotalPages(Math.max(1, Math.ceil(localResults.total / pageLimit)));
+        setCurrentPage(nextPage);
+        return;
+      }
+
       await syncUserGalleryPages({
         query: parseQueryResults(queryToUse),
         page: nextPage,
@@ -537,6 +612,20 @@ const App = () => {
     try {
       /** @type {string} */
       const queryToUse = searchQuery.trim() === '' ? geString : searchQuery;
+
+      if (searchMode === 'local_fav') {
+        await loadLocalData(
+          pageLimit,
+          currentPage,
+          queryToUse,
+          boorusToUse,
+          sortDirection,
+          sortField,
+          searchMode,
+        );
+        return;
+      }
+
       /** @type {boolean} */
       const isSpecialSearch = queryToUse !== geString;
 
@@ -574,6 +663,7 @@ const App = () => {
 
       if (mainSync) {
         setPageLimit(mainSync.syncLimit);
+        setTotalItems(mainSync.totalCount);
         setTotalPages(Math.max(1, Math.ceil(mainSync.totalCount / mainSync.syncLimit)));
       }
 
@@ -584,6 +674,7 @@ const App = () => {
         boorusToUse,
         sortDirection,
         sortField,
+        searchMode,
       );
     } catch (err) {
       console.error('Error on background sync:', err);
@@ -645,6 +736,7 @@ const App = () => {
           let initialSf = sortField;
           let initialSd = sortDirection;
           let initialPage = currentPage;
+          let initialMode = searchMode;
 
           if (isFirstLoad.current) {
             if (path.startsWith('/settings')) {
@@ -662,11 +754,13 @@ const App = () => {
               initialSf = params.get('sf') || 'created_at';
               initialSd = params.get('sd') || 'desc';
               initialPage = parseInt(params.get('page') || '1', 10);
+              initialMode = params.get('mode') || 'api';
 
               setSearchQuery(q);
               setSortField(initialSf);
               setSortDirection(initialSd);
               setCurrentPage(initialPage);
+              setSearchMode(initialMode);
               initialQuery = q;
               setIsHomepage(false);
               isDeepLinkSpecial = true;
@@ -691,18 +785,21 @@ const App = () => {
                     initialSf = params.get('sf') || 'created_at';
                     initialSd = params.get('sd') || 'desc';
                     initialPage = parseInt(params.get('page') || '1', 10);
+                    initialMode = params.get('mode') || 'api';
 
                     setSearchQuery(q);
                     setSortField(initialSf);
                     setSortDirection(initialSd);
                     setCurrentPage(initialPage);
+                    setSearchMode(initialMode);
                     initialQuery = q;
 
                     setIsHomepage(
                       q === geString &&
                         initialSf === 'created_at' &&
                         initialSd === 'desc' &&
-                        initialPage === 1,
+                        initialPage === 1 &&
+                        initialMode === 'api',
                     );
 
                     const imgData = await fetchSingleImage(acc.booruUrl, acc.apiKey, imgMatch[2]);
@@ -741,62 +838,77 @@ const App = () => {
           if (!skipMainSync) {
             // await clearImageCache();
             const isSpecialSearch = initialQuery !== geString;
-            const syncPromises = [
-              syncUserGalleryPages({
-                query: parseQueryResults(initialQuery),
-                page: initialPage,
-                allowedBoorus: activeUrls,
-                sd: initialSd,
-                sf: initialSf,
-              }),
-            ];
 
-            if (!isSpecialSearch && isHomepage && !isDeepLinkSpecial) {
-              syncPromises.push(
-                syncUserGalleryPages({
-                  query: parseQueryResults('first_seen_at.gt:3 days ago'),
-                  allowedBoorus: activeUrls,
-                  perPage: 20,
-                  sf: 'wilson_score',
-                  sd: 'desc',
-                }),
+            if (initialMode === 'local_fav') {
+              await loadLocalData(
+                pageLimit,
+                initialPage,
+                initialQuery,
+                activeUrls,
+                initialSd,
+                initialSf,
+                initialMode,
               );
-              syncPromises.push(
+            } else {
+              const syncPromises = [
                 syncUserGalleryPages({
-                  query: parseQueryResults('my:watched'),
+                  query: parseQueryResults(initialQuery),
+                  page: initialPage,
                   allowedBoorus: activeUrls,
+                  sd: initialSd,
+                  sf: initialSf,
                 }),
-              );
-            }
+              ];
 
-            const results = await Promise.all(syncPromises);
-            const mainSync = results[0];
-
-            if (mainSync) {
-              setPageLimit(mainSync.syncLimit);
-              setTotalPages(Math.max(1, Math.ceil(mainSync.totalCount / mainSync.syncLimit)));
-            }
-
-            if (!isSpecialSearch && isHomepage && !isDeepLinkSpecial && activeUrls.length > 0) {
-              /** @type {Account[]} */
-              const filteredAccounts = accounts.filter((a) => activeUrls.includes(a.booruUrl));
-              if (filteredAccounts.length > 0) {
-                const acc = filteredAccounts[TinySimpleDice.rollArrayIndex(filteredAccounts)];
-                const feat = await getFeaturedImage(acc.booruUrl, acc.apiKey);
-                setFeaturedImage(feat ? { account: acc, image: feat } : null);
-
-                if (!selectedLinkAccount) setSelectedLinkAccount(acc);
+              if (!isSpecialSearch && isHomepage && !isDeepLinkSpecial) {
+                syncPromises.push(
+                  syncUserGalleryPages({
+                    query: parseQueryResults('first_seen_at.gt:3 days ago'),
+                    allowedBoorus: activeUrls,
+                    perPage: 20,
+                    sf: 'wilson_score',
+                    sd: 'desc',
+                  }),
+                );
+                syncPromises.push(
+                  syncUserGalleryPages({
+                    query: parseQueryResults('my:watched'),
+                    allowedBoorus: activeUrls,
+                  }),
+                );
               }
-            }
 
-            await loadLocalData(
-              mainSync ? mainSync.syncLimit : 50,
-              initialPage,
-              initialQuery,
-              activeUrls,
-              initialSd,
-              initialSf,
-            );
+              const results = await Promise.all(syncPromises);
+              const mainSync = results[0];
+
+              if (mainSync) {
+                setPageLimit(mainSync.syncLimit);
+                setTotalItems(mainSync.totalCount);
+                setTotalPages(Math.max(1, Math.ceil(mainSync.totalCount / mainSync.syncLimit)));
+              }
+
+              if (!isSpecialSearch && isHomepage && !isDeepLinkSpecial && activeUrls.length > 0) {
+                /** @type {Account[]} */
+                const filteredAccounts = accounts.filter((a) => activeUrls.includes(a.booruUrl));
+                if (filteredAccounts.length > 0) {
+                  const acc = filteredAccounts[TinySimpleDice.rollArrayIndex(filteredAccounts)];
+                  const feat = await getFeaturedImage(acc.booruUrl, acc.apiKey);
+                  setFeaturedImage(feat ? { account: acc, image: feat } : null);
+
+                  if (!selectedLinkAccount) setSelectedLinkAccount(acc);
+                }
+              }
+
+              await loadLocalData(
+                mainSync ? mainSync.syncLimit : 50,
+                initialPage,
+                initialQuery,
+                activeUrls,
+                initialSd,
+                initialSf,
+                initialMode,
+              );
+            }
           }
 
           lastSyncedBoorus.current = activeUrls;
@@ -944,28 +1056,45 @@ const App = () => {
       const queryToUse = searchQuery.trim() === '' ? geString : searchQuery;
       try {
         // Ensure we know the limit and pages if they were lost during direct deep link entry
-        const syncData = await syncUserGalleryPages({
-          query: parseQueryResults(queryToUse),
-          limit: pageLimit,
-          page: currentPage,
-          allowedBoorus: visibleBoorus,
-          sd: sortDirection,
-          sf: sortField,
-        });
+        let newImages = [];
 
-        if (syncData) {
-          setPageLimit(syncData.syncLimit);
-          setTotalPages(Math.max(1, Math.ceil(syncData.totalCount / syncData.syncLimit)));
+        if (searchMode === 'local_fav') {
+          const localResults = await searchLocalFaves({
+            boorusToUse: visibleBoorus,
+            query: queryToUse === geString ? '*' : queryToUse,
+            limit: pageLimit,
+            page: currentPage,
+            sd: sortDirection,
+            sf: sortField,
+          });
+          setTotalItems(localResults.total);
+          newImages = localResults.images || [];
+          setTotalPages(Math.max(1, Math.ceil(localResults.total / pageLimit)));
+        } else {
+          const syncData = await syncUserGalleryPages({
+            query: parseQueryResults(queryToUse),
+            limit: pageLimit,
+            page: currentPage,
+            allowedBoorus: visibleBoorus,
+            sd: sortDirection,
+            sf: sortField,
+          });
+
+          if (syncData) {
+            setPageLimit(syncData.syncLimit);
+            setTotalItems(syncData.totalCount); // <-- Adicione esta linha
+            setTotalPages(Math.max(1, Math.ceil(syncData.totalCount / syncData.syncLimit)));
+          }
+
+          newImages = await searchImages({
+            query: parseQueryResults(queryToUse),
+            limit: pageLimit,
+            page: currentPage,
+            allowedBoorus: visibleBoorus,
+            sd: sortDirection,
+            sf: sortField,
+          });
         }
-
-        const newImages = await searchImages({
-          query: parseQueryResults(queryToUse),
-          limit: pageLimit,
-          page: currentPage,
-          allowedBoorus: visibleBoorus,
-          sd: sortDirection,
-          sf: sortField,
-        });
 
         if (newImages.length > 0) {
           setCurrentImages(newImages);
@@ -994,24 +1123,40 @@ const App = () => {
       } else if (sourceArray === currentImages && currentPage < totalPages) {
         const nextPage = currentPage + 1;
         const queryToUse = searchQuery.trim() === '' ? geString : searchQuery;
-        try {
-          await syncUserGalleryPages({
-            query: parseQueryResults(queryToUse),
-            limit: pageLimit,
-            page: nextPage,
-            allowedBoorus: visibleBoorus,
-            sd: sortDirection,
-            sf: sortField,
-          });
+        let newImages = [];
 
-          const newImages = await searchImages({
-            query: parseQueryResults(queryToUse),
-            limit: pageLimit,
-            page: nextPage,
-            allowedBoorus: visibleBoorus,
-            sd: sortDirection,
-            sf: sortField,
-          });
+        try {
+          if (searchMode === 'local_fav') {
+            const localResults = await searchLocalFaves({
+              boorusToUse: visibleBoorus,
+              query: queryToUse === geString ? '*' : queryToUse,
+              limit: pageLimit,
+              page: nextPage,
+              sd: sortDirection,
+              sf: sortField,
+            });
+            setTotalItems(localResults.total);
+            newImages = localResults.images || [];
+            setTotalPages(Math.max(1, Math.ceil(localResults.total / pageLimit)));
+          } else {
+            await syncUserGalleryPages({
+              query: parseQueryResults(queryToUse),
+              limit: pageLimit,
+              page: nextPage,
+              allowedBoorus: visibleBoorus,
+              sd: sortDirection,
+              sf: sortField,
+            });
+
+            newImages = await searchImages({
+              query: parseQueryResults(queryToUse),
+              limit: pageLimit,
+              page: nextPage,
+              allowedBoorus: visibleBoorus,
+              sd: sortDirection,
+              sf: sortField,
+            });
+          }
 
           if (isInfiniteScroll) {
             setCurrentImages((prev) => {
@@ -1038,24 +1183,40 @@ const App = () => {
       } else if (sourceArray === currentImages && currentPage > 1) {
         const prevPage = currentPage - 1;
         const queryToUse = searchQuery.trim() === '' ? geString : searchQuery;
-        try {
-          await syncUserGalleryPages({
-            query: parseQueryResults(queryToUse),
-            limit: pageLimit,
-            page: prevPage,
-            allowedBoorus: visibleBoorus,
-            sd: sortDirection,
-            sf: sortField,
-          });
+        let newImages = [];
 
-          const newImages = await searchImages({
-            query: parseQueryResults(queryToUse),
-            limit: pageLimit,
-            page: prevPage,
-            allowedBoorus: visibleBoorus,
-            sd: sortDirection,
-            sf: sortField,
-          });
+        try {
+          if (searchMode === 'local_fav') {
+            const localResults = await searchLocalFaves({
+              boorusToUse: visibleBoorus,
+              query: queryToUse === geString ? '*' : queryToUse,
+              limit: pageLimit,
+              page: prevPage,
+              sd: sortDirection,
+              sf: sortField,
+            });
+            setTotalItems(localResults.total);
+            newImages = localResults.images || [];
+            setTotalPages(Math.max(1, Math.ceil(localResults.total / pageLimit)));
+          } else {
+            await syncUserGalleryPages({
+              query: parseQueryResults(queryToUse),
+              limit: pageLimit,
+              page: prevPage,
+              allowedBoorus: visibleBoorus,
+              sd: sortDirection,
+              sf: sortField,
+            });
+
+            newImages = await searchImages({
+              query: parseQueryResults(queryToUse),
+              limit: pageLimit,
+              page: prevPage,
+              allowedBoorus: visibleBoorus,
+              sd: sortDirection,
+              sf: sortField,
+            });
+          }
 
           if (isInfiniteScroll) {
             // If using infinite scroll, scrolling upwards essentially pre-pends to the master list
@@ -1098,11 +1259,13 @@ const App = () => {
 
   /**
    * @param {string} newQuery
+   * @param {string} newMode
    */
-  const handleSearchSubmit = (newQuery) => {
+  const handleSearchSubmit = (newQuery, newMode = 'api') => {
     setIsHomepage(false);
     setViewingProfile(null);
     setSearchQuery(newQuery);
+    setSearchMode(newMode);
     setCurrentPage(1);
     setViewingImage(null);
     setShowNotifications(false);
@@ -1158,7 +1321,7 @@ const App = () => {
     setIs404(false);
     setGalleryRateLimited(false);
     lastGalleryFetchTime.current = 0;
-    handleSearchSubmit(query);
+    handleSearchSubmit(query, 'api');
   };
 
   /**
@@ -1173,10 +1336,12 @@ const App = () => {
       searchQuery !== '' ||
       isHomepage !== true ||
       sortField !== 'created_at' ||
-      sortDirection !== 'desc';
+      sortDirection !== 'desc' ||
+      searchMode !== 'api';
 
     setIsHomepage(true);
     setSearchQuery('');
+    setSearchMode('api');
     setSortField('created_at');
     setSortDirection('desc');
     setCurrentPage(1);
@@ -1242,9 +1407,18 @@ const App = () => {
 
   /** @type {boolean} */
   const showSpecialContent =
-    (searchQuery.trim() === '' || searchQuery.trim() === geString) && isHomepage;
+    (searchQuery.trim() === '' || searchQuery.trim() === geString) &&
+    isHomepage &&
+    searchMode === 'api';
 
   const infinityScrollMode = isInfiniteScroll && !isHomepage;
+
+  /** @type {number} */
+  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageLimit + 1;
+  /** @type {number} */
+  const endItem = infinityScrollMode
+    ? startItem - 1 + currentImages.length
+    : Math.min(currentPage * pageLimit, totalItems);
 
   return (
     <div className="min-vh-100 pb-5" style={{ backgroundColor: 'var(--app-bg)' }}>
@@ -1320,8 +1494,8 @@ const App = () => {
               {!showSettings && !showNotifications && !is404 && (
                 <div className="mx-lg-3 my-3 my-lg-0 flex-grow-1" style={{ maxWidth: '600px' }}>
                   <SearchBar
-                    onSearchSubmit={(q) => {
-                      handleSearchSubmit(q);
+                    onSearchSubmit={(q, m) => {
+                      handleSearchSubmit(q, m);
                       // Trigger visual close for manual DOM if you need it, but Bootstrap already manages well
                       const offcanvasElement = document.getElementById('mobileMenu');
                       if (offcanvasElement && offcanvasElement.classList.contains('show')) {
@@ -1330,6 +1504,7 @@ const App = () => {
                       }
                     }}
                     initialQuery={searchQuery}
+                    initialMode={searchMode}
                     isLoading={isSearching}
                   />
                 </div>
@@ -1707,14 +1882,20 @@ const App = () => {
                     </div>
                   ) : (
                     <>
+                      {/* Top Pagination and Info */}
                       {!infinityScrollMode && (
                         <PaginationBar
                           currentPage={currentPage}
                           totalPages={totalPages}
                           isHomepage={isHomepage}
                           onPageChange={changePage}
+                          className="mt-4"
                         />
                       )}
+                      <center className="text-muted small fw-bold  mb-4">
+                        {totalItems > 0 &&
+                          `Showing ${startItem} to ${endItem} of ${totalItems} items`}
+                      </center>
 
                       <ImageGallery
                         gridClass={`row-cols-2 row-cols-md-4 gallery-grid g-2`}
@@ -1755,12 +1936,18 @@ const App = () => {
                         </div>
                       )}
 
+                      {/* Top Pagination and Info */}
+                      <center className="text-muted small fw-bold  mt-4">
+                        {totalItems > 0 &&
+                          `Showing ${startItem} to ${endItem} of ${totalItems} items`}
+                      </center>
                       {!infinityScrollMode && (
                         <PaginationBar
                           currentPage={currentPage}
                           isHomepage={isHomepage}
                           totalPages={totalPages}
                           onPageChange={changePage}
+                          className="mb-4"
                         />
                       )}
 
