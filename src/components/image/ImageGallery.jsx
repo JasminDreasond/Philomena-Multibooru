@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
-import { checkLocalFave } from '../../services/api';
+import { checkLocalFave, toggleLocalFave } from '../../services/api';
 
 /**
  * @typedef {import('../../services/api').ImageResult} ImageResult
@@ -344,6 +344,9 @@ export const Image = ({ img, className, onOpenImage }) => {
   /** @type {boolean} */
   const openImagesInApp = localStorage.getItem('app_inAppViewer') === 'true';
 
+  /** @type {boolean} */
+  const localFavesEnabled = localStorage.getItem('app_localFavesEnabled') === 'true';
+
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isLocal, setIsLocal] = useState(false);
 
@@ -408,6 +411,20 @@ export const Image = ({ img, className, onOpenImage }) => {
       event.preventDefault();
       onOpenImage && onOpenImage(img);
     }
+  };
+
+  /**
+   * Toggles the local favorite state without triggering the image link.
+   * @param {import('react').MouseEvent} e
+   */
+  const handleToggleLocalFave = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!localFavesEnabled) return;
+
+    /** @type {boolean} */
+    const newStatus = await toggleLocalFave(img);
+    setIsLocal(newStatus);
   };
 
   /** @type {string} */
@@ -519,6 +536,9 @@ export const Image = ({ img, className, onOpenImage }) => {
                   <tr>
                     <td
                       className={`badge-interaction text-end ${isFav ? 'active-fave' : isLocal ? 'active-local-fav' : 'badge-inactive'}`}
+                      onClick={localFavesEnabled ? handleToggleLocalFave : undefined}
+                      style={{ cursor: localFavesEnabled ? 'pointer' : 'inherit' }}
+                      title={localFavesEnabled ? 'Click to toggle Local Fave' : undefined}
                     >
                       {isFav && isLocal ? '★ [B]' : isLocal ? '★ [L]' : '★'} {img.faves}
                     </td>
