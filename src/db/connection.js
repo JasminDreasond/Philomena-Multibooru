@@ -1,6 +1,9 @@
 import { Connection } from 'jsstore';
 
-// Initialize JsStore worker
+/**
+ * Initialize JsStore worker
+ * @returns {Worker}
+ */
 const getWorkerPath = () => {
   // Standard path for JsStore worker in Vite/Webpack
   return new Worker(new URL('jsstore/dist/jsstore.worker.js', import.meta.url));
@@ -8,44 +11,55 @@ const getWorkerPath = () => {
 
 export const dbConnection = new Connection(getWorkerPath());
 
+/**
+ * @returns {Promise<void>}
+ */
 export const initDatabase = async () => {
+  /** @type {Object} */
+  const imageColumns = {
+    id: { primaryKey: true, dataType: 'number', notNull: true },
+    booruUrl: { dataType: 'string', notNull: true },
+    name: { dataType: 'string', notNull: true },
+    viewUrl: { dataType: 'string', notNull: true },
+    tagIds: { dataType: 'array', notNull: true },
+    tags: { dataType: 'array', notNull: true },
+    sourceUrls: { dataType: 'array', notNull: true },
+    faves: { dataType: 'number', notNull: true },
+    size: { dataType: 'number', notNull: true },
+    uploaderId: { dataType: 'number', notNull: false },
+    description: { dataType: 'string', notNull: true },
+    mimeType: { dataType: 'string', notNull: true },
+    downvotes: { dataType: 'number', notNull: true },
+    upvotes: { dataType: 'number', notNull: true },
+    commentCount: { dataType: 'number', notNull: true },
+    origSize: { dataType: 'number', notNull: true },
+    intensities: { dataType: 'object', notNull: true },
+    representations: { dataType: 'object', notNull: true },
+    hiddenFromUsers: { dataType: 'number', notNull: true },
+    updatedAt: { dataType: 'number', notNull: true },
+    createdAt: { dataType: 'number', notNull: true },
+    firstSeenAt: { dataType: 'number', notNull: true },
+    sha512Hash: { dataType: 'string', notNull: false },
+    origSha512Hash: { dataType: 'string', notNull: false },
+    thumbnailsGenerated: { dataType: 'number', notNull: true },
+    animated: { dataType: 'number', notNull: true },
+    aspectRatio: { dataType: 'number', notNull: true },
+    duplicateOf: { dataType: 'number', notNull: false },
+    deletionReason: { dataType: 'string', notNull: false },
+    height: { dataType: 'number', notNull: true },
+    width: { dataType: 'number', notNull: true },
+    sourceUrl: { dataType: 'string', notNull: true },
+    wilsonScore: { dataType: 'number', notNull: true },
+  };
+
   const tblImages = {
     name: 'Images',
-    columns: {
-      id: { primaryKey: true, dataType: 'number', notNull: true },
-      booruUrl: { dataType: 'string', notNull: true },
-      name: { dataType: 'string', notNull: true },
-      viewUrl: { dataType: 'string', notNull: true },
-      tagIds: { dataType: 'array', notNull: true },
-      tags: { dataType: 'array', notNull: true },
-      sourceUrls: { dataType: 'array', notNull: true },
-      faves: { dataType: 'number', notNull: true },
-      size: { dataType: 'number', notNull: true },
-      uploaderId: { dataType: 'number', notNull: false },
-      description: { dataType: 'string', notNull: true },
-      mimeType: { dataType: 'string', notNull: true },
-      downvotes: { dataType: 'number', notNull: true },
-      upvotes: { dataType: 'number', notNull: true },
-      commentCount: { dataType: 'number', notNull: true },
-      origSize: { dataType: 'number', notNull: true },
-      intensities: { dataType: 'object', notNull: true },
-      representations: { dataType: 'object', notNull: true },
-      hiddenFromUsers: { dataType: 'number', notNull: true },
-      updatedAt: { dataType: 'number', notNull: true },
-      createdAt: { dataType: 'number', notNull: true },
-      firstSeenAt: { dataType: 'number', notNull: true },
-      sha512Hash: { dataType: 'string', notNull: false },
-      origSha512Hash: { dataType: 'string', notNull: false },
-      thumbnailsGenerated: { dataType: 'number', notNull: true },
-      animated: { dataType: 'number', notNull: true },
-      aspectRatio: { dataType: 'number', notNull: true },
-      duplicateOf: { dataType: 'number', notNull: false },
-      deletionReason: { dataType: 'string', notNull: false },
-      height: { dataType: 'number', notNull: true },
-      width: { dataType: 'number', notNull: true },
-      sourceUrl: { dataType: 'string', notNull: true },
-      wilsonScore: { dataType: 'number', notNull: true },
-    },
+    columns: imageColumns,
+  };
+
+  const tblLocalFaves = {
+    name: 'LocalFaves',
+    columns: { ...imageColumns },
   };
 
   const tblAccounts = {
@@ -101,9 +115,10 @@ export const initDatabase = async () => {
 
   const database = {
     name: 'PhilomenaMultiBooru',
-    version: 2,
+    version: 3,
     tables: [
       tblImages,
+      tblLocalFaves,
       tblAccounts,
       tblQueries,
       tblSettings,

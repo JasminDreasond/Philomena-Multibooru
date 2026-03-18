@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
+import { checkLocalFave } from '../../services/api';
+
 /**
  * @typedef {import('../../services/api').ImageResult} ImageResult
  * @typedef {import('../../services/api').ImageObj} ImageObj
@@ -342,6 +344,26 @@ export const Image = ({ img, className, onOpenImage }) => {
   /** @type {boolean} */
   const openImagesInApp = localStorage.getItem('app_inAppViewer') === 'true';
 
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isLocal, setIsLocal] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    /**
+     * @returns {Promise<void>}
+     */
+    const fetchLocalState = async () => {
+      /** @type {boolean} */
+      const status = await checkLocalFave(img.id, img.booruUrl);
+      if (!isMounted) return;
+      setIsLocal(status);
+    };
+    fetchLocalState();
+    return () => {
+      isMounted = false;
+    };
+  }, [img.id, img.booruUrl]);
+
   useEffect(() => {
     if (!contextMenu.visible) return;
 
@@ -496,9 +518,9 @@ export const Image = ({ img, className, onOpenImage }) => {
                 <tbody>
                   <tr>
                     <td
-                      className={`badge-interaction text-end ${isFav ? 'active-fave' : 'badge-inactive'}`}
+                      className={`badge-interaction text-end ${isFav ? 'active-fave' : isLocal ? 'active-local-fav' : 'badge-inactive'}`}
                     >
-                      ★ {img.faves}
+                      {isFav && isLocal ? '★ [B]' : isLocal ? '★ [L]' : '★'} {img.faves}
                     </td>
                     <td
                       className={`badge-interaction text-end ${isUp ? 'active-up' : 'badge-inactive'}`}

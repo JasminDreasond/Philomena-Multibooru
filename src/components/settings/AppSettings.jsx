@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 import { alert } from '../../tools/BootstrapDialogs';
-import { updateSystemSettings } from '../../services/api';
+import { updateSystemSettings, getActiveAccounts } from '../../services/api';
 
 /**
  * @param {Object} config
@@ -47,6 +47,44 @@ export const AppSettings = ({
   const [plyrStorage, setPlyrStorage] = useState(
     localStorage.getItem('app_plyrStorage') === 'true',
   );
+
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [localFavesEnabled, setLocalFavesEnabled] = useState(false);
+
+  useEffect(() => {
+    /**
+     * @returns {Promise<void>}
+     */
+    const initLocalFavesSetting = async () => {
+      /** @type {string | null} */
+      const storedVal = localStorage.getItem('app_localFavesEnabled');
+
+      if (storedVal !== null) {
+        setLocalFavesEnabled(storedVal === 'true');
+      } else {
+        /** @type {any[]} */
+        const accounts = await getActiveAccounts();
+        /** @type {boolean} */
+        const onlyAnonymous =
+          accounts.length > 0 && accounts.every((acc) => !acc.apiKey || acc.apiKey.trim() === '');
+
+        setLocalFavesEnabled(onlyAnonymous);
+        localStorage.setItem('app_localFavesEnabled', onlyAnonymous.toString());
+      }
+    };
+
+    initLocalFavesSetting();
+  }, []);
+
+  /**
+   * @param {import('react').ChangeEvent<HTMLInputElement>} e
+   */
+  const handleToggleLocalFaves = (e) => {
+    /** @type {boolean} */
+    const isChecked = e.target.checked;
+    setLocalFavesEnabled(isChecked);
+    localStorage.setItem('app_localFavesEnabled', isChecked.toString());
+  };
 
   const handleToggleAutoRefresh = (e) => {
     const isChecked = e.target.checked;
@@ -299,6 +337,26 @@ export const AppSettings = ({
             >
               Enable Player Local Storage (Remembers volume and player settings)
             </label>
+          </div>
+
+          <div
+            className="form-check form-switch my-3 border-top pt-3"
+            style={{ borderColor: 'var(--app-border)' }}
+          >
+            <input
+              className="form-check-input"
+              type="checkbox"
+              id="localFavesToggle"
+              checked={localFavesEnabled}
+              onChange={handleToggleLocalFaves}
+            />
+            <label className="form-check-label fw-bold" htmlFor="localFavesToggle">
+              Enable Local Favorites
+            </label>
+            <div className="form-text text-muted small">
+              Allows you to save images directly to your browser's local storage. Great for
+              anonymous accounts!
+            </div>
           </div>
         </div>
       </div>

@@ -14,6 +14,9 @@ import {
   getAccountBooruApi,
   searchImages,
   syncUserGalleryPages,
+  checkLocalFave,
+  toggleLocalFave,
+  updateLocalFave,
 } from '../../services/api';
 import { CommentBody } from '../utils/CommentBody';
 import { Loading } from '../utils/Loading';
@@ -136,6 +139,66 @@ export const ImageViewer = ({
   const pendingNavigation = useRef(false);
   /** @type {import('react').MutableRefObject<number>} */
   const lastNavActionTime = useRef(0); // Security cooldown for keyboard events
+
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isLocalFaved, setIsLocalFaved] = useState(false);
+
+  /** @type {boolean} */
+  const localFavesEnabled = localStorage.getItem('app_localFavesEnabled') === 'true';
+
+  useEffect(() => {
+    if (!image) return;
+    let isMounted = true;
+
+    /**
+     * @returns {Promise<void>}
+     */
+    const verifyLocalFave = async () => {
+      /** @type {boolean} */
+      const status = await checkLocalFave(image.id, image.booruUrl);
+      if (!isMounted) return;
+      setIsLocalFaved(status);
+    };
+
+    verifyLocalFave();
+    return () => {
+      isMounted = false;
+    };
+  }, [image]);
+
+  useEffect(() => {
+    if (!image) return;
+    let isMounted = true;
+
+    /**
+     * @returns {Promise<void>}
+     */
+    const verifyAndUpdateLocalFave = async () => {
+      /** @type {boolean} */
+      const status = await checkLocalFave(image.id, image.booruUrl);
+      if (!isMounted) return;
+      setIsLocalFaved(status);
+
+      if (status) {
+        await updateLocalFave(image);
+      }
+    };
+
+    verifyAndUpdateLocalFave();
+    return () => {
+      isMounted = false;
+    };
+  }, [image]);
+
+  /**
+   * @returns {Promise<void>}
+   */
+  const handleToggleFave = async () => {
+    if (!image || !localFavesEnabled) return;
+    /** @type {boolean} */
+    const newStatus = await toggleLocalFave(image);
+    setIsLocalFaved(newStatus);
+  };
 
   // Initial Spoiler check
   const isImageSpoiler = image?.spoilered;
@@ -276,7 +339,9 @@ export const ImageViewer = ({
   useEffect(() => {
     if (!isInteractionReady || !image) return;
 
+    const controller = new AbortController();
     let isMounted = true;
+
     const getComments = async () => {
       setIsLoadingComments(true);
       try {
@@ -284,18 +349,24 @@ export const ImageViewer = ({
           image.booruUrl,
           await getAccountBooruApi(image.booruUrl),
           `image_id:${image.id}`,
+          1,
+          controller.signal,
         );
         if (isMounted) setComments(data.comments || []);
       } catch (err) {
-        console.error('Failed to fetch comments:', err);
+        if (err.name !== 'AbortError') {
+          console.error('Failed to fetch comments:', err);
+        }
       } finally {
         if (isMounted) setIsLoadingComments(false);
       }
     };
 
     getComments();
+
     return () => {
       isMounted = false;
+      controller.abort();
     };
   }, [image, refreshTrigger, isInteractionReady]);
 
@@ -337,6 +408,7 @@ export const ImageViewer = ({
     if (!isInteractionReady) return;
 
     let isMounted = true;
+    const controller = new AbortController();
 
     /**
      * Internal function to load image recommendations with smart filtering
@@ -407,6 +479,7 @@ export const ImageViewer = ({
           allowedBoorus: activeBoorus,
           sd: 'desc',
           sf: 'wilson_score',
+          signal: controller.signal,
         });
 
         const data = await searchImages({
@@ -440,8 +513,10 @@ export const ImageViewer = ({
           });
         }
       } catch (err) {
-        console.error('Failed to fetch recommendations:', err);
-        if (isMounted) setHasMoreRecs(false); // Stop trying if the API fails
+        if (err.name !== 'AbortError') {
+          console.error('Failed to fetch recommendations:', err);
+          if (isMounted) setHasMoreRecs(false); // Stop trying if the API fails
+        }
       } finally {
         if (isMounted) setIsLoadingRecs(false);
       }
@@ -451,6 +526,7 @@ export const ImageViewer = ({
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
   }, [image, enableRecs, isAllowedToFetch, recPage, isInteractionReady, retryRecsCount]);
 
@@ -624,6 +700,17 @@ export const ImageViewer = ({
   const isUp = isFav || image.interaction === 'upVote';
   const isDown = !isFav && image.interaction === 'downVote';
 
+  const faveBackground =
+    isFav && isLocalFaved
+      ? 'var(--fave-color)'
+      : isFav
+        ? 'var(--fave-color)'
+        : isLocalFaved
+          ? 'var(--local-fave-color)'
+          : null;
+
+  const faveText = `${isFav && isLocalFaved ? '★ [B]' : isLocalFaved ? '★ [L]' : '★'} ${image.faves}`;
+
   return (
     <div className="fade-in position-relative">
       {/* Global Loading Overlay for general application state */}
@@ -655,12 +742,28 @@ export const ImageViewer = ({
         </div>
 
         <div className="d-flex align-items-center gap-3 ms-1 fw-bold">
-          <span
-            className={`active-fave${isFav ? ' px-2 rounded' : ''}`}
-            style={isFav ? { backgroundColor: 'var(--fave-color)', color: '#fff' } : null}
-          >
-            ★ {image.faves}
-          </span>
+          {localFavesEnabled ? (
+            <button
+              className={`active-fave btn-tool fw-bold border-0 p-0 m-0 px-2${isFav || isLocalFaved ? ' rounded' : ''}`}
+              style={{
+                backgroundColor: faveBackground,
+                color: '#fff',
+              }}
+              onClick={handleToggleFave}
+              title={localFavesEnabled ? 'Click to toggle Local Fave' : 'Favorites'}
+            >
+              {faveText}
+            </button>
+          ) : (
+            <span
+              className={`active-fave${isFav || isLocalFaved ? ' px-2 rounded' : ''}`}
+              style={
+                isFav || isLocalFaved ? { backgroundColor: faveBackground, color: '#fff' } : null
+              }
+            >
+              {faveText}
+            </span>
+          )}
           <span
             className={`active-up${isUp ? ' px-2 rounded' : ''}`}
             style={isUp ? { backgroundColor: 'var(--upvote-color)', color: '#fff' } : null}

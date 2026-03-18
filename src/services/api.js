@@ -19,13 +19,20 @@ const throwApiError = (context, field) => {
  * @param {string} endpoint The specific API endpoint to call.
  * @param {string} apiKey The user's authentication key.
  * @param {Record<string, any>} params Additional query parameters for the request.
+ * @param {AbortSignal} [signal]
  * @returns {Promise<any>} The parsed JSON response from the server.
  */
-export const fetchPhilomena = async (booruUrl, endpoint, apiKey, params = {}) => {
+export const fetchPhilomena = async (
+  booruUrl,
+  endpoint,
+  apiKey,
+  params = {},
+  signal = undefined,
+) => {
   const queryParams = new URLSearchParams(apiKey ? { ...params, key: apiKey } : params).toString();
   const url = `${booruUrl}/api/v1/json/${endpoint}?${queryParams}`;
 
-  const response = await fetch(url);
+  const response = await fetch(url, signal ? { signal } : {});
   if (!response.ok) {
     throw new Error(
       `Network Error: Failed to fetch data from ${booruUrl} (${endpoint}). Status: ${response.status} ${response.statusText}`,
@@ -180,10 +187,23 @@ export const fetchProfile = async (booruUrl, userId) => {
  * @param {string} apiKey User API key.
  * @param {string} [query='*'] Search query for comments.
  * @param {number} [page=1] Page number for pagination.
+ * @param {AbortSignal} [signal]
  * @returns {Promise<CommentObj>} Parsed comments and metadata.
  */
-export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => {
-  const result = await fetchPhilomena(booruUrl, 'search/comments', apiKey, { q: query, page });
+export const fetchComments = async (
+  booruUrl,
+  apiKey,
+  query = '*',
+  page = 1,
+  signal = undefined,
+) => {
+  const result = await fetchPhilomena(
+    booruUrl,
+    'search/comments',
+    apiKey,
+    { q: query, page },
+    signal,
+  );
   const ctx = 'Comments Search';
 
   if (typeof result.total !== 'number') throwApiError(ctx, 'result.total');
@@ -311,9 +331,20 @@ export const fetchComments = async (booruUrl, apiKey, query = '*', page = 1) => 
  * @param {string} [sd] Sort direction ('asc' or 'desc').
  * @param {string} [sf] Sort field (e.g., 'created_at').
  * @param {number} [limit=null] Content limit.
+ * @param {AbortSignal} [signal]
  * @returns {Promise<{ total: number; interactions: any[]; images: any[] }>} Raw API response data.
  */
-export const searchImagesApi = async (booruUrl, apiKey, query, page, perPage, sd, sf, limit) => {
+export const searchImagesApi = async (
+  booruUrl,
+  apiKey,
+  query,
+  page,
+  perPage,
+  sd,
+  sf,
+  limit,
+  signal = undefined,
+) => {
   /** @type {Record<string, any>} */
   const data = { q: query };
 
@@ -328,7 +359,7 @@ export const searchImagesApi = async (booruUrl, apiKey, query, page, perPage, sd
     data.filter_id = filterId;
   }
 
-  const result = await fetchPhilomena(booruUrl, 'search/images', apiKey, data);
+  const result = await fetchPhilomena(booruUrl, 'search/images', apiKey, data, signal);
   const ctx = 'Image Search';
 
   if (typeof result.total !== 'number') throwApiError(ctx, 'result.total');
@@ -632,6 +663,7 @@ const getInteractions = (booruUrl, data) => {
  * @param {string} [sd] Sort direction.
  * @param {string} [sf] Sort field.
  * @param {number} [limit=null] Content limit.
+ * @param {AbortSignal} [signal]
  * @returns {Promise<any>} The raw data returned by the API.
  */
 const syncGalleryPage = async (
@@ -643,6 +675,7 @@ const syncGalleryPage = async (
   sd = undefined,
   sf = undefined,
   limit = null,
+  signal = undefined,
 ) => {
   if (typeof syncTimes[booruUrl] !== 'number') syncTimes[booruUrl] = 0;
   syncTimes[booruUrl]++;
@@ -661,6 +694,7 @@ const syncGalleryPage = async (
       allowedBoorus: [booruUrl],
       sd,
       sf,
+      signal,
     });
 
     /** @type {number[]} */
@@ -1017,6 +1051,7 @@ export const toggleAccountStatus = async (accountId, isActive) => {
  * @param {Account} [config.account] Specific account to sync.
  * @param {string} [config.sd='desc'] Sort direction.
  * @param {string} [config.sf='created_at'] Sort field.
+ * @param {AbortSignal} [config.signal]
  * @returns {Promise<{ accounts: Account[]; syncLimit: number; totalCount: number; }>} Sync operation summary.
  */
 export const syncUserGalleryPages = async ({
@@ -1028,6 +1063,7 @@ export const syncUserGalleryPages = async ({
   account,
   sd = 'desc',
   sf = 'created_at',
+  signal = undefined,
 } = {}) => {
   const allAccounts = !account ? await getActiveAccounts() : [account];
 
@@ -1039,7 +1075,7 @@ export const syncUserGalleryPages = async ({
   if (accounts.length === 0) return { accounts: [], syncLimit: perPage, totalCount: 0 };
 
   const syncs = accounts.map((account) =>
-    syncGalleryPage(account.booruUrl, account.apiKey, query, page, perPage, sd, sf, limit),
+    syncGalleryPage(account.booruUrl, account.apiKey, query, page, perPage, sd, sf, limit, signal),
   );
 
   const results = await Promise.all(syncs);
@@ -1511,4 +1547,112 @@ export const randomImage = async (accounts, query = '*') => {
   }
 
   return null;
+};
+
+/**
+ * @param {ImageObj|ImageResult} img
+ * @returns {ImageObj}
+ */
+const formatLocalFaveData = (img) => {
+  /** @type {Record<string, any>} */
+  const faveData = { ...img };
+
+  faveData.animated = faveData.animated ? 1 : 0;
+  faveData.hiddenFromUsers = faveData.hiddenFromUsers ? 1 : 0;
+  faveData.processed = faveData.processed ? 1 : 0;
+  faveData.spoilered = faveData.spoilered ? 1 : 0;
+  faveData.thumbnailsGenerated = faveData.thumbnailsGenerated ? 1 : 0;
+
+  delete faveData.interaction;
+
+  return faveData;
+};
+
+/**
+ * @param {ImageObj|ImageResult} img
+ * @returns {Promise<void>}
+ */
+export const updateLocalFave = async (img) => {
+  await dbConnection.update({
+    in: 'LocalFaves',
+    set: formatLocalFaveData(img),
+    where: { id: img.id, booruUrl: img.booruUrl },
+  });
+};
+
+/**
+ * @param {number} imageId
+ * @param {string} booruUrl
+ * @returns {Promise<boolean>}
+ */
+export const checkLocalFave = async (imageId, booruUrl) => {
+  /** @type {any[]} */
+  const results = await dbConnection.select({
+    from: 'LocalFaves',
+    where: { id: imageId, booruUrl: booruUrl },
+  });
+  return results.length > 0;
+};
+
+/**
+ * @param {ImageObj|ImageResult} img
+ * @returns {Promise<boolean>}
+ */
+export const toggleLocalFave = async (img) => {
+  /** @type {boolean} */
+  const isFaved = await checkLocalFave(img.id, img.booruUrl);
+
+  if (isFaved) {
+    await dbConnection.remove({
+      from: 'LocalFaves',
+      where: { id: img.id, booruUrl: img.booruUrl },
+    });
+    return false;
+  }
+
+  await dbConnection.insert({
+    into: 'LocalFaves',
+    values: [formatLocalFaveData(img)],
+  });
+  return true;
+};
+
+/**
+ * @param {Object} config
+ * @param {string} [config.query='*']
+ * @param {number} [config.limit=50]
+ * @param {number} [config.page=1]
+ * @returns {Promise<any[]>}
+ */
+export const searchLocalFaves = async ({ query = '*', limit = 50, page = 1 }) => {
+  /** @type {number} */
+  const skipCount = (page - 1) * limit;
+
+  /** @type {any[]} */
+  let results = await dbConnection.select({
+    from: 'LocalFaves',
+    order: { by: 'createdAt', type: 'desc' },
+  });
+
+  if (query !== '*' && query.trim() !== '') {
+    /** @type {string[]} */
+    const queryTags = query
+      .toLowerCase()
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => t !== '');
+
+    results = results.filter((img) => {
+      /** @type {string[]} */
+      const imgTags = img.tags.map((t) => t.toLowerCase());
+      return queryTags.every((qt) => imgTags.includes(qt));
+    });
+  }
+
+  /** @type {any[]} */
+  const paginatedResults = results
+    .slice(skipCount, skipCount + limit)
+    .map((item) => fixImageObj(item));
+
+  return paginatedResults;
 };
