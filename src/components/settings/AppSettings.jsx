@@ -1,7 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-import { alert } from '../../tools/BootstrapDialogs';
-import { updateSystemSettings, getActiveAccounts } from '../../services/api';
+import { alert, confirm } from '../../tools/BootstrapDialogs';
+import {
+  updateSystemSettings,
+  getActiveAccounts,
+  clearLocalFaves,
+  exportLocalFaves,
+  importLocalFaves,
+} from '../../services/api';
 
 /**
  * @param {Object} config
@@ -50,6 +56,12 @@ export const AppSettings = ({
 
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [localFavesEnabled, setLocalFavesEnabled] = useState(false);
+
+  /** @type {import('react').MutableRefObject<HTMLInputElement | null>} */
+  const fileInputRef = useRef(null);
+
+  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  const [isProcessingFaves, setIsProcessingFaves] = useState(false);
 
   useEffect(() => {
     /**
@@ -132,6 +144,101 @@ export const AppSettings = ({
     const val = parseInt(event.target.value, 10);
     setMaxItemsLimit(val);
     await updateSystemSettings(val, isPersistent ? 1 : 0);
+  };
+
+  /**
+   * It handles exporting the favorites list to a JSON file.
+   */
+  const handleExportLocalFaves = async () => {
+    if (isProcessingFaves) return;
+    setIsProcessingFaves(true);
+    try {
+      // Retrieves the favorites array directly from the API/Database.
+      const faves = await exportLocalFaves();
+
+      if (!faves || faves.length === 0) {
+        alert('You have no Local Favorites to export.');
+        setIsProcessingFaves(false);
+        return;
+      }
+
+      const blob = new Blob([JSON.stringify(faves, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `philomena-local-faves-${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while exporting Local Favorites.');
+    } finally {
+      setIsProcessingFaves(false);
+    }
+  };
+
+  /**
+   * It handles importing a favorites list from a JSON file.
+   * @param {import('react').ChangeEvent<HTMLInputElement>} event
+   */
+  const handleImportLocalFaves = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessingFaves(true);
+    const reader = new FileReader();
+
+    reader.onload = async (e) => {
+      try {
+        const json = JSON.parse(e.target.result);
+
+        if (!Array.isArray(json)) {
+          alert('Invalid JSON format. Expected an array of favorite images.');
+          return;
+        }
+
+        const successCount = await importLocalFaves(json);
+        await alert(`Successfully imported ${successCount} Local Favorites!`);
+
+        // Reload the page to update the application status.
+        window.location.reload();
+      } catch (err) {
+        console.error(err);
+        alert('Invalid JSON file format or error during import.');
+      } finally {
+        setIsProcessingFaves(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    };
+
+    reader.readAsText(file);
+  };
+
+  /**
+   * Resets the entire Local Favorites database.
+   */
+  const handleResetLocalFaves = async () => {
+    if (isProcessingFaves) return;
+
+    // Confirmation alert using confirm
+    if (
+      await confirm(
+        'Are you SURE you want to delete ALL your Local Favorites? This action cannot be undone unless you have a backup!',
+      )
+    ) {
+      setIsProcessingFaves(true);
+      try {
+        await clearLocalFaves();
+        await alert('All Local Favorites have been successfully deleted.');
+        // Reload the page to clear the UI.
+        window.location.reload();
+      } catch (err) {
+        console.error(err);
+        alert('Failed to reset Local Favorites.');
+      } finally {
+        setIsProcessingFaves(false);
+      }
+    }
   };
 
   useEffect(() => {
@@ -338,11 +445,13 @@ export const AppSettings = ({
               Enable Player Local Storage (Remembers volume and player settings)
             </label>
           </div>
+        </div>
+      </div>
 
-          <div
-            className="form-check form-switch my-3 border-top pt-3"
-            style={{ borderColor: 'var(--app-border)' }}
-          >
+      <div className="card no-anim mt-4">
+        <div className="card-header fw-bold">Local Favorites Management</div>
+        <div className="card-body">
+          <div className="form-check form-switch mb-4">
             <input
               className="form-check-input"
               type="checkbox"
@@ -350,7 +459,7 @@ export const AppSettings = ({
               checked={localFavesEnabled}
               onChange={handleToggleLocalFaves}
             />
-            <label className="form-check-label fw-bold" htmlFor="localFavesToggle">
+            <label className="form-check-label fw-bold text-info" htmlFor="localFavesToggle">
               Enable Local Favorites
             </label>
             <div className="form-text text-muted small">
@@ -358,6 +467,57 @@ export const AppSettings = ({
               anonymous accounts!
             </div>
           </div>
+
+          {localFavesEnabled && (
+            <div
+              className="d-flex flex-column gap-3 border-top pt-3"
+              style={{ borderColor: 'var(--app-border)' }}
+            >
+              <div className="d-flex align-items-center flex-wrap gap-2">
+                <input
+                  type="file"
+                  accept=".json"
+                  style={{ display: 'none' }}
+                  ref={fileInputRef}
+                  onChange={handleImportLocalFaves}
+                  disabled={isProcessingFaves}
+                />
+
+                <button
+                  className="btn btn-sm btn-primary fw-bold"
+                  onClick={handleExportLocalFaves}
+                  disabled={isProcessingFaves}
+                >
+                  <i className="fa-solid fa-file-export me-2"></i>Export JSON
+                </button>
+
+                <button
+                  className="btn btn-sm btn-outline-primary fw-bold"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isProcessingFaves}
+                >
+                  <i className="fa-solid fa-file-import me-2"></i>Import JSON
+                </button>
+
+                <div className="ms-auto">
+                  <button
+                    className="btn btn-sm btn-danger fw-bold"
+                    onClick={handleResetLocalFaves}
+                    disabled={isProcessingFaves}
+                  >
+                    <i className="fa-solid fa-trash me-2"></i>Reset All
+                  </button>
+                </div>
+              </div>
+
+              {isProcessingFaves && (
+                <div className="text-center text-primary mt-2">
+                  <div className="spinner-border spinner-border-sm me-2" role="status"></div>
+                  <span className="fw-bold small">Processing... Please wait.</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

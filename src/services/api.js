@@ -1791,3 +1791,35 @@ export const searchLocalFaves = async ({
 
   return { images: results, total };
 };
+
+/**
+ * @returns {Promise<void>}
+ */
+export const clearLocalFaves = async () => {
+  await dbConnection.clear('LocalFaves');
+};
+
+/**
+ * @returns {Promise<any[]>}
+ */
+export const exportLocalFaves = async () => {
+  return await dbConnection.select({
+    from: 'LocalFaves',
+  });
+};
+
+/**
+ * @param {any[]} favesList
+ * @returns {Promise<number>}
+ */
+export const importLocalFaves = async (favesList) => {
+  if (!Array.isArray(favesList) || favesList.length === 0) return 0;
+
+  const result = await dbConnection.insert({
+    into: 'LocalFaves',
+    values: favesList,
+    upsert: true,
+  });
+
+  return result;
+};
