@@ -37,7 +37,9 @@ export const PaginationBar = ({ currentPage, isHomepage, totalPages, onPageChang
   const pages = getPageNumbers(totalPages, currentPage);
 
   return (
-    <div className={`d-flex flex-column flex-md-row justify-content-center align-items-center${className ? ` ${className}` : ''}`}>
+    <div
+      className={`d-flex flex-column flex-md-row justify-content-center align-items-center${className ? ` ${className}` : ''}`}
+    >
       <ul className="pagination mb-0 me-md-3">
         <li className={`page-item ${isHomepage ? 'disabled' : ''}`}>
           <button

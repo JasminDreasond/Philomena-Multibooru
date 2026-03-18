@@ -486,7 +486,7 @@ const App = () => {
       try {
         const localResults = await searchLocalFaves({
           boorusToUse,
-          query: queryToUse === geString ? '*' : queryToUse,
+          query: parseQueryResults(queryToUse),
           limit: limitToUse,
           page: pageToUse,
           sd,
@@ -554,7 +554,7 @@ const App = () => {
       if (searchMode === 'local_fav') {
         const localResults = await searchLocalFaves({
           boorusToUse: visibleBoorus,
-          query: queryToUse === geString ? geString : parseQueryResults(queryToUse),
+          query: parseQueryResults(queryToUse),
           limit: pageLimit,
           page: nextPage,
           sd: sortDirection,
@@ -1061,14 +1061,14 @@ const App = () => {
         if (searchMode === 'local_fav') {
           const localResults = await searchLocalFaves({
             boorusToUse: visibleBoorus,
-            query: queryToUse === geString ? '*' : queryToUse,
+            query: parseQueryResults(queryToUse),
             limit: pageLimit,
             page: currentPage,
             sd: sortDirection,
             sf: sortField,
           });
           setTotalItems(localResults.total);
-          newImages = localResults.images || [];
+          newImages = localResults.images;
           setTotalPages(Math.max(1, Math.ceil(localResults.total / pageLimit)));
         } else {
           const syncData = await syncUserGalleryPages({
@@ -1129,14 +1129,14 @@ const App = () => {
           if (searchMode === 'local_fav') {
             const localResults = await searchLocalFaves({
               boorusToUse: visibleBoorus,
-              query: queryToUse === geString ? '*' : queryToUse,
+              query: parseQueryResults(queryToUse),
               limit: pageLimit,
               page: nextPage,
               sd: sortDirection,
               sf: sortField,
             });
             setTotalItems(localResults.total);
-            newImages = localResults.images || [];
+            newImages = localResults.images;
             setTotalPages(Math.max(1, Math.ceil(localResults.total / pageLimit)));
           } else {
             await syncUserGalleryPages({
@@ -1189,14 +1189,14 @@ const App = () => {
           if (searchMode === 'local_fav') {
             const localResults = await searchLocalFaves({
               boorusToUse: visibleBoorus,
-              query: queryToUse === geString ? '*' : queryToUse,
+              query: parseQueryResults(queryToUse),
               limit: pageLimit,
               page: prevPage,
               sd: sortDirection,
               sf: sortField,
             });
             setTotalItems(localResults.total);
-            newImages = localResults.images || [];
+            newImages = localResults.images;
             setTotalPages(Math.max(1, Math.ceil(localResults.total / pageLimit)));
           } else {
             await syncUserGalleryPages({

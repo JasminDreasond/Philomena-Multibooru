@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { alert } from '../../tools/BootstrapDialogs';
 
 /**
  * @param {{ onSearchSubmit: (query: string, mode: string) => void, initialQuery: string, initialMode: string, isLoading: boolean }} props
@@ -10,6 +11,8 @@ export const SearchBar = ({ onSearchSubmit, initialQuery, initialMode, isLoading
   /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
   const [mode, setMode] = useState(initialMode || 'api');
 
+  const localFavesEnabled = localStorage.getItem('app_localFavesEnabled') === 'true';
+
   useEffect(() => {
     setInputValue(initialQuery);
   }, [initialQuery]);
@@ -17,6 +20,25 @@ export const SearchBar = ({ onSearchSubmit, initialQuery, initialMode, isLoading
   useEffect(() => {
     setMode(initialMode || 'api');
   }, [initialMode]);
+
+  /**
+   * @param {import('react').ChangeEvent<HTMLSelectElement>} event
+   */
+  const handleModeChange = (event) => {
+    const newMode = event.target.value;
+    setMode(newMode);
+
+    if (newMode === 'local_fav') {
+      const hasSeenAlert = localStorage.getItem('app_localFavAlertSeen');
+
+      if (!hasSeenAlert) {
+        alert(
+          "Philomena's complex query syntax (like AND/OR/NOT) may not work identically in the local database search.",
+        );
+        localStorage.setItem('app_localFavAlertSeen', 'true');
+      }
+    }
+  };
 
   /**
    * @param {import('react').FormEvent<HTMLFormElement>} event
@@ -29,16 +51,18 @@ export const SearchBar = ({ onSearchSubmit, initialQuery, initialMode, isLoading
   return (
     <div className="d-flex flex-column flex-grow-1 mx-lg-4 my-2 my-lg-0">
       <form onSubmit={handleFormSubmit} className="d-flex w-100">
-        <select
-          className="form-select form-select-sm bg-dark text-light border-secondary me-2 fw-semibold"
-          style={{ width: 'auto', minWidth: '130px' }}
-          value={mode}
-          onChange={(e) => setMode(e.target.value)}
-          disabled={isLoading}
-        >
-          <option value="api">Philomena API</option>
-          <option value="local_fav">Local Faves</option>
-        </select>
+        {localFavesEnabled && (
+          <select
+            className="form-select form-select-sm bg-dark text-light border-secondary me-2 fw-semibold"
+            style={{ width: 'auto', minWidth: '130px' }}
+            value={mode}
+            onChange={handleModeChange}
+            disabled={isLoading}
+          >
+            <option value="api">API</option>
+            <option value="local_fav">Local Faves</option>
+          </select>
+        )}
 
         <input
           type="search"
@@ -53,13 +77,6 @@ export const SearchBar = ({ onSearchSubmit, initialQuery, initialMode, isLoading
           Search
         </button>
       </form>
-
-      {mode === 'local_fav' && (
-        <small className="text-warning mt-1 fw-semibold" style={{ fontSize: '0.75rem' }}>
-          * Philomena's complex query syntax (like AND/OR/NOT) may not work identically in the local
-          database search.
-        </small>
-      )}
     </div>
   );
 };
