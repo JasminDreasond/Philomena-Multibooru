@@ -9,15 +9,11 @@ import {
 } from '@vidstack/react/player/layouts/default';
 
 import { alert } from '../../tools/BootstrapDialogs';
-import {
-  fetchComments,
-  getAccountBooruApi,
-  searchImages,
-  syncUserGalleryPages,
-  checkLocalFave,
-  toggleLocalFave,
-  updateLocalFave,
-} from '../../services/api';
+
+import { fetchComments, searchImages, syncUserGalleryPages } from '../../services/api/Images';
+import { getAccountBooruApi } from '../../services/api/System';
+import { checkLocalFave, toggleLocalFave, updateLocalFave } from '../../services/api/LocalFaves';
+
 import { CommentBody } from '../utils/CommentBody';
 import { Loading } from '../utils/Loading';
 import { ProfileLink } from './ProfileLink';
@@ -30,8 +26,8 @@ import tagsPrefixCssList from '../../queries/tagsPrefixCssList';
 import { parseQueryResults } from '../../queries/globalTags';
 
 /**
- * @typedef {import('../../services/api').ImageResult} ImageResult
- * @typedef {import('../../services/api').CommentData} CommentData
+ * @typedef {import('../../services/api/Images').ImageResult} ImageResult
+ * @typedef {import('../../services/api/Images').CommentData} CommentData
  */
 
 /**

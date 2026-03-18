@@ -2,19 +2,20 @@ import { useEffect, useState, useRef } from 'react';
 import TinySimpleDice from 'tiny-essentials/libs/TinySimpleDice';
 import { shuffleArray } from 'tiny-essentials/basics/array';
 import { initDatabase } from './db/connection';
+import { applyThemeFromStorage } from './services/theme';
+
 import {
-  syncUserGalleryPages,
-  searchImages,
-  getFeaturedImage,
-  fixImageObj,
-  getActiveAccounts,
   clearImageCache,
   fetchSingleImage,
-  fetchProfile,
+  fixImageObj,
+  getFeaturedImage,
   randomImage,
-  searchLocalFaves,
-} from './services/api';
-import { applyThemeFromStorage } from './services/theme';
+  searchImages,
+  syncUserGalleryPages,
+} from './services/api/Images';
+import { getActiveAccounts } from './services/api/System';
+import { fetchProfile } from './services/api/Profile';
+import { searchLocalFaves } from './services/api/LocalFaves';
 
 import { SearchBar } from './components/search/SearchBar';
 import { ImageGallery, Image } from './components/image/ImageGallery';
@@ -31,9 +32,9 @@ import { alert } from './tools/BootstrapDialogs';
 import { WatchedImages } from './components/home/WatchedImages';
 import { updateEmbedMetadata } from './tools/utils';
 
-/** @typedef {import('./services/api').ImageResult} ImageResult */
-/** @typedef {import('./services/api').ImageObj} ImageObj */
-/** @typedef {import('./services/api').Account} Account */
+/** @typedef {import('./services/api/Images').ImageResult} ImageResult */
+/** @typedef {import('./services/api/Images').ImageObj} ImageObj */
+/** @typedef {import('./services/api/System').Account} Account */
 
 /**
  * @typedef {(e: import('react').MouseEvent<HTMLAnchorElement, MouseEvent>, query: string, sf: string, sd: string) => void} HandleQuickLinkClick

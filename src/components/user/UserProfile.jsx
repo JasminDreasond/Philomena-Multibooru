@@ -1,11 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import {
-  fetchProfile,
-  searchImages,
-  fetchComments,
-  syncUserGalleryPages,
-  getAccountBooru,
-} from '../../services/api';
+
+import { fetchProfile } from '../../services/api/Profile';
+import { fetchComments, searchImages, syncUserGalleryPages } from '../../services/api/Images';
+import { getAccountBooru } from '../../services/api/System';
+
 import { Image } from '../image/ImageGallery';
 import { ProfileLink } from '../image/ProfileLink';
 import { CommentBody } from '../utils/CommentBody';
@@ -13,9 +11,9 @@ import { openImageLink } from '../../tools/utils';
 import { parseQueryResults } from '../../queries/globalTags';
 
 /**
- * @typedef {import('../../services/api').UserProfileData} UserProfileData
- * @typedef {import('../../services/api').ImageResult} ImageResult
- * @typedef {import('../../services/api').CommentData} CommentData
+ * @typedef {import('../../services/api/Profile').UserProfileData} UserProfileData
+ * @typedef {import('../../services/api/Images').ImageResult} ImageResult
+ * @typedef {import('../../services/api/Images').CommentData} CommentData
  */
 
 /**

@@ -13,7 +13,7 @@ const preProcessPhilomenaTags = (text) => {
 };
 
 /**
- * @param {{ body: string, booruUrl: string, imageId?: number, imageReps?: import('../services/api').ImageRepresentations, setIsLoading: import('../utils').SetIsLoading, onOpenImageLink?: import('../utils').OnOpenImageLink, onOpenProfileLink?: import('../utils').OnOpenProfileLink }} props
+ * @param {{ body: string, booruUrl: string, imageId?: number, imageReps?: import('../../services/api/Images').ImageRepresentations, setIsLoading: import('../utils').SetIsLoading, onOpenImageLink?: import('../utils').OnOpenImageLink, onOpenProfileLink?: import('../utils').OnOpenProfileLink }} props
  */
 export const CommentBody = ({
   body,

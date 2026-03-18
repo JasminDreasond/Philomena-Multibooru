@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getActiveAccounts } from '../../services/api';
+import { getActiveAccounts } from '../../services/api/System';
 
 import { Privacy } from './Privacy';
 import { About } from './About';
@@ -11,7 +11,7 @@ import { Accounts } from './Accounts';
 import { RecommendationsSettings } from './RecommendationsSettings';
 
 /**
- * @typedef {import('../../services/api').Account} Account
+ * @typedef {import('../../services/api/System').Account} Account
  */
 
 /**

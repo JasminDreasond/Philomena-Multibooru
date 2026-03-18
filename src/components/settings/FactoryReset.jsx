@@ -1,5 +1,5 @@
 import { confirm } from '../../tools/BootstrapDialogs';
-import { factoryResetDatabase } from '../../services/api';
+import { factoryResetDatabase } from '../../services/api/System';
 
 /**
  * @param {Object} config

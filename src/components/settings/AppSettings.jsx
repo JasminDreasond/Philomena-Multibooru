@@ -1,13 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 
 import { alert, confirm } from '../../tools/BootstrapDialogs';
-import {
-  updateSystemSettings,
-  getActiveAccounts,
-  clearLocalFaves,
-  exportLocalFaves,
-  importLocalFaves,
-} from '../../services/api';
+import { getActiveAccounts, updateSystemSettings } from '../../services/api/System';
+import { exportLocalFaves, clearLocalFaves, importLocalFaves } from '../../services/api/LocalFaves';
 
 /**
  * @param {Object} config

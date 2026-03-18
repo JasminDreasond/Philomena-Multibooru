@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { searchImagesApi } from '../../services/api';
+import { searchImagesApi } from '../../services/api/Images';
 import { geString, parseQueryResults } from '../../queries/globalTags';
 
 /**
- * @param {{ accounts: import('../../services/api').Account[], visibleBoorus: string[], onClose: () => void, onGoHome: () => void }} props
+ * @param {{ accounts: import('../../services/api/System').Account[], visibleBoorus: string[], onClose: () => void, onGoHome: () => void }} props
  * @returns {import('react').JSX.Element}
  */
 export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }) => {
@@ -206,7 +206,7 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
     const checkNewImages = async () => {
       if (visibleBoorus.length === 0 || accounts.length === 0) return;
 
-      /** @type {import('../../services/api').Account[]} */
+      /** @type {import('../../services/api/System').Account[]} */
       const activeAccounts = accounts.filter((a) => visibleBoorus.includes(a.booruUrl));
 
       /** @type {string} */

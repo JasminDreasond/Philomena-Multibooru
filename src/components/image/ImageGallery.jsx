@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
-import { checkLocalFave, toggleLocalFave } from '../../services/api';
+import { checkLocalFave, toggleLocalFave } from '../../services/api/LocalFaves';
 
 /**
- * @typedef {import('../../services/api').ImageResult} ImageResult
- * @typedef {import('../../services/api').ImageObj} ImageObj
+ * @typedef {import('../../services/api/Images').ImageResult} ImageResult
+ * @typedef {import('../../services/api/Images').ImageObj} ImageObj
  */
 
 /**

@@ -1,15 +1,10 @@
 import { useEffect, useState } from 'react';
 import { alert } from '../../tools/BootstrapDialogs';
-
-import {
-  fixBooruUrl,
-  fetchSystemFilters,
-  fetchUserFilters,
-  saveBooruFilters,
-} from '../../services/api';
+import { fixBooruUrl } from '../../services/api/utils';
+import { fetchSystemFilters, fetchUserFilters, saveBooruFilters } from '../../services/api/Filters';
 
 /**
- * @typedef {import('../../services/api').Account} Account
+ * @typedef {import('../../services/api/System').Account} Account
  */
 
 export const Filters = ({ loadAccounts, accounts, activeTab }) => {

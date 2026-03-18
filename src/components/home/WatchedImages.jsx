@@ -1,6 +1,6 @@
 import { ImageGallery } from '../image/ImageGallery';
 
-/** @typedef {import('../../services/api').ImageResult} ImageResult */
+/** @typedef {import('../../services/api/Images').ImageResult} ImageResult */
 
 /**
  * @param {Object} options

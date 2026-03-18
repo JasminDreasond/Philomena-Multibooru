@@ -1,5 +1,8 @@
 import { alert } from './BootstrapDialogs';
-import { fetchProfile, fetchSingleImage, getAccountBooruApi } from '../services/api';
+
+import { fetchProfile } from '../services/api/Profile';
+import { fetchSingleImage } from '../services/api/Images';
+import { getAccountBooruApi } from '../services/api/System';
 
 /**
  * Function type to update the loading state.

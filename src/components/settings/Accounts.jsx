@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import { confirm } from '../../tools/BootstrapDialogs';
 
 import {
-  getAllAccounts,
-  getSystemSettings,
   addAccount,
+  clearSpecificBooruCache,
   deleteAccount,
   deleteAllAccounts,
-  fixBooruUrl,
-  clearSpecificBooruCache,
-} from '../../services/api';
+  getAllAccounts,
+  getSystemSettings,
+} from '../../services/api/System';
+import { fixBooruUrl } from '../../services/api/utils';
 
 export const Accounts = ({
   setMaxItemsLimit,
