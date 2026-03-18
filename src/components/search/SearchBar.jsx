@@ -38,6 +38,9 @@ export const SearchBar = ({ onSearchSubmit, initialQuery, initialMode, isLoading
         localStorage.setItem('app_localFavAlertSeen', 'true');
       }
     }
+
+    // Auto-submits the search immediately upon changing the select mode
+    onSearchSubmit(inputValue, newMode);
   };
 
   /**

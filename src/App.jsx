@@ -931,6 +931,7 @@ const App = () => {
     sortField,
     sortDirection,
     is404,
+    searchMode,
   ]);
 
   useEffect(() => {
@@ -984,6 +985,7 @@ const App = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [
     searchQuery,
+    searchMode,
     currentPage,
     pageLimit,
     isHomepage,
