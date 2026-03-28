@@ -93,7 +93,6 @@ Enjoy your unified browsing experience! If you run into any issues or have featu
 > 🧠 **Note**: This documentation was written by [Gemini](https://gemini.google.com), an AI assistant developed by Google, based on the project structure and descriptions provided by the repository author.  
 > If you find any inaccuracies or need improvements, feel free to contribute or open an issue!
 
-
 <div align="center">
 <a href="https://github.com/Tiny-Essentials/Tiny-Essentials/tree/main/test/img"><img src="./img/5ec92aff-7a9d-4b86-bcc3-fe715def537a.png" height="300" alt="tiny-jasmini-js" /></a>
 
