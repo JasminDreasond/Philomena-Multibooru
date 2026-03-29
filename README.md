@@ -31,7 +31,9 @@ Because we rely entirely on the endpoints provided by the platform, not every na
 
 ## 🔒 Privacy & Security First
 
-Your data is *yours*. **Philomena Multi-Booru does not collect, track, or send any of your personal information to external servers.** * **Local Storage Only:** Everything—from your cached images and search history to your custom themes—is stored locally in your browser using IndexedDB (JsStore) and LocalStorage.
+Your data is *yours*. **Philomena Multi-Booru does not collect, track, or send any of your personal information to external servers.** 
+
+* **Local Storage Only:** Everything—from your cached images and search history to your custom themes—is stored locally in your browser using IndexedDB (JsStore) and LocalStorage.
 * **API Key Responsibility:** Because your API keys are saved directly within your browser's local environment, keeping them secure is entirely your responsibility. Treat your browser and device security with care, and never share your exported app data if it contains your keys.
 
 ## 🚀 Getting Started
