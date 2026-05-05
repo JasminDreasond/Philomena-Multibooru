@@ -20,7 +20,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",
-    "tiny-essentials": "^1.25.1"
+    "tiny-essentials": "^1.26.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
