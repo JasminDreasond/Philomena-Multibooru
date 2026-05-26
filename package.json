@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.2.0",
-    "@vidstack/react": "^1.12.13",
+    "@vidstack/react": "^1.13.1",
     "bootstrap": "^5.3.8",
     "buffer": "^6.0.3",
     "jsstore": "^4.9.0",

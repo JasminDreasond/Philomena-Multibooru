@@ -673,10 +673,10 @@
   resolved "https://registry.yarnpkg.com/@ungap/structured-clone/-/structured-clone-1.3.0.tgz#d06bbb384ebcf6c505fde1c3d0ed4ddffe0aaff8"
   integrity sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==
 
-"@vidstack/react@^1.12.13":
-  version "1.12.13"
-  resolved "https://registry.yarnpkg.com/@vidstack/react/-/react-1.12.13.tgz#db7d27db4a20ad21fd2acfd3f68b200ae098d010"
-  integrity sha512-zyNydy1+HtoK6cJ8EmqFNkPPGHIFMrr2KH+ef3654EqXx4IcJ8A5LCNMXBuALQE8IMxtk040JMoR9OKyeXjBOQ==
+"@vidstack/react@^1.13.1":
+  version "1.13.1"
+  resolved "https://registry.yarnpkg.com/@vidstack/react/-/react-1.13.1.tgz#ef8b99d18f7f96b553cd60ffe619a08cd3ec6c5c"
+  integrity sha512-1Hw9rVME7sCYwVmOOiWx/ZFex2MxhcUq2GI9FR9axX/qxvEhBRWRNK/kgOpHlqxrRdZQGI5n9WI2tLJicQaPZA==
   dependencies:
     "@floating-ui/dom" "^1.6.10"
     media-captions "^1.0.4"
