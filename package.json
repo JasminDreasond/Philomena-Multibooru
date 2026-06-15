@@ -4,6 +4,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "ethereum": "jasmindreasond.x",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
