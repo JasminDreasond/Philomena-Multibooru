@@ -11,7 +11,6 @@ import 'bootstrap/dist/css/bootstrap.min.css'; // Bootstrap import
 import './index.css';
 import './tags.css';
 
-
 import ServiceWorkerSync from './components/utils/ReactRounter';
 import App from './App.jsx';
 
@@ -21,15 +20,15 @@ window.confirm = (msg) => BootstrapDialogs.confirm(msg);
 window.prompt = (msg, def) => BootstrapDialogs.prompt(msg, def);
 
 const headerConfig = BootstrapDialogs.headerConfig;
-BootstrapDialogs.headerConfig = { 
-  className: headerConfig.className, 
-  styles: { ...headerConfig.styles, 'background-color': 'var(--app-navbar-bg, #000) !important' }
+BootstrapDialogs.headerConfig = {
+  className: headerConfig.className,
+  styles: { ...headerConfig.styles, 'background-color': 'var(--app-navbar-bg, #000) !important' },
 };
 
 const titleConfig = BootstrapDialogs.titleConfig;
-BootstrapDialogs.titleConfig = { 
-  className: titleConfig.className, 
-  styles: { ...titleConfig.styles, 'color': '#fff' }
+BootstrapDialogs.titleConfig = {
+  className: titleConfig.className,
+  styles: { ...titleConfig.styles, color: '#fff' },
 };
 
 createRoot(document.getElementById('root')).render(

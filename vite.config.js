@@ -30,6 +30,9 @@ const copyIndexTo404 = () => {
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    port: 5174,
+  },
   base: '/',
   build: {
     assetsDir: 'assets',

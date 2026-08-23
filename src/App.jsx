@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from 'react';
 import TinySimpleDice from 'tiny-essentials/libs/math/TinySimpleDice';
 import { shuffleArray } from 'tiny-essentials/basics/array';
 import { alert } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
+import TinyRouter from './TinyRouter.mjs';
+import { globalCache } from './tools/DataCache';
 import { initDatabase } from './db/connection';
 import { applyThemeFromStorage } from './services/theme';
 
@@ -134,6 +136,9 @@ const App = () => {
   /** @type {import('react').MutableRefObject<boolean>} */
   const hasInitialized = useRef(false);
 
+  /** @type {import('react').MutableRefObject<null|TinyRouter>} */
+  const router = useRef(null);
+
   /** @type {import('react').MutableRefObject<boolean>} */
   const hasSynced = useRef(false);
 
@@ -155,75 +160,6 @@ const App = () => {
   useEffect(() => {
     localStorage.setItem('app_infiniteScroll', isInfiniteScroll.toString());
   }, [isInfiniteScroll]);
-
-  // Synchronizes internal App State outbound to the URL bar
-  useEffect(() => {
-    // The isFirstLoad.current lock ensures that the application does not delete the URL
-    // original user before processing the deep link!
-    if (!isDbReady || isFirstLoad.current) return;
-
-    let newPath = '/';
-    let newSearch = '';
-
-    if (showSettings) {
-      newPath = '/settings';
-      if (window.location.search.includes('tab=')) newSearch = window.location.search;
-    } else if (showNotifications) {
-      newPath = '/notifications';
-    } else if (is404) {
-      // Keeps the current broken URL visible so the user sees what went wrong
-      return;
-    } else if (viewingProfile) {
-      const host = new URL(viewingProfile.booruUrl).hostname;
-      newPath = `/${host}/profiles/${viewingProfile.id}`;
-    } else if (viewingImage) {
-      const host = new URL(viewingImage.booruUrl).hostname;
-      newPath = `/${host}/images/${viewingImage.id}`;
-
-      // Memory persistence: Safely attach background gallery context to the Image URL
-      const searchParams = new URLSearchParams();
-      if (searchQuery && searchQuery !== geString) searchParams.set('q', searchQuery);
-      if (sortField !== 'created_at') searchParams.set('sf', sortField);
-      if (sortDirection !== 'desc') searchParams.set('sd', sortDirection);
-      if (currentPage > 1) searchParams.set('page', currentPage.toString());
-      if (searchMode !== 'api') searchParams.set('mode', searchMode);
-
-      const searchStr = searchParams.toString();
-      if (searchStr) newSearch = `?${searchStr}`;
-    } else if (!isHomepage) {
-      newPath = '/search';
-      const searchParams = new URLSearchParams();
-      if (searchQuery && searchQuery !== geString) searchParams.set('q', searchQuery);
-      if (sortField !== 'created_at') searchParams.set('sf', sortField);
-      if (sortDirection !== 'desc') searchParams.set('sd', sortDirection);
-      if (currentPage > 1) searchParams.set('page', currentPage.toString());
-      if (searchMode !== 'api') searchParams.set('mode', searchMode);
-
-      const searchStr = searchParams.toString();
-      if (searchStr) newSearch = `?${searchStr}`;
-    }
-
-    const targetUrl = newPath + newSearch;
-    const currentUrl = window.location.pathname + window.location.search;
-
-    // Push state only if it differs from the current active route
-    if (currentUrl !== targetUrl) {
-      window.history.pushState(null, '', targetUrl);
-    }
-  }, [
-    showSettings,
-    showNotifications,
-    viewingProfile,
-    viewingImage,
-    isHomepage,
-    searchQuery,
-    searchMode,
-    isDbReady,
-    sortField,
-    sortDirection,
-    currentPage,
-    is404,
-  ]);
 
   // Synchronizes document <title> with the active view
   useEffect(() => {
@@ -277,126 +213,117 @@ const App = () => {
 
   // Handle Forward/Back button navigation internally
   useEffect(() => {
-    const handlePopState = async () => {
-      const path = window.location.pathname;
-      const params = new URLSearchParams(window.location.search);
+    if (!isDbReady) return;
 
-      // Resets shared pagination states for infinite scroll
-      setGalleryRateLimited(false);
-      lastGalleryFetchTime.current = 0;
+    router.current = new TinyRouter({
+      onRouteChanged: () => {
+        // Resets shared pagination states for infinite scroll
+        setGalleryRateLimited(false);
+        lastGalleryFetchTime.current = 0;
+      },
+    });
 
-      if (path === '/' || path === '') {
-        setIsHomepage(true);
-        setShowSettings(false);
-        setShowNotifications(false);
-        setViewingImage(null);
-        setViewingProfile(null);
-        setSearchQuery('');
-        setSortField('created_at');
-        setSortDirection('desc');
-        setCurrentPage(1);
-        setIs404(false);
-        setSearchMode('api');
-        hasSynced.current = false; // Force recharge the main gallery if necessary
-      } else if (path.startsWith('/settings')) {
-        setShowSettings(true);
-        setShowNotifications(false);
-        setIs404(false);
-      } else if (path.startsWith('/notifications')) {
-        setShowNotifications(true);
-        setShowSettings(false);
-        setIs404(false);
-      } else if (path.startsWith('/search')) {
-        const q = params.get('q') || geString;
-        const sfParam = params.get('sf') || 'created_at';
-        const sdParam = params.get('sd') || 'desc';
-        const pParam = parseInt(params.get('page') || '1', 10);
-        const mParam = params.get('mode') || 'api';
+    // ROUTE: HOME
+    router.current.addRoute('/', async () => {
+      setIsHomepage(true);
+      setShowSettings(false);
+      setShowNotifications(false);
+      setViewingImage(null);
+      setViewingProfile(null);
+      setSearchQuery('');
+      setSortField('created_at');
+      setSortDirection('desc');
+      setCurrentPage(1);
+      setIs404(false);
+      setSearchMode('api');
+      hasSynced.current = false; // Force recharge the main gallery if necessary
+    });
 
-        setSearchQuery(q);
-        setSortField(sfParam);
-        setSortDirection(sdParam);
-        setCurrentPage(pParam);
-        setSearchMode(mParam);
+    // ROUTE: SETTINGS
+    router.current.addRoute('/settings', async () => {
+      setShowSettings(true);
+      setShowNotifications(false);
+      setIs404(false);
+    });
+
+    // ROUTE: NOTIFICATIONS
+    router.current.addRoute('/notifications', async () => {
+      setShowNotifications(true);
+      setShowSettings(false);
+      setIs404(false);
+    });
+
+    // ROUTE: SEARCH
+    router.current.addRoute('/search', async (match) => {
+      const q = match.query.get('q') || geString;
+      const sf = match.query.get('sf') || 'created_at';
+      const sd = match.query.get('sd') || 'desc';
+      const p = parseInt(match.query.get('page') || '1', 10);
+      const m = match.query.get('mode') || 'api';
+
+      setSearchQuery(q);
+      setSortField(sf);
+      setSortDirection(sd);
+      setCurrentPage(p);
+      setSearchMode(m);
+      setIsHomepage(false);
+      setViewingImage(null);
+      setViewingProfile(null);
+      setShowSettings(false);
+      setShowNotifications(false);
+      setIs404(false);
+      hasSynced.current = false; // Force reload the search
+    });
+
+    // ROUTE: IMAGE VIEW
+    router.current.addRoute('/:host/images/:id', async (match) => {
+      const { host, id } = match.params;
+      const accounts = await getActiveAccounts();
+      const acc = accounts.find((a) => new URL(a.booruUrl).hostname === host);
+
+      if (acc) {
         setIsHomepage(false);
-        setViewingImage(null);
-        setViewingProfile(null);
         setShowSettings(false);
         setShowNotifications(false);
         setIs404(false);
-        hasSynced.current = false; // Force reload the search
-      } else {
-        const imgMatch = path.match(/^\/([^/]+)\/images\/(\d+)/);
-        const profMatch = path.match(/^\/([^/]+)\/profiles\/([^/]+)/);
 
-        if (imgMatch || profMatch) {
-          const accounts = await getActiveAccounts();
-          const host = (imgMatch || profMatch)[1];
-          const acc = accounts.find((a) => new URL(a.booruUrl).hostname === host);
-
-          if (acc) {
-            setIsHomepage(false);
-            setShowSettings(false);
-            setShowNotifications(false);
-            setIs404(false);
-
-            if (imgMatch) {
-              // Restore memory query variables silently for background gallery contexts
-              const q = params.get('q') || geString;
-              const sfParam = params.get('sf') || 'created_at';
-              const sdParam = params.get('sd') || 'desc';
-              const pParam = parseInt(params.get('page') || '1', 10);
-              const mParam = params.get('mode') || 'api';
-
-              setSearchQuery(q);
-              setSortField(sfParam);
-              setSortDirection(sdParam);
-              setCurrentPage(pParam);
-              setSearchMode(mParam);
-
-              // Determines correct background display state for when the user closes the image
-              setIsHomepage(
-                q === geString &&
-                  sfParam === 'created_at' &&
-                  sdParam === 'desc' &&
-                  pParam === 1 &&
-                  mParam === 'api',
-              );
-
-              const imgData = await fetchSingleImage(acc.booruUrl, acc.apiKey, imgMatch[2]);
-              if (imgData) {
-                setViewingProfile(null);
-                setViewingImage(imgData);
-              } else {
-                setIs404(true);
-              }
-            } else if (profMatch) {
-              const profileData = await fetchProfile(acc.booruUrl, profMatch[2]);
-              if (profileData) {
-                setViewingImage(null);
-                setViewingProfile({
-                  booruUrl: acc.booruUrl,
-                  username: profileData.name,
-                  id: profileData.id,
-                });
-              } else {
-                setIs404(true);
-              }
-            }
-          } else {
-            setIsHomepage(false);
-            setIs404(true);
-          }
+        const imgData = await fetchSingleImage(acc.booruUrl, acc.apiKey, id);
+        if (imgData) {
+          setViewingProfile(null);
+          setViewingImage(imgData);
         } else {
-          setIsHomepage(false);
           setIs404(true);
         }
+      } else {
+        setIs404(true);
       }
-    };
+    });
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+    // ROUTE: PROFILE
+    router.current.addRoute('/:host/profiles/:id', async (match) => {
+      const { host, id } = match.params;
+      const accounts = await getActiveAccounts();
+      const acc = accounts.find((na) => new URL(na.booruUrl).hostname === host);
+
+      if (acc) {
+        const profileData = await fetchProfile(acc.booruUrl, id);
+        if (profileData) {
+          setViewingImage(null);
+          setViewingProfile({
+            booruUrl: acc.booruUrl,
+            username: profileData.name,
+            id: profileData.id,
+          });
+        } else {
+          setIs404(true);
+        }
+      } else {
+        setIs404(true);
+      }
+    });
+
+    router.current.start();
+  }, [isDbReady]);
 
   // Updates references and localStorage visual without causing immediate side-effects
   useEffect(() => {
@@ -1244,17 +1171,11 @@ const App = () => {
     }
   };
 
-  /**
-   * @returns {void}
-   */
   const handleCloseSettings = () => {
     setShowSettings(false);
     hasSynced.current = false;
   };
 
-  /**
-   * @returns {void}
-   */
   const handleCloseNotifications = () => {
     setShowNotifications(false);
     hasSynced.current = false;
@@ -1265,32 +1186,22 @@ const App = () => {
    * @param {string} newMode
    */
   const handleSearchSubmit = (newQuery, newMode = 'api') => {
-    setIsHomepage(false);
-    setViewingProfile(null);
-    setSearchQuery(newQuery);
-    setSearchMode(newMode);
-    setCurrentPage(1);
-    setViewingImage(null);
-    setShowNotifications(false);
-    setIs404(false);
-    hasSynced.current = false;
-    setGalleryRateLimited(false);
-    lastGalleryFetchTime.current = 0;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const params = new URLSearchParams();
+    params.set('q', newQuery);
+    params.set('mode', newMode);
+    params.set('page', 1);
+
+    router.current.navigate(`/search?${params.toString()}`);
   };
 
   /**
    * @param {number} newPage
    */
   const changePage = (newPage) => {
-    setIsHomepage(false);
-    setViewingProfile(null);
-    setCurrentPage(newPage);
-    setIs404(false);
-    hasSynced.current = false;
-    setGalleryRateLimited(false);
-    lastGalleryFetchTime.current = 0;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const params = new URLSearchParams(window.location.search);
+    params.set('page', newPage.toString());
+
+    router.current.navigate(`/search?${params.toString()}`);
   };
 
   /**
@@ -1316,72 +1227,43 @@ const App = () => {
    */
   const handleQuickLinkClick = (e, query, sf, sd) => {
     if (e.ctrlKey || e.metaKey || e.button === 1) return;
-
     e.preventDefault();
-    setSortField(sf);
-    setSortDirection(sd);
-    setCurrentPage(1);
-    setIs404(false);
-    setGalleryRateLimited(false);
-    lastGalleryFetchTime.current = 0;
-    handleSearchSubmit(query, 'api');
+
+    const params = new URLSearchParams();
+    params.set('q', query);
+    params.set('sf', sf);
+    params.set('sd', sd);
+    params.set('page', 1);
+    params.set('mode', 'api');
+
+    router.current.navigate(`/search?${params.toString()}`);
   };
 
   /**
    * @returns {void}
    */
   const goToHome = () => {
-    // Check if React will fire the useEffect naturally
-    const willUseEffectTrigger =
-      showSettings !== false ||
-      showNotifications !== false ||
-      currentPage !== 1 ||
-      searchQuery !== '' ||
-      isHomepage !== true ||
-      sortField !== 'created_at' ||
-      sortDirection !== 'desc' ||
-      searchMode !== 'api';
-
-    setIsHomepage(true);
-    setSearchQuery('');
-    setSearchMode('api');
-    setSortField('created_at');
-    setSortDirection('desc');
-    setCurrentPage(1);
-    setViewingImage(null);
-    setViewingProfile(null);
-    setShowSettings(false);
-    setShowNotifications(false);
-    setIs404(false);
-    setGalleryRateLimited(false);
-    lastGalleryFetchTime.current = 0;
-
-    if (willUseEffectTrigger) {
-      hasSynced.current = false;
-    } else {
-      refreshHomepage();
-    }
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    router.current.navigate('/');
   };
 
   /**
    * @param {ImageResult} img
    */
   const handleOpenImage = (img) => {
-    setViewingProfile(null);
-    setViewingImage(img);
-    setShowNotifications(false);
-    setIs404(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const host = new URL(img.booruUrl).hostname;
+    globalCache.set(`img_${img.id}`, img);
+    router.current.navigate(`/${host}/images/${img.id}`);
   };
 
+  /**
+   * @param {string} booruUrl
+   * @param {string} username
+   * @param {number} id
+   */
   const handleOpenProfile = (booruUrl, username, id) => {
-    setViewingImage(null);
-    setViewingProfile({ booruUrl, username, id });
-    setShowNotifications(false);
-    setIs404(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const host = new URL(booruUrl).hostname;
+    globalCache.set(`profile_${booruUrl}_${id}`, { booruUrl, username, id });
+    router.current.navigate(`/${host}/profiles/${id}`);
   };
 
   /**
