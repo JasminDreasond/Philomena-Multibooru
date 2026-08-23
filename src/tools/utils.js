@@ -1,4 +1,4 @@
-import { alert } from './BootstrapDialogs';
+import { alert } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 
 import { fetchProfile } from '../services/api/Profile';
 import { fetchSingleImage } from '../services/api/Images';

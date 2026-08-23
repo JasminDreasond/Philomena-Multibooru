@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { alert } from '../../tools/BootstrapDialogs';
+import { alert } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 
 /**
  * @param {{ onSearchSubmit: (query: string, mode: string) => void, initialQuery: string, initialMode: string, isLoading: boolean }} props

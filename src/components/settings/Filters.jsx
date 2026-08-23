@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { alert } from '../../tools/BootstrapDialogs';
+import { alert } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 import { fixBooruUrl } from '../../services/api/utils';
 import { fetchSystemFilters, fetchUserFilters, saveBooruFilters } from '../../services/api/Filters';
 

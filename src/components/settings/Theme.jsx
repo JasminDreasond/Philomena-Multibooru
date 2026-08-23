@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { alert } from '../../tools/BootstrapDialogs';
+import { alert } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 
 /**
  * @param {Object} config

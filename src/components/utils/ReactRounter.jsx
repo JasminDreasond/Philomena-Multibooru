@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import TinyDomReadyManager from 'tiny-essentials/libs/TinyDomReadyManager';
+import TinyDomReadyManager from 'tiny-essentials/libs/html/TinyDomReadyManager';
 
 /** @type {string} */
 const SW_VERSION = '1.1.0';

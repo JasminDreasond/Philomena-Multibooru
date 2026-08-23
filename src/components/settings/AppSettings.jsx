@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
-import { alert, confirm } from '../../tools/BootstrapDialogs';
+import { alert, confirm } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 import { getActiveAccounts, updateSystemSettings } from '../../services/api/System';
 import { exportLocalFaves, clearLocalFaves, importLocalFaves } from '../../services/api/LocalFaves';
 

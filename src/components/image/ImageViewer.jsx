@@ -8,7 +8,7 @@ import {
   DefaultAudioLayout,
 } from '@vidstack/react/player/layouts/default';
 
-import { alert } from '../../tools/BootstrapDialogs';
+import { alert } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 
 import { fetchComments, searchImages, syncUserGalleryPages } from '../../services/api/Images';
 import { getAccountBooruApi } from '../../services/api/System';

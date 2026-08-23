@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
-import TinySimpleDice from 'tiny-essentials/libs/TinySimpleDice';
+import TinySimpleDice from 'tiny-essentials/libs/math/TinySimpleDice';
 import { shuffleArray } from 'tiny-essentials/basics/array';
+import { alert } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 import { initDatabase } from './db/connection';
 import { applyThemeFromStorage } from './services/theme';
 
@@ -28,7 +29,6 @@ import { Error404 } from './components/errors/404';
 import { PaginationBar } from './components/utils/PaginationBar';
 import { SearchControls } from './components/search/SearchControls';
 import { geString, parseQueryResults } from './queries/globalTags';
-import { alert } from './tools/BootstrapDialogs';
 import { WatchedImages } from './components/home/WatchedImages';
 import { updateEmbedMetadata } from './tools/utils';
 

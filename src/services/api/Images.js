@@ -1,4 +1,4 @@
-import TinySimpleDice from 'tiny-essentials/libs/TinySimpleDice';
+import TinySimpleDice from 'tiny-essentials/libs/math/TinySimpleDice';
 import { dbConnection } from '../../db/connection';
 import { getBooruFilterId } from './Filters';
 import { fetchPhilomena, throwApiError } from './Philomena';

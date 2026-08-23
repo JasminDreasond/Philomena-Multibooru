@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { confirm } from '../../tools/BootstrapDialogs';
+import { confirm } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 
 import {
   addAccount,
