@@ -278,19 +278,41 @@ const App = () => {
     // ROUTE: IMAGE VIEW
     router.current.addRoute('/:host/images/:id', async (match) => {
       const { host, id } = match.params;
-      const accounts = await getActiveAccounts();
-      const acc = accounts.find((a) => new URL(a.booruUrl).hostname === host);
+      const cacheKey = `img_${id}`;
 
-      if (acc) {
+      const disableOldPage = () => {
         setIsHomepage(false);
         setShowSettings(false);
         setShowNotifications(false);
         setIs404(false);
+      };
 
+      /** @param {ImageResult} imgData */
+      const startPage = (imgData) => {
+        setViewingProfile(null);
+        setViewingImage(imgData);
+      };
+
+      // 1. Tenta recuperar do cache primeiro
+      const cachedImg = globalCache.get(cacheKey);
+      if (cachedImg) {
+        console.log(`[Cache] Imagem ${id} recuperada do cache.`);
+        disableOldPage();
+        startPage(cachedImg);
+        return; // Interrompe aqui para não fazer o fetch
+      }
+
+      // 2. Se não estiver no cache, busca na API
+      const accounts = await getActiveAccounts();
+      const acc = accounts.find((a) => new URL(a.booruUrl).hostname === host);
+
+      if (acc) {
+        disableOldPage();
         const imgData = await fetchSingleImage(acc.booruUrl, acc.apiKey, id);
         if (imgData) {
-          setViewingProfile(null);
-          setViewingImage(imgData);
+          // 3. Salva no cache para a próxima vez
+          globalCache.set(cacheKey, imgData);
+          startPage(imgData);
         } else {
           setIs404(true);
         }
@@ -302,18 +324,42 @@ const App = () => {
     // ROUTE: PROFILE
     router.current.addRoute('/:host/profiles/:id', async (match) => {
       const { host, id } = match.params;
+      const cacheKey = `profile_${host}_${id}`;
+
+      const disableOldPage = () => {
+        setIsHomepage(false);
+        setShowSettings(false);
+        setShowNotifications(false);
+      };
+
+      // 1. Tenta recuperar do cache
+      const cachedProfile = globalCache.get(cacheKey);
+      if (cachedProfile) {
+        console.log(`[Cache] Perfil ${id} recuperado do cache.`);
+        disableOldPage();
+        setIs404(false);
+        setViewingImage(null);
+        setViewingProfile(cachedProfile);
+        return;
+      }
+
+      // 2. Se não estiver no cache, busca na API
       const accounts = await getActiveAccounts();
       const acc = accounts.find((na) => new URL(na.booruUrl).hostname === host);
 
       if (acc) {
         const profileData = await fetchProfile(acc.booruUrl, id);
         if (profileData) {
-          setViewingImage(null);
-          setViewingProfile({
+          const profileObj = {
             booruUrl: acc.booruUrl,
             username: profileData.name,
             id: profileData.id,
-          });
+          };
+          // 3. Salva no cache
+          globalCache.set(cacheKey, profileObj);
+          disableOldPage();
+          setViewingImage(null);
+          setViewingProfile(profileObj);
         } else {
           setIs404(true);
         }
