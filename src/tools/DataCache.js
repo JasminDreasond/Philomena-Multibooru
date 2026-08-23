@@ -4,14 +4,14 @@
  */
 
 /**
- * Gerenciador de cache em memória para evitar requisições duplicadas.
+ * In-memory cache manager to prevent duplicate requests.
  */
 class DataCache {
   #cache = new Map();
-  #ttl = 300000; // Time-to-live: 5 minutos em milissegundos
+  #ttl = 300000; // Time-to-live: 5 minutes in milliseconds
 
   /**
-   * Salva um item no cache.
+   * Saves an item to the cache.
    * @param {string} key
    * @param {any} data
    */
@@ -23,7 +23,7 @@ class DataCache {
   }
 
   /**
-   * Recupera um item se ele ainda for válido.
+   * Retrieves an item if it is still valid.
    * @param {string} key
    * @returns {any | null}
    */
@@ -31,7 +31,7 @@ class DataCache {
     const cached = this.#cache.get(key);
     if (!cached) return null;
 
-    // Verifica se o cache expirou
+    // Checks if the cache has expired
     if (Date.now() - cached.timestamp > this.#ttl) {
       this.#cache.delete(key);
       return null;
@@ -41,12 +41,12 @@ class DataCache {
   }
 
   /**
-   * Limpa todo o cache.
+   * Clears the entire cache.
    */
   clear() {
     this.#cache.clear();
   }
 }
 
-// Exportamos uma única instância (Singleton) para ser usada em todo o App
+// Exporting a single instance (Singleton) to be used throughout the App
 export const globalCache = new DataCache();
