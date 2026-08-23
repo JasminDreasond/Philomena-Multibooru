@@ -293,16 +293,16 @@ const App = () => {
         setViewingImage(imgData);
       };
 
-      // 1. Tenta recuperar do cache primeiro
+      // 1. Attempt to retrieve from cache first
       const cachedImg = globalCache.get(cacheKey);
       if (cachedImg) {
-        console.log(`[Cache] Imagem ${id} recuperada do cache.`);
+        console.log(`[Cache] Image ${id} retrieved from cache.`);
         disableOldPage();
         startPage(cachedImg);
-        return; // Interrompe aqui para não fazer o fetch
+        return; // Stop here to avoid unnecessary fetch
       }
 
-      // 2. Se não estiver no cache, busca na API
+      // 2. If not in cache, fetch from API
       const accounts = await getActiveAccounts();
       const acc = accounts.find((a) => new URL(a.booruUrl).hostname === host);
 
@@ -310,7 +310,7 @@ const App = () => {
         disableOldPage();
         const imgData = await fetchSingleImage(acc.booruUrl, acc.apiKey, id);
         if (imgData) {
-          // 3. Salva no cache para a próxima vez
+          // 3. Save to cache for future use
           globalCache.set(cacheKey, imgData);
           startPage(imgData);
         } else {
@@ -332,10 +332,10 @@ const App = () => {
         setShowNotifications(false);
       };
 
-      // 1. Tenta recuperar do cache
+      // 1. Attempt to retrieve from cache
       const cachedProfile = globalCache.get(cacheKey);
       if (cachedProfile) {
-        console.log(`[Cache] Perfil ${id} recuperado do cache.`);
+        console.log(`[Cache] Profile ${id} retrieved from cache.`);
         disableOldPage();
         setIs404(false);
         setViewingImage(null);
@@ -343,7 +343,7 @@ const App = () => {
         return;
       }
 
-      // 2. Se não estiver no cache, busca na API
+      // 2. If not in cache, fetch from API
       const accounts = await getActiveAccounts();
       const acc = accounts.find((na) => new URL(na.booruUrl).hostname === host);
 
@@ -355,7 +355,7 @@ const App = () => {
             username: profileData.name,
             id: profileData.id,
           };
-          // 3. Salva no cache
+          // 3. Save to cache
           globalCache.set(cacheKey, profileObj);
           disableOldPage();
           setViewingImage(null);

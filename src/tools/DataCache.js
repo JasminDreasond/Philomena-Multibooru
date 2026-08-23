@@ -6,7 +6,7 @@
 /**
  * In-memory cache manager to prevent duplicate requests.
  */
-class DataCache {
+class TinyDataCache {
   #cache = new Map();
   #ttl = 300000; // Time-to-live: 5 minutes in milliseconds
 
@@ -49,4 +49,4 @@ class DataCache {
 }
 
 // Exporting a single instance (Singleton) to be used throughout the App
-export const globalCache = new DataCache();
+export const globalCache = new TinyDataCache();
