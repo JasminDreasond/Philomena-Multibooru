@@ -1,7 +1,15 @@
+import { EventEmitter } from 'events';
+
+/**
+ * @typedef {Object} ServiceWorkerMessagePayload
+ * @property {string} type - The identifier for the message type.
+ * @property {Recod<any, any>} [data] - The actual data content of the message.
+ */
+
 /**
  * Manages Service Worker registration, versioning, and messaging.
  */
-class ServiceWorkerManager {
+class ServiceWorkerManager extends EventEmitter {
   /** @type {ServiceWorkerRegistration | null} */
   #registration = null;
   /** @type {string} */
@@ -16,17 +24,18 @@ class ServiceWorkerManager {
   }
 
   get isSwAvailable() {
-    return 'serviceWorker' in navigator && navigator.serviceWorker.controller ? true : false;
+    return 'serviceWorker' in navigator && !!navigator.serviceWorker.controller;
   }
 
   /**
-   * @param {string} id - The id to the service worker file.
+   * @param {string} id - The unique identifier for this manager instance.
    * @param {string} swUrl - The path to the service worker file.
    * @param {string} version - The current application version.
-   * @throws {TypeError} If swUrl or version are not strings.
+   * @throws {TypeError} If parameters are not the correct types or if id is empty.
    */
   constructor(id, swUrl, version) {
-    if (typeof id !== 'string' || id.trim() !== '') {
+    super();
+    if (typeof id !== 'string' || id.trim() === '') {
       throw new TypeError('The "id" parameter must be a non-empty string.');
     }
     if (typeof swUrl !== 'string') {
@@ -36,6 +45,7 @@ class ServiceWorkerManager {
       throw new TypeError('The "version" parameter must be a string.');
     }
 
+    this.#id = id;
     this.#swUrl = swUrl;
     this.#version = version;
   }
@@ -67,7 +77,7 @@ class ServiceWorkerManager {
    */
   async register() {
     if (!('serviceWorker' in navigator)) {
-      console.warn('');
+      console.warn('[ServiceWorkerManager] Service Worker is not supported in this browser.');
       return;
     }
 
@@ -95,6 +105,21 @@ class ServiceWorkerManager {
       }
 
       this.#registration = await navigator.serviceWorker.register(this.#swUrl);
+
+      // Bridge: Listen to native browser events and emit them via EventEmitter
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        /** @type {ServiceWorkerMessagePayload} */
+        const payload = event.data;
+        if (!payload || typeof payload !== 'object') return;
+        if (typeof payload.type !== 'string') return;
+        if (
+          typeof payload.data !== 'undefined' &&
+          (typeof payload.data !== 'object' || payload.data === null)
+        )
+          return;
+        super.emit(payload.type, payload.data);
+      });
+
       console.log('[ServiceWorkerManager] Registered successfully.');
     } catch (error) {
       console.error('[ServiceWorkerManager] Registration error:', error);
@@ -104,13 +129,41 @@ class ServiceWorkerManager {
 
   /**
    * Sends a message to the active Service Worker controller.
-   * @param {Record<any, any>} payload - The message payload.
-   * @throws {TypeError} If the payload does not match ServiceWorkerMessage structure.
+   * @param {string} type - The identifier for the message type.
+   * @param {Recod<any, any>} [data] - The actual data content of the message.
+   */
+  emit(type, data) {
+    if (typeof type !== 'string') {
+      throw new TypeError('Payload.type must be a string.');
+    }
+    if (typeof data !== 'object' || data === null) {
+      throw new TypeError('Payload.data must be a non-null object.');
+    }
+
+    if (this.isSwAvailable) {
+      navigator.serviceWorker.controller.postMessage({ type, data });
+    } else this.#noSwControllerWarn();
+  }
+
+  /**
+   * Sends a message to the active Service Worker controller.
+   * @param {ServiceWorkerMessagePayload} payload - The message payload.
+   * @throws {TypeError} If the payload does not match ServiceWorkerMessagePayload structure.
    */
   postMessage(payload) {
     if (!payload || typeof payload !== 'object') {
       throw new TypeError('Payload must be an object.');
     }
+    if (typeof payload.type !== 'string') {
+      throw new TypeError('Payload.type must be a string.');
+    }
+    if (
+      typeof payload.data !== 'undefined' &&
+      (typeof payload.data !== 'object' || payload.data === null)
+    ) {
+      throw new TypeError('Payload.data must be a non-null object.');
+    }
+
     if (this.isSwAvailable) {
       navigator.serviceWorker.controller.postMessage(payload);
     } else this.#noSwControllerWarn();
