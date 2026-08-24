@@ -48,6 +48,8 @@ const imageCache = new TinyMapCache();
 /** @type {TinyMapCache<{ booruUrl: string; username: string; id: number; }>} */
 const profileCache = new TinyMapCache();
 
+const scrollUp = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
 const App = () => {
   /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
   const [totalItems, setTotalItems] = useState(0);
@@ -221,17 +223,23 @@ const App = () => {
   useEffect(() => {
     if (!isDbReady) return;
 
+    /**
+     * Resets shared pagination states for infinite scroll
+     */
     const resetSharedPagination = () => {
-      // Resets shared pagination states for infinite scroll
       setGalleryRateLimited(false);
       lastGalleryFetchTime.current = 0;
     };
 
     router.current = new TinyRouter({
-      onRouteChanged: () => resetSharedPagination(),
+      onRouteChanged: () => {
+        resetSharedPagination();
+        scrollUp();
+      },
       onRouteNotFound: () => {
         resetSharedPagination();
         setIs404(true);
+        scrollUp();
       },
     });
 
@@ -1672,7 +1680,7 @@ const App = () => {
               onClick={() => {
                 if (!showSettings) hasSynced.current = false;
                 setShowSettings(!showSettings);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                scrollUp();
               }}
             />
           ) : (
