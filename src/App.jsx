@@ -246,7 +246,7 @@ const App = () => {
     });
 
     // ROUTE: HOME
-    router.current.addRoute('/', async () => {
+    router.current.add('/', async () => {
       setIsHomepage(true);
       setShowSettings(false);
       setShowNotifications(false);
@@ -262,21 +262,21 @@ const App = () => {
     });
 
     // ROUTE: SETTINGS
-    router.current.addRoute('/settings', async () => {
+    router.current.add('/settings', async () => {
       setShowSettings(true);
       setShowNotifications(false);
       setIs404(false);
     });
 
     // ROUTE: NOTIFICATIONS
-    router.current.addRoute('/notifications', async () => {
+    router.current.add('/notifications', async () => {
       setShowNotifications(true);
       setShowSettings(false);
       setIs404(false);
     });
 
     // ROUTE: SEARCH
-    router.current.addRoute('/search', async (match) => {
+    router.current.add('/search', async (match) => {
       const q = match.query.get('q') || geString;
       const sf = match.query.get('sf') || 'created_at';
       const sd = match.query.get('sd') || 'desc';
@@ -298,7 +298,7 @@ const App = () => {
     });
 
     // ROUTE: IMAGE VIEW
-    router.current.addRoute('/:host/images/:id', async (match) => {
+    router.current.add('/:host/images/:id', async (match) => {
       const { host, id } = match.params;
       const cacheKey = `${host}_${id}`;
 
@@ -344,7 +344,7 @@ const App = () => {
     });
 
     // ROUTE: PROFILE
-    router.current.addRoute('/:host/profiles/:id', async (match) => {
+    router.current.add('/:host/profiles/:id', async (match) => {
       const { host, id } = match.params;
       const cacheKey = `${host}_${id}`;
 
