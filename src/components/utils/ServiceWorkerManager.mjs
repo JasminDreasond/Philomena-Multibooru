@@ -67,6 +67,9 @@ class ServiceWorkerManager extends EventEmitter {
     return this.#registration;
   }
 
+  /** @type {string[]} */
+  #reservedEvents = ['displayModeChanged', 'beforeInstallPrompt', 'appInstalled'];
+
   /**
    * Determines the current PWA display mode.
    *
@@ -98,6 +101,20 @@ class ServiceWorkerManager extends EventEmitter {
     this.#swUrl = swUrl;
     this.#version = version;
     this.#updateDisplayMode();
+  }
+
+  /**
+   * Valida se um tipo de evento é um nome reservado para o ciclo de vida interno.
+   * @param {string} type - O nome do evento para validar.
+   * @throws {TypeError} Se o nome do evento estiver na lista de reservados.
+   * @private
+   */
+  #validateEventType(type) {
+    if (this.#reservedEvents.includes(type)) {
+      throw new TypeError(
+        `The event type "${type}" is reserved for internal PWA lifecycle management and cannot be used for Service Worker messaging.`,
+      );
+    }
   }
 
   /**
@@ -142,7 +159,7 @@ class ServiceWorkerManager extends EventEmitter {
     // 3. Handle App Installed
     this.#appInstalledHandler = () => {
       this.#deferredPrompt = null;
-      super.emit('appinstalled');
+      super.emit('appInstalled');
       console.log('[PWA] PWA was installed');
     };
     window.addEventListener('appinstalled', this.#appInstalledHandler);
@@ -210,6 +227,7 @@ class ServiceWorkerManager extends EventEmitter {
           (typeof payload.data !== 'object' || payload.data === null)
         )
           return;
+        if (this.#reservedEvents.includes(payload.type)) return;
         super.emit(payload.type, payload.data);
       };
 
@@ -228,7 +246,8 @@ class ServiceWorkerManager extends EventEmitter {
   /**
    * Sends a message to the active Service Worker controller.
    * @param {string} type - The identifier for the message type.
-   * @param {Recod<any, any>} [data] - The actual data content of the message.
+   * @param {Record<any, any>} [data] - The actual data content of the message.
+   * @throws {TypeError} If the payload does not match ServiceWorkerMessagePayload structure or uses a reserved type.
    */
   emit(type, data) {
     if (typeof type !== 'string') {
@@ -238,6 +257,9 @@ class ServiceWorkerManager extends EventEmitter {
       throw new TypeError('Payload.data must be a non-null object.');
     }
 
+    // Security check: prevent sending messages that collide with internal events
+    this.#validateEventType(type);
+
     if (this.isSwAvailable) {
       navigator.serviceWorker.controller.postMessage({ type, data });
     } else this.#noSwControllerWarn();
@@ -246,7 +268,7 @@ class ServiceWorkerManager extends EventEmitter {
   /**
    * Sends a message to the active Service Worker controller.
    * @param {ServiceWorkerMessagePayload} payload - The message payload.
-   * @throws {TypeError} If the payload does not match ServiceWorkerMessagePayload structure.
+   * @throws {TypeError} If the payload does not match ServiceWorkerMessagePayload structure or uses a reserved type.
    */
   postMessage(payload) {
     if (!payload || typeof payload !== 'object') {
@@ -261,6 +283,9 @@ class ServiceWorkerManager extends EventEmitter {
     ) {
       throw new TypeError('Payload.data must be a non-null object.');
     }
+
+    // Security check: prevent sending messages that collide with internal events
+    this.#validateEventType(payload.type);
 
     if (this.isSwAvailable) {
       navigator.serviceWorker.controller.postMessage(payload);
