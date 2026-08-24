@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
 
 /**
  * @typedef {Object} ServiceWorkerMessagePayload
@@ -16,7 +16,7 @@ import { EventEmitter } from 'events';
 /**
  * Manages Service Worker registration, versioning, and messaging.
  */
-class ServiceWorkerManager extends EventEmitter {
+class TinyServiceWorker extends TinyDebugger {
   /** @type {ServiceWorkerRegistration | null} */
   #registration = null;
   /** @type {string} */
@@ -40,7 +40,8 @@ class ServiceWorkerManager extends EventEmitter {
   #appInstalledHandler = null;
 
   #noSwControllerWarn() {
-    console.warn('[ServiceWorkerManager] No active controller to receive message.');
+    super.emit('noSwControllerWarn');
+    this.log('warn', 'No active controller to receive message.');
   }
 
   get isSwAvailable() {
@@ -68,7 +69,12 @@ class ServiceWorkerManager extends EventEmitter {
   }
 
   /** @type {string[]} */
-  #reservedEvents = ['displayModeChanged', 'beforeInstallPrompt', 'appInstalled'];
+  #reservedEvents = [
+    'displayModeChanged',
+    'beforeInstallPrompt',
+    'appInstalled',
+    'noSwControllerWarn',
+  ];
 
   /**
    * Determines the current PWA display mode.
@@ -83,10 +89,19 @@ class ServiceWorkerManager extends EventEmitter {
    * @param {string} id - The unique identifier for this manager instance.
    * @param {string} swUrl - The path to the service worker file.
    * @param {string} version - The current application version.
+   * @param {Object} [options]
+   * @param {boolean} [options.debugMode=false] - Whether to enable internal debug logging.
+   * @param {boolean} [options.useLogColors=false] - Whether to enable log color support.
+   * @param {Partial<Console>} [options.logger=console] - A custom logger object (must implement console methods).
    * @throws {TypeError} If parameters are not the correct types or if id is empty.
    */
-  constructor(id, swUrl, version) {
-    super();
+  constructor(id, swUrl, version, options) {
+    super({
+      id: '[_blue_TinyServiceWorker_reset_] :debug:',
+      logger: options.logger ?? console,
+      debugMode: options.debugMode ?? false,
+      useLogColors: options.useLogColors ?? false,
+    });
     if (typeof id !== 'string' || id.trim() === '') {
       throw new TypeError('The "id" parameter must be a non-empty string.');
     }
@@ -134,7 +149,7 @@ class ServiceWorkerManager extends EventEmitter {
     }
 
     super.emit('displayModeChanged', this.#displayMode);
-    console.log(`[PWA] DISPLAY_MODE_CHANGED: ${this.#displayMode}`);
+    this.log('info', `DISPLAY_MODE_CHANGED: ${this.#displayMode}`);
   }
 
   /**
@@ -152,7 +167,7 @@ class ServiceWorkerManager extends EventEmitter {
     this.#beforeInstallPromptHandler = (e) => {
       this.#deferredPrompt = e;
       super.emit('beforeInstallPrompt', e);
-      console.log('[PWA] beforeinstallprompt event fired.');
+      this.log('info', 'beforeinstallprompt event fired.');
     };
     window.addEventListener('beforeinstallprompt', this.#beforeInstallPromptHandler);
 
@@ -160,7 +175,7 @@ class ServiceWorkerManager extends EventEmitter {
     this.#appInstalledHandler = () => {
       this.#deferredPrompt = null;
       super.emit('appInstalled');
-      console.log('[PWA] PWA was installed');
+      this.log('info', 'PWA was installed');
     };
     window.addEventListener('appinstalled', this.#appInstalledHandler);
   }
@@ -176,7 +191,7 @@ class ServiceWorkerManager extends EventEmitter {
     }
     this.#deferredPrompt.prompt();
     const { outcome } = await this.#deferredPrompt.userChoice;
-    console.log(`[PWA] User installation choice: ${outcome}`);
+    this.log('info', `User installation choice: ${outcome}`);
     this.#deferredPrompt = null;
   }
 
@@ -187,7 +202,7 @@ class ServiceWorkerManager extends EventEmitter {
    */
   async register() {
     if (!('serviceWorker' in navigator)) {
-      console.warn('[ServiceWorkerManager] Service Worker is not supported in this browser.');
+      this.log('warn', 'Service Worker is not supported in this browser.');
       return;
     }
 
@@ -196,9 +211,7 @@ class ServiceWorkerManager extends EventEmitter {
       const savedVersion = localStorage.getItem(idVersion);
 
       if (savedVersion !== this.#version) {
-        console.log(
-          `[ServiceWorkerManager] Version mismatch: ${savedVersion} -> ${this.#version}. Cleaning up...`,
-        );
+        this.log('warn', `Version mismatch: ${savedVersion} -> ${this.#version}. Cleaning up...`);
 
         const registrations = await navigator.serviceWorker.getRegistrations();
         for (const registration of registrations) {
@@ -208,7 +221,7 @@ class ServiceWorkerManager extends EventEmitter {
         localStorage.setItem(idVersion, this.#version);
 
         if (savedVersion !== null) {
-          console.log('[ServiceWorkerManager] Old workers removed. Reloading...');
+          this.log('warn', 'Old workers removed. Reloading...');
           window.location.reload();
           return;
         }
@@ -236,9 +249,9 @@ class ServiceWorkerManager extends EventEmitter {
       // Initialize PWA listeners
       this.#setupPwaListeners();
 
-      console.log('[ServiceWorkerManager] Registered successfully.');
+      this.log('info', 'Registered successfully.');
     } catch (error) {
-      console.error('[ServiceWorkerManager] Registration error:', error);
+      this.log('error', 'Registration error:', error);
       throw error;
     }
   }
@@ -346,10 +359,10 @@ class ServiceWorkerManager extends EventEmitter {
     this.#registration = null;
     this.#deferredPrompt = null;
 
-    console.log(`[ServiceWorkerManager] [${this.#id}] Destroyed successfully.`);
+    this.log('info', `[${this.#id}] Destroyed successfully.`);
   }
 }
 
 // Single instance to manage Service Worker
-const swManager = new ServiceWorkerManager('web-manager', '/sw.js', '1.1.0');
+const swManager = new TinyServiceWorker('web-manager', '/sw.js', '1.1.0');
 export default swManager;
