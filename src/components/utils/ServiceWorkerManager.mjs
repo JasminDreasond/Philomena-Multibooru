@@ -1,15 +1,11 @@
 /**
- * @typedef {Object} ServiceWorkerMessage
- * @property {string} type - The type of message being sent to the Service Worker.
- * @property {string} [icon] - Optional icon identifier for favicon updates.
- */
-
-/**
  * Manages Service Worker registration, versioning, and messaging.
  */
 class ServiceWorkerManager {
   /** @type {ServiceWorkerRegistration | null} */
   #registration = null;
+  /** @type {string} */
+  #id;
   /** @type {string} */
   #swUrl;
   /** @type {string} */
@@ -24,11 +20,15 @@ class ServiceWorkerManager {
   }
 
   /**
+   * @param {string} id - The id to the service worker file.
    * @param {string} swUrl - The path to the service worker file.
    * @param {string} version - The current application version.
    * @throws {TypeError} If swUrl or version are not strings.
    */
-  constructor(swUrl, version) {
+  constructor(id, swUrl, version) {
+    if (typeof id !== 'string' || id.trim() !== '') {
+      throw new TypeError('The "id" parameter must be a non-empty string.');
+    }
     if (typeof swUrl !== 'string') {
       throw new TypeError('The "swUrl" parameter must be a string.');
     }
@@ -38,6 +38,11 @@ class ServiceWorkerManager {
 
     this.#swUrl = swUrl;
     this.#version = version;
+  }
+
+  /** @returns {string} */
+  get id() {
+    return this.#id;
   }
 
   /** @returns {string} */
@@ -67,7 +72,8 @@ class ServiceWorkerManager {
     }
 
     try {
-      const savedVersion = localStorage.getItem('app_sw_version');
+      const idVersion = `${this.#id}_sw_version`;
+      const savedVersion = localStorage.getItem(idVersion);
 
       if (savedVersion !== this.#version) {
         console.log(
@@ -79,7 +85,7 @@ class ServiceWorkerManager {
           await registration.unregister();
         }
 
-        localStorage.setItem('app_sw_version', this.#version);
+        localStorage.setItem(idVersion, this.#version);
 
         if (savedVersion !== null) {
           console.log('[ServiceWorkerManager] Old workers removed. Reloading...');
@@ -98,7 +104,7 @@ class ServiceWorkerManager {
 
   /**
    * Sends a message to the active Service Worker controller.
-   * @param {ServiceWorkerMessage} payload - The message payload.
+   * @param {Record<any, any>} payload - The message payload.
    * @throws {TypeError} If the payload does not match ServiceWorkerMessage structure.
    */
   postMessage(payload) {
@@ -135,5 +141,5 @@ class ServiceWorkerManager {
 const SW_VERSION = '1.1.0';
 
 // Single instance to manage Service Worker
-const swManager = new ServiceWorkerManager('/sw.js', SW_VERSION);
+const swManager = new ServiceWorkerManager('web-manager', '/sw.js', SW_VERSION);
 export default swManager;
