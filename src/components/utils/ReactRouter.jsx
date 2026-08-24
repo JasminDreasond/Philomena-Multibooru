@@ -1,49 +1,18 @@
 import { useEffect } from 'react';
 import TinyDomReadyManager from 'tiny-essentials/libs/html/TinyDomReadyManager';
-
-/** @type {string} */
-const SW_VERSION = '1.1.0';
-
-/**
- * @returns {Promise<void>}
- */
-const initServiceWorker = async () => {
-  if ('serviceWorker' in navigator) {
-    try {
-      /** @type {string | null} */
-      const savedVersion = localStorage.getItem('app_sw_version');
-
-      if (savedVersion !== SW_VERSION) {
-        console.log(
-          `[ServiceWorker] Version mismatch: ${savedVersion} -> ${SW_VERSION}. Cleaning up old workers...`,
-        );
-
-        /** @type {readonly ServiceWorkerRegistration[]} */
-        const registrations = await navigator.serviceWorker.getRegistrations();
-
-        for (const registration of registrations) {
-          await registration.unregister();
-        }
-
-        localStorage.setItem('app_sw_version', SW_VERSION);
-
-        if (savedVersion !== null) {
-          console.log('[ServiceWorker] Old workers removed. Reloading for a fresh start.');
-          window.location.reload();
-          return;
-        }
-      }
-
-      await navigator.serviceWorker.register('/sw.js');
-      console.log('[ServiceWorker] Registered and up to date.');
-    } catch (error) {
-      console.error('[ServiceWorker] Registration failed:', error);
-    }
-  }
-};
+import swManager from './ServiceWorkerManager.mjs';
 
 const readyPage = new TinyDomReadyManager();
-readyPage.onReady(initServiceWorker, { once: true });
+readyPage.onReady(
+  async () => {
+    try {
+      await swManager.register();
+    } catch (err) {
+      console.error('Initialization failed', err);
+    }
+  },
+  { once: true },
+);
 readyPage.init();
 
 /**
@@ -81,15 +50,10 @@ const ServiceWorkerSync = () => {
      * @returns {void}
      */
     const handleVisibilityAndFocus = () => {
-      if (!document.hidden && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({ type: 'FAVICON_UPDATE', icon: 'default' });
-      }
+      if (!document.hidden) swManager.postMessage({ type: 'FAVICON_UPDATE', icon: 'default' });
     };
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
-    }
-
+    swManager.addEventListener(handleServiceWorkerMessage);
     // Listen to focus and visibility changes to clear the notification icon
     window.addEventListener('focus', handleVisibilityAndFocus);
     document.addEventListener('visibilitychange', handleVisibilityAndFocus);
@@ -98,9 +62,7 @@ const ServiceWorkerSync = () => {
     handleVisibilityAndFocus();
 
     return () => {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
-      }
+      swManager.removeEventListener(handleServiceWorkerMessage);
       window.removeEventListener('focus', handleVisibilityAndFocus);
       document.removeEventListener('visibilitychange', handleVisibilityAndFocus);
     };
