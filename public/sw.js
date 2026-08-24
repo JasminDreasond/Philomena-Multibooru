@@ -108,6 +108,10 @@ sw.addEventListener('message', async (event) => {
   /** @type {string} */
   const clientId = ev.source.id;
 
+  if (data?.type === 'ping') {
+    ev.source.postMessage({ type: 'pong' });
+  }
+
   if (data?.type === 'REQUEST_START_SCANNER') {
     await cleanGhostScanners();
 

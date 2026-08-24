@@ -140,7 +140,7 @@ class ServiceWorkerManager extends EventEmitter {
     if (typeof type !== 'string') {
       throw new TypeError('Payload.type must be a string.');
     }
-    if (typeof data !== 'object' || data === null) {
+    if (typeof data !== 'undefined' && (typeof data !== 'object' || data === null)) {
       throw new TypeError('Payload.data must be a non-null object.');
     }
 
