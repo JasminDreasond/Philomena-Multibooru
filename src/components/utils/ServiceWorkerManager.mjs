@@ -3,7 +3,14 @@ import { EventEmitter } from 'events';
 /**
  * @typedef {Object} ServiceWorkerMessagePayload
  * @property {string} type - The identifier for the message type.
- * @property {Recod<any, any>} [data] - The actual data content of the message.
+ * @property {Record<any, any>} [data] - The actual data content of the message.
+ */
+
+/**
+ * @typedef {Object} BeforeInstallPromptEvent
+ * @property {() => Promise<void>} preventDefault
+ * @property {() => Promise<void>} userChoice
+ * @property {boolean} canShare
  */
 
 /**
@@ -20,6 +27,17 @@ class ServiceWorkerManager extends EventEmitter {
   #version;
   /** @type {((event: MessageEvent) => void) | null} */
   #messageHandler = null;
+  /** @type {BeforeInstallPromptEvent | null} */
+  #deferredPrompt = null;
+  /** @type {string} */
+  #displayMode = 'browser';
+
+  /** @type {((evt: MediaQueryListEvent) => void) | null} */
+  #displayModeChangeHandler = null;
+  /** @type {((e: Event) => void) | null} */
+  #beforeInstallPromptHandler = null;
+  /** @type {(() => void) | null} */
+  #appInstalledHandler = null;
 
   #noSwControllerWarn() {
     console.warn('[ServiceWorkerManager] No active controller to receive message.');
@@ -29,16 +47,33 @@ class ServiceWorkerManager extends EventEmitter {
     return 'serviceWorker' in navigator && !!navigator.serviceWorker.controller;
   }
 
+  /** @returns {string} */
+  get id() {
+    return this.#id;
+  }
+
+  /** @returns {string} */
+  get swUrl() {
+    return this.#swUrl;
+  }
+
+  /** @returns {string} */
+  get version() {
+    return this.#version;
+  }
+
+  /** @returns {ServiceWorkerRegistration | null} */
+  get registration() {
+    return this.#registration;
+  }
+
   /**
    * Determines the current PWA display mode.
    *
    * @returns {'twa' | 'standalone' | 'browser'}
    */
   get displayMode() {
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    if (document.referrer.startsWith('android-app://')) return 'twa';
-    if (navigator.standalone || isStandalone) return 'standalone';
-    return 'browser';
+    return this.#displayMode;
   }
 
   /**
@@ -62,26 +97,70 @@ class ServiceWorkerManager extends EventEmitter {
     this.#id = id;
     this.#swUrl = swUrl;
     this.#version = version;
+    this.#updateDisplayMode();
   }
 
-  /** @returns {string} */
-  get id() {
-    return this.#id;
+  /**
+   * Updates the internal displayMode state and emits an event.
+   * @private
+   */
+  #updateDisplayMode() {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const isTwa = document.referrer.startsWith('android-app://');
+
+    if (isTwa) {
+      this.#displayMode = 'twa';
+    } else if (navigator.standalone || isStandalone) {
+      this.#displayMode = 'standalone';
+    } else {
+      this.#displayMode = 'browser';
+    }
+
+    super.emit('displayModeChanged', this.#displayMode);
+    console.log(`[PWA] DISPLAY_MODE_CHANGED: ${this.#displayMode}`);
   }
 
-  /** @returns {string} */
-  get swUrl() {
-    return this.#swUrl;
+  /**
+   * Sets up listeners for PWA lifecycle events.
+   * @private
+   */
+  #setupPwaListeners() {
+    // 1. Handle Display Mode Changes
+    this.#displayModeChangeHandler = () => this.#updateDisplayMode();
+    window
+      .matchMedia('(display-mode: standalone)')
+      .addEventListener('change', this.#displayModeChangeHandler);
+
+    // 2. Handle Before Install Prompt
+    this.#beforeInstallPromptHandler = (e) => {
+      this.#deferredPrompt = e;
+      super.emit('beforeInstallPrompt', e);
+      console.log('[PWA] beforeinstallprompt event fired.');
+    };
+    window.addEventListener('beforeinstallprompt', this.#beforeInstallPromptHandler);
+
+    // 3. Handle App Installed
+    this.#appInstalledHandler = () => {
+      this.#deferredPrompt = null;
+      super.emit('appinstalled');
+      console.log('[PWA] PWA was installed');
+    };
+    window.addEventListener('appinstalled', this.#appInstalledHandler);
   }
 
-  /** @returns {string} */
-  get version() {
-    return this.#version;
-  }
-
-  /** @returns {ServiceWorkerRegistration | null} */
-  get registration() {
-    return this.#registration;
+  /**
+   * Triggers the native PWA installation prompt.
+   * @returns {Promise<void>}
+   * @throws {Error} If the prompt cannot be shown.
+   */
+  async promptInstallation() {
+    if (!this.#deferredPrompt) {
+      throw new Error('Cannot show installation prompt: beforeinstallprompt event has not fired.');
+    }
+    this.#deferredPrompt.prompt();
+    const { outcome } = await this.#deferredPrompt.userChoice;
+    console.log(`[PWA] User installation choice: ${outcome}`);
+    this.#deferredPrompt = null;
   }
 
   /**
@@ -120,7 +199,7 @@ class ServiceWorkerManager extends EventEmitter {
 
       this.#registration = await navigator.serviceWorker.register(this.#swUrl);
 
-      // Store the handler in a private field so it can be removed later
+      // Existing message handler logic
       this.#messageHandler = (event) => {
         /** @type {ServiceWorkerMessagePayload} */
         const payload = event.data;
@@ -135,6 +214,9 @@ class ServiceWorkerManager extends EventEmitter {
       };
 
       navigator.serviceWorker.addEventListener('message', this.#messageHandler);
+
+      // Initialize PWA listeners
+      this.#setupPwaListeners();
 
       console.log('[ServiceWorkerManager] Registered successfully.');
     } catch (error) {
@@ -210,17 +292,34 @@ class ServiceWorkerManager extends EventEmitter {
    * @returns {void}
    */
   destroy() {
-    // 1. Remove the listener from the native Service Worker API
+    // 1. Remove native Service Worker listener
     if (this.#messageHandler && 'serviceWorker' in navigator) {
       navigator.serviceWorker.removeEventListener('message', this.#messageHandler);
       this.#messageHandler = null;
     }
 
-    // 2. Remove all listeners attached to this EventEmitter instance
+    // 2. Remove Window Listeners (Crucial for preventing memory leaks)
+    if (this.#displayModeChangeHandler) {
+      window
+        .matchMedia('(display-mode: standalone)')
+        .removeEventListener('change', this.#displayModeChangeHandler);
+      this.#displayModeChangeHandler = null;
+    }
+    if (this.#beforeInstallPromptHandler) {
+      window.removeEventListener('beforeinstallprompt', this.#beforeInstallPromptHandler);
+      this.#beforeInstallPromptHandler = null;
+    }
+    if (this.#appInstalledHandler) {
+      window.removeEventListener('appinstalled', this.#appInstalledHandler);
+      this.#appInstalledHandler = null;
+    }
+
+    // 3. Remove EventEmitter listeners
     this.removeAllListeners();
 
-    // 3. Clear the registration reference
+    // 4. Clear references
     this.#registration = null;
+    this.#deferredPrompt = null;
 
     console.log(`[ServiceWorkerManager] [${this.#id}] Destroyed successfully.`);
   }
