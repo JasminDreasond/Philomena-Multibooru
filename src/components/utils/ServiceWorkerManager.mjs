@@ -30,6 +30,18 @@ class ServiceWorkerManager extends EventEmitter {
   }
 
   /**
+   * Determines the current PWA display mode.
+   *
+   * @returns {'twa' | 'standalone' | 'browser'}
+   */
+  get displayMode() {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    if (document.referrer.startsWith('android-app://')) return 'twa';
+    if (navigator.standalone || isStandalone) return 'standalone';
+    return 'browser';
+  }
+
+  /**
    * @param {string} id - The unique identifier for this manager instance.
    * @param {string} swUrl - The path to the service worker file.
    * @param {string} version - The current application version.
@@ -214,9 +226,6 @@ class ServiceWorkerManager extends EventEmitter {
   }
 }
 
-/** @type {string} */
-const SW_VERSION = '1.1.0';
-
 // Single instance to manage Service Worker
-const swManager = new ServiceWorkerManager('web-manager', '/sw.js', SW_VERSION);
+const swManager = new ServiceWorkerManager('web-manager', '/sw.js', '1.1.0');
 export default swManager;
