@@ -65,6 +65,7 @@ class TinyDataCache {
   }
 
   /**
+   * Returns the number of items currently stored in the cache.
    * @returns {number}
    */
   get size() {
@@ -72,16 +73,28 @@ class TinyDataCache {
   }
 
   /**
-   * @param {string} key
+   * Checks if a specific key exists in the cache.
+   * @param {string} key - The identifier for the data.
+   * @returns {boolean} True if the key exists, false otherwise.
+   * @throws {TypeError} If the key is not a string.
    */
   has(key) {
+    if (typeof key !== 'string') {
+      throw new TypeError('The cache key must be a string.');
+    }
     return this.#cache.has(key);
   }
 
   /**
-   * @param {string} key
+   * Removes the item associated with the specified key from the cache.
+   * @param {string} key - The identifier for the data.
+   * @returns {boolean} True if an element in the Map existed and has been removed, false otherwise.
+   * @throws {TypeError} If the key is not a string.
    */
   delete(key) {
+    if (typeof key !== 'string') {
+      throw new TypeError('The cache key must be a string.');
+    }
     return this.#cache.delete(key);
   }
 
@@ -105,7 +118,7 @@ class TinyDataCache {
 
   /**
    * Retrieves an item if it is still valid.
-   * Performs cache cleaning if the item has expired.
+   * Note: This method triggers a full purge of all expired items in the cache.
    * @template T
    * @param {string} key - The identifier for the data.
    * @returns {T | null} The data if valid, or null if expired/not found.
@@ -125,6 +138,7 @@ class TinyDataCache {
 
   /**
    * Iterates through the entire cache and removes all entries that have expired.
+   * @returns {void}
    */
   purgeExpired() {
     const now = Date.now();
@@ -136,7 +150,8 @@ class TinyDataCache {
   }
 
   /**
-   * Clears the entire cache.
+   * Removes all items from the cache.
+   * @returns {void}
    */
   clear() {
     this.#cache.clear();
