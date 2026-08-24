@@ -11,7 +11,7 @@ import 'bootstrap/dist/css/bootstrap.min.css'; // Bootstrap import
 import './index.css';
 import './tags.css';
 
-import ServiceWorkerSync from './components/utils/ReactRounter';
+import ServiceWorkerSync from './components/utils/ReactRouter';
 import App from './App.jsx';
 
 BootstrapDialogs.Modal = Modal;
