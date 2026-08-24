@@ -232,6 +232,8 @@ const App = () => {
     };
 
     router.current = new TinyRouter({
+      debugMode: import.meta.env.DEV,
+      useLogColors: true,
       onRouteChanged: () => {
         resetSharedPagination();
         scrollUp();
