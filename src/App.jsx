@@ -221,11 +221,17 @@ const App = () => {
   useEffect(() => {
     if (!isDbReady) return;
 
+    const resetSharedPagination = () => {
+      // Resets shared pagination states for infinite scroll
+      setGalleryRateLimited(false);
+      lastGalleryFetchTime.current = 0;
+    };
+
     router.current = new TinyRouter({
-      onRouteChanged: () => {
-        // Resets shared pagination states for infinite scroll
-        setGalleryRateLimited(false);
-        lastGalleryFetchTime.current = 0;
+      onRouteChanged: () => resetSharedPagination(),
+      onRouteNotFound: () => {
+        resetSharedPagination();
+        setIs404(true);
       },
     });
 
