@@ -16,10 +16,11 @@
  */
 
 /**
+ * @template {any} T
  * In-memory cache manager to prevent duplicate requests.
  */
-class TinyDataCache {
-  /** @type {CacheMap<any>} */
+class TinyMapCache {
+  /** @type {CacheMap<T>} */
   #cache = new Map();
   /**
    * Time-to-live: 5 minutes in milliseconds
@@ -53,12 +54,14 @@ class TinyDataCache {
 
   /**
    * Returns a deep-cloned plain object representation of the cache.
-   * @returns {CacheObject<any>} An object where keys are cache keys and values are deep-cloned entries.
+   * @returns {CacheObject<T>} An object where keys are cache keys and values are deep-cloned entries.
    */
   get cache() {
+    /** @type {CacheObject<T>} */
     const cacheObject = {};
     for (const [key, entry] of this.#cache.entries()) {
       // structuredClone ensures a deep copy of the entry and its nested data
+      // @ts-ignore
       cacheObject[key] = structuredClone(entry);
     }
     return cacheObject;
@@ -74,6 +77,8 @@ class TinyDataCache {
 
   /**
    * Checks if a specific key exists in the cache.
+   *
+   * Note: This method triggers a full purge of all expired items in the cache.
    * @param {string} key - The identifier for the data.
    * @returns {boolean} True if the key exists, false otherwise.
    * @throws {TypeError} If the key is not a string.
@@ -82,11 +87,14 @@ class TinyDataCache {
     if (typeof key !== 'string') {
       throw new TypeError('The cache key must be a string.');
     }
+    this.purgeExpired();
     return this.#cache.has(key);
   }
 
   /**
    * Removes the item associated with the specified key from the cache.
+   *
+   * Note: This method triggers a full purge of all expired items in the cache.
    * @param {string} key - The identifier for the data.
    * @returns {boolean} True if an element in the Map existed and has been removed, false otherwise.
    * @throws {TypeError} If the key is not a string.
@@ -95,12 +103,14 @@ class TinyDataCache {
     if (typeof key !== 'string') {
       throw new TypeError('The cache key must be a string.');
     }
+    this.purgeExpired();
     return this.#cache.delete(key);
   }
 
   /**
    * Saves an item to the cache.
-   * @template T
+   *
+   * Note: This method triggers a full purge of all expired items in the cache.
    * @param {string} key - The identifier for the data.
    * @param {T} data - The data to be stored.
    * @throws {TypeError} If the key is not a string.
@@ -109,7 +119,7 @@ class TinyDataCache {
     if (typeof key !== 'string') {
       throw new TypeError('The cache key must be a string.');
     }
-
+    this.purgeExpired();
     this.#cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -118,8 +128,8 @@ class TinyDataCache {
 
   /**
    * Retrieves an item if it is still valid.
+   *
    * Note: This method triggers a full purge of all expired items in the cache.
-   * @template T
    * @param {string} key - The identifier for the data.
    * @returns {T | null} The data if valid, or null if expired/not found.
    * @throws {TypeError} If the key is not a string.
@@ -128,7 +138,6 @@ class TinyDataCache {
     if (typeof key !== 'string') {
       throw new TypeError('The cache key must be a string.');
     }
-
     this.purgeExpired();
     const cached = this.#cache.get(key);
     if (!cached) return null;
@@ -159,4 +168,8 @@ class TinyDataCache {
 }
 
 // Exporting a single instance (Singleton) to be used throughout the App
-export const globalCache = new TinyDataCache();
+/** @type {TinyMapCache<any>} */
+export const imageCache = new TinyMapCache();
+
+/** @type {TinyMapCache<any>} */
+export const profileCache = new TinyMapCache();

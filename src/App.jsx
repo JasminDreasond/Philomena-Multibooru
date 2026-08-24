@@ -3,7 +3,7 @@ import TinySimpleDice from 'tiny-essentials/libs/math/TinySimpleDice';
 import { shuffleArray } from 'tiny-essentials/basics/array';
 import { alert } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 import TinyRouter from './TinyRouter.mjs';
-import { globalCache } from './tools/DataCache';
+import { imageCache, profileCache } from './tools/DataCache';
 import { initDatabase } from './db/connection';
 import { applyThemeFromStorage } from './services/theme';
 
@@ -278,7 +278,7 @@ const App = () => {
     // ROUTE: IMAGE VIEW
     router.current.addRoute('/:host/images/:id', async (match) => {
       const { host, id } = match.params;
-      const cacheKey = `img_${id}`;
+      const cacheKey = `${host}_${id}`;
 
       const disableOldPage = () => {
         setIsHomepage(false);
@@ -294,7 +294,7 @@ const App = () => {
       };
 
       // 1. Attempt to retrieve from cache first
-      const cachedImg = globalCache.get(cacheKey);
+      const cachedImg = imageCache.get(cacheKey);
       if (cachedImg) {
         console.log(`[Cache] Image ${id} retrieved from cache.`);
         disableOldPage();
@@ -311,7 +311,7 @@ const App = () => {
         const imgData = await fetchSingleImage(acc.booruUrl, acc.apiKey, id);
         if (imgData) {
           // 3. Save to cache for future use
-          globalCache.set(cacheKey, imgData);
+          imageCache.set(cacheKey, imgData);
           startPage(imgData);
         } else {
           setIs404(true);
@@ -324,7 +324,7 @@ const App = () => {
     // ROUTE: PROFILE
     router.current.addRoute('/:host/profiles/:id', async (match) => {
       const { host, id } = match.params;
-      const cacheKey = `profile_${host}_${id}`;
+      const cacheKey = `${host}_${id}`;
 
       const disableOldPage = () => {
         setIsHomepage(false);
@@ -333,7 +333,7 @@ const App = () => {
       };
 
       // 1. Attempt to retrieve from cache
-      const cachedProfile = globalCache.get(cacheKey);
+      const cachedProfile = profileCache.get(cacheKey);
       if (cachedProfile) {
         console.log(`[Cache] Profile ${id} retrieved from cache.`);
         disableOldPage();
@@ -356,7 +356,7 @@ const App = () => {
             id: profileData.id,
           };
           // 3. Save to cache
-          globalCache.set(cacheKey, profileObj);
+          profileCache.set(cacheKey, profileObj);
           disableOldPage();
           setViewingImage(null);
           setViewingProfile(profileObj);
@@ -1297,7 +1297,7 @@ const App = () => {
    */
   const handleOpenImage = (img) => {
     const host = new URL(img.booruUrl).hostname;
-    globalCache.set(`img_${img.id}`, img);
+    imageCache.set(`${host}_${img.id}`, img);
     router.current.navigate(`/${host}/images/${img.id}`);
   };
 
@@ -1308,7 +1308,7 @@ const App = () => {
    */
   const handleOpenProfile = (booruUrl, username, id) => {
     const host = new URL(booruUrl).hostname;
-    globalCache.set(`profile_${booruUrl}_${id}`, { booruUrl, username, id });
+    profileCache.set(`${host}_${id}`, { booruUrl, username, id });
     router.current.navigate(`/${host}/profiles/${id}`);
   };
 
