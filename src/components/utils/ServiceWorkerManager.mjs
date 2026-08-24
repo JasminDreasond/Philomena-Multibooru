@@ -19,6 +19,10 @@ class ServiceWorkerManager {
     console.warn('[ServiceWorkerManager] No active controller to receive message.');
   }
 
+  get isSwAvailable() {
+    return 'serviceWorker' in navigator && navigator.serviceWorker.controller ? true : false;
+  }
+
   /**
    * @param {string} swUrl - The path to the service worker file.
    * @param {string} version - The current application version.
@@ -101,7 +105,7 @@ class ServiceWorkerManager {
     if (!payload || typeof payload !== 'object') {
       throw new TypeError('Payload must be an object.');
     }
-    if (navigator.serviceWorker.controller) {
+    if (this.isSwAvailable) {
       navigator.serviceWorker.controller.postMessage(payload);
     } else this.#noSwControllerWarn();
   }

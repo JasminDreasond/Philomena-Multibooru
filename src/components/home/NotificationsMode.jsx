@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { searchImagesApi } from '../../services/api/Images';
 import { geString, parseQueryResults } from '../../queries/globalTags';
+import swManager from '../utils/ServiceWorkerManager.mjs';
 
 /**
  * @param {{ accounts: import('../../services/api/System').Account[], visibleBoorus: string[], onClose: () => void, onGoHome: () => void }} props
@@ -99,56 +100,44 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
       }
     };
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('message', handleSwMessage);
-    }
+    swManager.addEventListener(handleSwMessage);
 
     return () => {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.removeEventListener('message', handleSwMessage);
-      }
+      swManager.removeEventListener(handleSwMessage);
     };
   }, []);
 
   useEffect(() => {
     return () => {
-      if (isActive && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({ type: 'STOP_SCANNER' });
+      if (isActive) {
+        swManager.postMessage({ type: 'STOP_SCANNER' });
       }
     };
   }, [isActive]);
 
-  /**
-   * @returns {Promise<void>}
-   */
+  /** @returns {Promise<void>} */
   const requestPermission = async () => {
     /** @type {NotificationPermission} */
     const result = await Notification.requestPermission();
     setPermission(result);
   };
 
-  /**
-   * @returns {void}
-   */
+  /** @returns {void} */
   const toggleScanner = () => {
     setIsWaitingSw(true);
 
     if (!isActive) {
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      if (swManager.isSwAvailable) {
         /** @type {string} */
         const queryKey = searchType === 'custom' ? `custom|${customQuery}` : searchType;
-
-        navigator.serviceWorker.controller.postMessage({
-          type: 'REQUEST_START_SCANNER',
-          queryKey,
-        });
+        swManager.postMessage({ type: 'REQUEST_START_SCANNER', queryKey });
       } else {
         setIsActive(true);
         setIsWaitingSw(false);
       }
     } else {
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({ type: 'STOP_SCANNER' });
+      if (swManager.isSwAvailable) {
+        swManager.postMessage({ type: 'STOP_SCANNER' });
       } else {
         setIsActive(false);
         setIsWaitingSw(false);
@@ -176,10 +165,7 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
     if (Notification.permission !== 'granted') return;
 
     /** @type {Notification} */
-    const notification = new Notification(title, {
-      body,
-      icon: '/icon/512.png',
-    });
+    const notification = new Notification(title, { body, icon: '/icon/512.png' });
 
     /**
      * @param {Event} e
@@ -200,9 +186,6 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
   useEffect(() => {
     if (!isActive || permission !== 'granted') return;
 
-    /**
-     * @returns {Promise<void>}
-     */
     const checkNewImages = async () => {
       if (visibleBoorus.length === 0 || accounts.length === 0) return;
 
@@ -254,12 +237,7 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
               sendNotification(acc.booruUrl, title, body);
 
               // Tell the Service Worker to broadcast the alert icon to all tabs
-              if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                navigator.serviceWorker.controller.postMessage({
-                  type: 'FAVICON_UPDATE',
-                  icon: 'alert',
-                });
-              }
+              swManager.postMessage({ type: 'FAVICON_UPDATE', icon: 'alert' });
             }
 
             lastSeenIds.current[trackerKey] = latestImage.id;
@@ -296,13 +274,8 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
     setIntervalMinutes(val);
   };
 
-  /**
-   * @returns {void}
-   */
   const enforceMinimum = () => {
-    if (intervalMinutes < 30) {
-      setIntervalMinutes(30);
-    }
+    if (intervalMinutes < 30) setIntervalMinutes(30);
   };
 
   return (
@@ -312,11 +285,7 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
     >
       <div
         className="card no-anim shadow-lg border-0 p-5 text-center"
-        style={{
-          backgroundColor: 'var(--app-surface)',
-          maxWidth: '500px',
-          width: '100%',
-        }}
+        style={{ backgroundColor: 'var(--app-surface)', maxWidth: '500px', width: '100%' }}
       >
         <div className="mb-4" style={{ fontSize: '4rem' }}>
           ⏰
