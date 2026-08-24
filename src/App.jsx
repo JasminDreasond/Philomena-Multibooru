@@ -3,7 +3,7 @@ import TinySimpleDice from 'tiny-essentials/libs/math/TinySimpleDice';
 import { shuffleArray } from 'tiny-essentials/basics/array';
 import { alert } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 import TinyRouter from './TinyRouter.mjs';
-import { imageCache, profileCache } from './tools/DataCache';
+import TinyMapCache from './tools/DataCache';
 import { initDatabase } from './db/connection';
 import { applyThemeFromStorage } from './services/theme';
 
@@ -41,6 +41,12 @@ import { updateEmbedMetadata } from './tools/utils';
 /**
  * @typedef {(e: import('react').MouseEvent<HTMLAnchorElement, MouseEvent>, query: string, sf: string, sd: string) => void} HandleQuickLinkClick
  */
+
+/** @type {TinyMapCache<ImageResult>} */
+const imageCache = new TinyMapCache();
+
+/** @type {TinyMapCache<{ booruUrl: string; username: string; id: number; }>} */
+const profileCache = new TinyMapCache();
 
 const App = () => {
   /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */

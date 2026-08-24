@@ -167,9 +167,4 @@ class TinyMapCache {
   }
 }
 
-// Exporting a single instance (Singleton) to be used throughout the App
-/** @type {TinyMapCache<any>} */
-export const imageCache = new TinyMapCache();
-
-/** @type {TinyMapCache<any>} */
-export const profileCache = new TinyMapCache();
+export default TinyMapCache;
