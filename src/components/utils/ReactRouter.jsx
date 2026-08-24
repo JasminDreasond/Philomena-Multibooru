@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import TinyDomReadyManager from 'tiny-essentials/libs/html/TinyDomReadyManager';
-import swManager from './ServiceWorkerManager.mjs';
+import swManager from './TinyServiceWorker.mjs';
 
 const readyPage = new TinyDomReadyManager();
 readyPage.onReady(
