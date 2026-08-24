@@ -18,6 +18,8 @@ class ServiceWorkerManager extends EventEmitter {
   #swUrl;
   /** @type {string} */
   #version;
+  /** @type {((event: MessageEvent) => void) | null} */
+  #messageHandler = null;
 
   #noSwControllerWarn() {
     console.warn('[ServiceWorkerManager] No active controller to receive message.');
@@ -106,8 +108,8 @@ class ServiceWorkerManager extends EventEmitter {
 
       this.#registration = await navigator.serviceWorker.register(this.#swUrl);
 
-      // Bridge: Listen to native browser events and emit them via EventEmitter
-      navigator.serviceWorker.addEventListener('message', (event) => {
+      // Store the handler in a private field so it can be removed later
+      this.#messageHandler = (event) => {
         /** @type {ServiceWorkerMessagePayload} */
         const payload = event.data;
         if (!payload || typeof payload !== 'object') return;
@@ -118,7 +120,9 @@ class ServiceWorkerManager extends EventEmitter {
         )
           return;
         super.emit(payload.type, payload.data);
-      });
+      };
+
+      navigator.serviceWorker.addEventListener('message', this.#messageHandler);
 
       console.log('[ServiceWorkerManager] Registered successfully.');
     } catch (error) {
@@ -187,6 +191,26 @@ class ServiceWorkerManager extends EventEmitter {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.removeEventListener('message', callback);
     } else this.#noSwControllerWarn();
+  }
+
+  /**
+   * Cleans up all event listeners and references to prevent memory leaks.
+   * @returns {void}
+   */
+  destroy() {
+    // 1. Remove the listener from the native Service Worker API
+    if (this.#messageHandler && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.removeEventListener('message', this.#messageHandler);
+      this.#messageHandler = null;
+    }
+
+    // 2. Remove all listeners attached to this EventEmitter instance
+    this.removeAllListeners();
+
+    // 3. Clear the registration reference
+    this.#registration = null;
+
+    console.log(`[ServiceWorkerManager] [${this.#id}] Destroyed successfully.`);
   }
 }
 
