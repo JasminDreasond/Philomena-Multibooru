@@ -316,7 +316,7 @@ const App = () => {
       // 1. Attempt to retrieve from cache first
       const cachedImg = imageCache.get(cacheKey);
       if (cachedImg) {
-        console.log(`[Cache] Image ${id} retrieved from cache.`);
+        console.log(`[Cache] [${host}] Image ${id} retrieved from cache.`);
         disableOldPage();
         startPage(cachedImg);
         return; // Stop here to avoid unnecessary fetch
@@ -355,7 +355,7 @@ const App = () => {
       // 1. Attempt to retrieve from cache
       const cachedProfile = profileCache.get(cacheKey);
       if (cachedProfile) {
-        console.log(`[Cache] Profile ${id} retrieved from cache.`);
+        console.log(`[Cache] [${host}] Profile ${id} retrieved from cache.`);
         disableOldPage();
         setIs404(false);
         setViewingImage(null);
