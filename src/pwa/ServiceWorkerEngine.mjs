@@ -94,25 +94,67 @@ class ServiceWorkerEngine extends EventEmitter {
   }
 
   /**
-   * Performs rigorous validation of the configuration object.
-   * @param {ServiceWorkerSettings} config - The configuration object to validate.
-   * @throws {TypeError} If the configuration structure is invalid.
+   * Performs rigorous deep validation of the configuration object.
+   *
+   * @param {ServiceWorkerSettings | Partial<ServiceWorkerSettings>} config - The configuration object to validate.
+   * @param {boolean} [strict=false] - If true, ensures all properties defined in the typedef are present.
+   * @throws {TypeError} If any property is of the wrong type or is missing when in strict mode.
    */
-  #validateConfig(config) {
+  #validateConfig(config, strict = false) {
     if (typeof config !== 'object' || config === null) {
       throw new TypeError('Configuration must be a non-null object.');
     }
-    if (
-      (typeof config.fetch !== 'undefined' && typeof config.fetch !== 'object') ||
-      config.fetch === null
-    ) {
-      throw new TypeError('Fetch configuration must be a non-null object.');
+
+    /**
+     * Helper to validate existence and type.
+     * @template {Record<any, any>}
+     * @param {T} obj - The object containing the property.
+     * @param {string} key - The property name.
+     * @param {string} type - The expected typeof result.
+     * @param {string} context - Context for the error message.
+     */
+    const validateField = (obj, key, type, context) => {
+      const value = obj[key];
+      if (strict && value === undefined) {
+        throw new TypeError(`Missing required property: "${context}.${key}"`);
+      }
+      if (value !== undefined && typeof value !== type) {
+        throw new TypeError(
+          `Invalid type for "${context}.${key}": expected ${type}, got ${typeof value}`,
+        );
+      }
+    };
+
+    // Deep validation for 'fetch' configuration
+    if (config.fetch !== undefined) {
+      if (typeof config.fetch !== 'object' || config.fetch === null) {
+        throw new TypeError('Fetch configuration must be a non-null object.');
+      }
+      validateField(config.fetch, 'enabled', 'boolean', 'fetch');
+
+      if (config.fetch.router !== undefined) {
+        if (typeof config.fetch.router !== 'object' || config.fetch.router === null) {
+          throw new TypeError('Fetch router configuration must be a non-null object.');
+        }
+        validateField(config.fetch.router, 'enabled', 'boolean', 'fetch.router');
+        validateField(config.fetch.router, 'validator', 'function', 'fetch.router');
+        validateField(config.fetch.router, 'notFoundHandler', 'function', 'fetch.router');
+      } else if (strict) {
+        throw new TypeError('Missing required property: "fetch.router"');
+      }
+    } else if (strict) {
+      throw new TypeError('Missing required property: "fetch"');
     }
-    if (
-      (typeof config.messaging !== 'undefined' && typeof config.messaging !== 'object') ||
-      config.messaging === null
-    ) {
-      throw new TypeError('Messaging configuration must be a non-null object.');
+
+    // Deep validation for 'messaging' configuration
+    if (config.messaging !== undefined) {
+      if (typeof config.messaging !== 'object' || config.messaging === null) {
+        throw new TypeError('Messaging configuration must be a non-null object.');
+      }
+      validateField(config.messaging, 'enabled', 'boolean', 'messaging');
+      validateField(config.messaging, 'allowPingPong', 'boolean', 'messaging');
+    } else if (strict) {
+      throw new TypeError('Missing required property: "messaging"');
     }
   }
 
@@ -122,7 +164,7 @@ class ServiceWorkerEngine extends EventEmitter {
    */
   constructor(config = {}) {
     super();
-    this.#validateConfig(config);
+    this.#validateConfig(config, false);
     this.#config = {
       fetch: config.fetch
         ? {
@@ -137,7 +179,7 @@ class ServiceWorkerEngine extends EventEmitter {
         ? { ...this.#config.messaging, ...config.messaging }
         : this.#config.messaging,
     };
-    this.#validateConfig(this.#config);
+    this.#validateConfig(config, true);
   }
 
   /**
