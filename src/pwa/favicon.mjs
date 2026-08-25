@@ -5,16 +5,13 @@ import { tinySw } from './config.mjs';
 const sw = self;
 
 // Favicon Update Logic
-tinySw.addMessage('FAVICON_UPDATE', async ({ data, event }) => {
+tinySw.addMessage('FAVICON_UPDATE', async ({ data, event, toReply }) => {
   console.log(`[ServiceWorker] Broadcasting favicon update: ${data.icon}`);
 
   event.waitUntil(
     sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       clientList.forEach((client) => {
-        client.postMessage({
-          type: 'FAVICON_UPDATE',
-          data: { icon: data.icon },
-        });
+        toReply(client, 'FAVICON_UPDATE', { icon: data.icon });
       });
     }),
   );

@@ -26,7 +26,7 @@ const cleanGhostScanners = async () => {
 };
 
 // Scanner Logic
-tinySw.addMessage('REQUEST_START_SCANNER', async ({ event, clientId, data }) => {
+tinySw.addMessage('REQUEST_START_SCANNER', async ({ clientId, data, reply }) => {
   await cleanGhostScanners();
 
   /** @type {string} */
@@ -43,16 +43,16 @@ tinySw.addMessage('REQUEST_START_SCANNER', async ({ event, clientId, data }) => 
   }
 
   if (isDuplicate) {
-    event.source.postMessage({ type: 'SCANNER_DUPLICATE_QUERY' });
+    reply('SCANNER_DUPLICATE_QUERY');
   } else if (activeScanners.size >= 3 && !activeScanners.has(clientId)) {
-    event.source.postMessage({ type: 'SCANNER_LIMIT_REACHED' });
+    reply('SCANNER_LIMIT_REACHED');
   } else {
     activeScanners.set(clientId, queryKey);
-    event.source.postMessage({ type: 'SCANNER_STARTED' });
+    reply('SCANNER_STARTED');
   }
 });
 
-tinySw.addMessage('STOP_SCANNER', ({ event, clientId }) => {
+tinySw.addMessage('STOP_SCANNER', ({ clientId, reply }) => {
   activeScanners.delete(clientId);
-  event.source.postMessage({ type: 'SCANNER_STOPPED' });
+  reply('SCANNER_STOPPED');
 });

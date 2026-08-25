@@ -1,5 +1,7 @@
 import { EventEmitter } from 'events';
 
+///////////////////////////////////////////////////////////////////
+
 /**
  * @typedef {Object} PartialServiceWorkerSettings
  * @property {PartialFetchOptions} fetch - Partial configuration for fetch event interception.
@@ -11,6 +13,8 @@ import { EventEmitter } from 'events';
  * @property {boolean} [enabled] - Indicates if fetch interception is enabled.
  * @property {Partial<RouterOptions>} router - Partial configuration for the routing logic.
  */
+
+///////////////////////////////////////////////////////////////////
 
 /**
  * @typedef {Object} FetchOptions
@@ -37,17 +41,48 @@ import { EventEmitter } from 'events';
  * @property {MessagingOptions} messaging - Configuration for message event handling.
  */
 
+///////////////////////////////////////////////////////////////////
+
 /**
- * @typedef {Object} MessageData
+ * @typedef {any} MessagePayload
+ */
+
+/**
+ * @typedef {Object} MessagingData
+ * @property {string} type
+ * @property {MessagePayload} data
+ */
+
+/**
+ * @callback MessageReplyTemplate
+ * @param {string} type
+ * @param {MessagePayload} data
+ * @returns {MessagingData}
+ */
+
+/**
+ * @callback MessageToReplyTemplate
+ * @param {Client} event
+ * @param {string} type
+ * @param {MessagePayload} data
+ */
+
+/**
+ * @typedef {Object} MessageObj
  * @property {ExtendableMessageEvent} event - The original message event.
  * @property {string} clientId - The ID of the client that sent the message.
- * @property {any} data - The payload sent within the message.
+ * @property {MessagePayload} data - The payload sent within the message.
+ * @property {MessageToReplyTemplate} toReply
+ * @property {MessageReplyTemplate} replyTemplate
+ * @property {(type: string, data: MessagePayload) => void} reply
  */
 
 /**
  * @callback MessageCallback
- * @param {MessageData} msg - The message data object.
+ * @param {MessageObj} msg - The message data object.
  */
+
+///////////////////////////////////////////////////////////////////
 
 /** @type {ServiceWorkerGlobalScope} */
 // @ts-ignore
@@ -317,7 +352,7 @@ class ServiceWorkerEngine extends EventEmitter {
       const ev = event;
       /** @type {Client} */
       const source = event.source instanceof Client ? event.source : null;
-      /** @type {any} */
+      /** @type {Partial<MessagingData>} */
       const data = event.data;
       /** @type {string} */
       const clientId = source.id;
@@ -327,8 +362,24 @@ class ServiceWorkerEngine extends EventEmitter {
       // Get the registered message callback
       const message = this.#messages.get(type ?? '');
 
-      /** @type {MessageData} */
-      const msgData = { event: ev, data, clientId };
+      /** @type {MessageReplyTemplate} */
+      const replyTemplate = (nType, payload) => {
+        return { type: nType, data: payload };
+      };
+
+      /** @type {MessageToReplyTemplate} */
+      const toReply = (source, nType, payload) => source.postMessage(replyTemplate(nType, payload));
+
+      /** @type {MessageObj} */
+      const msgData = {
+        event: ev,
+        data: data?.data,
+        clientId,
+        replyTemplate,
+        toReply,
+        reply: (nType, payload) =>
+          event.source instanceof Client && toReply(event.source, nType, payload),
+      };
 
       // Emit events
       this.emit('beforeMessage', type, msgData);
