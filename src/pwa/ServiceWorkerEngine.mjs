@@ -45,41 +45,47 @@ import { EventEmitter } from 'events';
 
 /**
  * @typedef {any} MessagePayload
+ * The data payload contained within the message.
  */
 
 /**
+ * Represents the structured data format for messages sent via postMessage.
  * @typedef {Object} MessagingData
- * @property {string} type
- * @property {MessagePayload} data
+ * @property {string} type - The identifier for the message type.
+ * @property {MessagePayload} data - The actual payload of the message.
  */
 
 /**
+ * A function used to format a reply message into a standard MessagingData object.
  * @callback MessageReplyTemplate
- * @param {string} type
- * @param {MessagePayload} data
- * @returns {MessagingData}
+ * @param {string} type - The type identifier for the reply message.
+ * @param {MessagePayload} data - The payload to be sent in the reply.
+ * @returns {MessagingData} The formatted message object.
  */
 
 /**
+ * A function that handles the actual postMessage call to a specific Client using a reply template.
  * @callback MessageToReplyTemplate
- * @param {Client} event
- * @param {string} type
- * @param {MessagePayload} data
+ * @param {Client} client - The target client to receive the message.
+ * @param {string} type - The type identifier for the reply message.
+ * @param {MessagePayload} data - The payload to be sent in the reply.
  */
 
 /**
+ * An enriched message object containing the event, client information, and utility methods for responding.
  * @typedef {Object} MessageObj
  * @property {ExtendableMessageEvent} event - The original message event.
  * @property {string} clientId - The ID of the client that sent the message.
  * @property {MessagePayload} data - The payload sent within the message.
- * @property {MessageToReplyTemplate} toReply
- * @property {MessageReplyTemplate} replyTemplate
- * @property {(type: string, data: MessagePayload) => void} reply
+ * @property {MessageToReplyTemplate} toReply - A function to send a reply to the message source.
+ * @property {MessageReplyTemplate} replyTemplate - A template function to format reply messages.
+ * @property {(type: string, data: MessagePayload) => void} reply - A convenience method to reply to the message source.
  */
 
 /**
+ * A callback function executed when a registered message type is received.
  * @callback MessageCallback
- * @param {MessageObj} msg - The message data object.
+ * @param {MessageObj} msg - The enriched message data object.
  */
 
 ///////////////////////////////////////////////////////////////////
@@ -348,19 +354,35 @@ class ServiceWorkerEngine extends EventEmitter {
     }
 
     sw.addEventListener('message', async (event) => {
-      /** @type {ExtendableMessageEvent} */
-      const ev = event;
+      // Validation: Ensure the source is a valid Client
+      if (!(event.source instanceof Client)) {
+        console.error('[SW-Engine] Message received from an invalid source (not a Client).');
+        return;
+      }
+
+      // Validation: Ensure event.data is a non-null object
+      if (typeof event.data !== 'object' || event.data === null) {
+        console.error('[SW-Engine] Received message with invalid data format (expected object).');
+        return;
+      }
+
+      // Validation: Ensure 'type' exists and is a string
+      if (typeof event.data.type !== 'string') {
+        console.error('[SW-Engine] Received message with missing or invalid "type" string.');
+        return;
+      }
+
       /** @type {Client} */
-      const source = event.source instanceof Client ? event.source : null;
-      /** @type {Partial<MessagingData>} */
-      const data = event.data;
+      const source = event.source;
       /** @type {string} */
       const clientId = source.id;
-      /** @type {string|null} */
-      const type = data?.type ?? null;
+      /** @type {string} */
+      const type = event.data.type;
+      /** @type {MessagePayload} */
+      const data = event.data.data;
 
       // Get the registered message callback
-      const message = this.#messages.get(type ?? '');
+      const message = this.#messages.get(type);
 
       /** @type {MessageReplyTemplate} */
       const replyTemplate = (nType, payload) => {
@@ -368,22 +390,34 @@ class ServiceWorkerEngine extends EventEmitter {
       };
 
       /** @type {MessageToReplyTemplate} */
-      const toReply = (source, nType, payload) => source.postMessage(replyTemplate(nType, payload));
+      const toReply = (targetSource, nType, payload) =>
+        targetSource.postMessage(replyTemplate(nType, payload));
 
       /** @type {MessageObj} */
       const msgData = {
-        event: ev,
-        data: data?.data,
+        event,
+        data,
         clientId,
         replyTemplate,
         toReply,
-        reply: (nType, payload) =>
-          event.source instanceof Client && toReply(event.source, nType, payload),
+        reply: (nType, payload) => {
+          if (!(event.source instanceof Client)) {
+            console.warn('[SW-Engine] Attempted to reply to a non-client source.');
+            return;
+          }
+          toReply(event.source, nType, payload);
+        },
       };
 
       // Emit events
       this.emit('beforeMessage', type, msgData);
-      if (message) await message(msgData);
+      if (message) {
+        try {
+          await message(msgData);
+        } catch (error) {
+          console.error(`[SW-Engine] Error executing handler for message type "${type}":`, error);
+        }
+      }
       this.emit('afterMessage', type, msgData);
     });
   }
