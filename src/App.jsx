@@ -48,6 +48,7 @@ const imageCache = new TinyMapCache();
 /** @type {TinyMapCache<{ booruUrl: string; username: string; id: number; }>} */
 const profileCache = new TinyMapCache();
 
+if (import.meta.env.DEV) window.TinyMapCache = TinyMapCache;
 const scrollUp = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
 const App = () => {
