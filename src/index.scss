@@ -1,3 +1,4 @@
+@use 'sass:meta';
 :root {
   /* Paleta Light (Moderna e Vibrante) */
   --app-bg: #f8fafc;
@@ -83,65 +84,65 @@
 /* =========================================
    Reset Global & Animações Base
    ========================================= */
-@import './scss/Base.scss';
+@include meta.load-css('scss/Base.scss');
 
 /* =========================================
    Cards e Superfícies
    ========================================= */
-@import './scss/Cards.scss';
+@include meta.load-css('scss/Cards.scss');
 
 /* =========================================
    Inputs Globais (Search, Forms)
    ========================================= */
-@import './scss/Inputs.scss';
+@include meta.load-css('scss/Inputs.scss');
 
 /* =========================================
    Botões, Badges e Spinners
    ========================================= */
-@import './scss/Buttons.scss';
+@include meta.load-css('scss/Buttons.scss');
 
 /* =========================================
    Paginação
    ========================================= */
-@import './scss/Pagination.scss';
+@include meta.load-css('scss/Pagination.scss');
 
 /* =========================================
    Alertas Dashboard Modernos
    ========================================= */
-@import './scss/Alerts.scss';
+@include meta.load-css('scss/Alerts.scss');
 
 /* =========================================
    Badges e Interações (Fav, Up, Down)
    ========================================= */
-@import './scss/Badges.scss';
+@include meta.load-css('scss/Badges.scss');
 
 /* =========================================
    Navbar e Logo (Animações de Hover)
    ========================================= */
-@import './scss/Navbar.scss';
+@include meta.load-css('scss/Navbar.scss');
 
 /* =========================================
    Layout: Sidebar Responsiva
    ========================================= */
-@import './scss/Sidebar.scss';
+@include meta.load-css('scss/Sidebar.scss');
 
 /* =========================================
    Philomena Classic Viewer Styles
    ========================================= */
-@import './scss/Viewer.scss';
+@include meta.load-css('scss/Viewer.scss');
 
 /* =========================================
    Classic Tags Styling with Hover Animation
    ========================================= */
-@import './scss/Tags.scss';
+@include meta.load-css('scss/Tags.scss');
 
 /* =========================================
    Video Player
    ========================================= */
-@import './scss/VideoPlayer.scss';
+@include meta.load-css('scss/VideoPlayer.scss');
 
 /* =========================================
    Selection & Scrollbar Optimization
    ========================================= */
-@import './scss/Selection.scss';
-@import './scss/Scrollbar.scss';
+@include meta.load-css('scss/Selection.scss');
+@include meta.load-css('scss/Scrollbar.scss');

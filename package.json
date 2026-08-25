@@ -2,14 +2,14 @@
   "name": "philomena-multibooru",
   "description": "Run philomena multibooru instances in a single page.",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.1.0",
   "type": "module",
   "ethereum": "jasmindreasond.x",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "fix:prettier": "prettier --write ./src/* && prettier --write ./vite.config.js  && prettier --write ./eslint.config.js && prettier --write ./index.html && prettier --write ./public/sw.js",
+    "fix:prettier": "prettier --write ./src/* && prettier --write ./vite.config.js  && prettier --write ./eslint.config.js && prettier --write ./index.html",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -33,6 +33,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "prettier": "3.6.2",
+    "sass-embedded": "^1.102.0",
     "vite": "^7.3.1",
     "vite-plugin-node-polyfills": "^0.28.0"
   }

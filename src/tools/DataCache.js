@@ -6,11 +6,13 @@
  */
 
 /**
+ * A Map collection where keys are strings and values are CacheEntry objects.
  * @template T
  * @typedef {Map<string, CacheEntry<T>>} CacheMap
  */
 
 /**
+ * A plain object representation of the cache, where keys are strings and values are CacheEntry objects.
  * @template T
  * @typedef {Object.<string, CacheEntry<T>>} CacheObject
  */
@@ -20,6 +22,13 @@
  * In-memory cache manager to prevent duplicate requests.
  */
 class TinyMapCache {
+  /** @type {Set<TinyMapCache<any>>} */
+  static #instances = new Set();
+
+  static get instancesAmount() {
+    return TinyMapCache.#instances.size;
+  }
+
   /** @type {CacheMap<T>} */
   #cache = new Map();
   /**
@@ -120,6 +129,7 @@ class TinyMapCache {
       throw new TypeError('The cache key must be a string.');
     }
     this.purgeExpired();
+    if (!TinyMapCache.#instances.has(this)) TinyMapCache.#instances.add(this);
     this.#cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -146,16 +156,23 @@ class TinyMapCache {
   }
 
   /**
-   * Iterates through the entire cache and removes all entries that have expired.
+   * Iterates through the current cache and removes all entries that have exceeded the TTL.
+   * @param {boolean} [clearAll=true] - If true, triggers a purge on all other active cache instances.
    * @returns {void}
    */
-  purgeExpired() {
+  purgeExpired(clearAll) {
     const now = Date.now();
     for (const [key, entry] of this.#cache.entries()) {
       if (now - entry.timestamp > this.#ttl) {
         this.#cache.delete(key);
       }
     }
+    if (this.#cache.size < 1) TinyMapCache.#instances.delete(this);
+
+    if (clearAll)
+      TinyMapCache.#instances.forEach((i) => {
+        if (i !== this) i.purgeExpired(false);
+      });
   }
 
   /**
@@ -163,6 +180,7 @@ class TinyMapCache {
    * @returns {void}
    */
   clear() {
+    TinyMapCache.#instances.delete(this);
     this.#cache.clear();
   }
 }
