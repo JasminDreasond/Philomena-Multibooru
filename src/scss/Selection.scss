@@ -1,0 +1,8 @@
+/**
+ * Text selection styling using the primary theme color.
+ * We use a solid color for clarity and to maintain accessibility.
+ */
+::selection {
+  background-color: var(--app-primary-hover);
+  color: var(--app-text);
+}

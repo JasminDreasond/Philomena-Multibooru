@@ -9,7 +9,6 @@ import '@vidstack/react/player/styles/default/layouts/video.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import 'bootstrap/dist/css/bootstrap.min.css'; // Bootstrap import
 import './index.scss';
-import './tags.scss';
 
 import ServiceWorkerSync from './components/utils/ReactRouter';
 import App from './App.jsx';

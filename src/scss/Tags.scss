@@ -1,3 +1,64 @@
+/* =========================================
+   Tags Styling
+   ========================================= */
+
+.philo-tag-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.philo-tag {
+  display: inline-flex;
+  font-size: 0.8rem;
+  border-radius: 3px;
+  overflow: hidden;
+  text-decoration: none;
+  font-weight: 600;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: filter 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  &:hover {
+    filter: brightness(1.15);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+  }
+
+  &:active {
+    filter: brightness(0.9);
+  }
+}
+
+.philo-tag-name {
+  background-color: #2c3e50;
+  color: #ecf0f1;
+  padding: 2px 8px;
+  transition: background-color 0.2s;
+}
+
+.philo-tag-count {
+  background-color: rgba(0, 0, 0, 0.2);
+  color: #ffffff;
+  padding: 2px 6px;
+  opacity: 0.8;
+}
+
+[data-theme='light'] {
+  .philo-tag-name {
+    background-color: #e2e8f0;
+    color: #334155;
+  }
+
+  .philo-tag-count {
+    background-color: #cbd5e1;
+    color: #1e293b;
+  }
+}
+
+/* =========================================
+   Custom Tags Styling
+   ========================================= */
+
 .philo-tag {
   /* Ratings */
   &.tag-safe {

@@ -1,0 +1,17 @@
+.booru-video-player {
+  max-height: 85vh;
+  width: auto;
+  border: 0px solid transparent !important;
+
+  .vds-slider-track-fill {
+    background-color: var(--app-primary);
+  }
+
+  video {
+    height: 100%;
+  }
+}
+
+:fullscreen .booru-video-player {
+  max-height: unset;
+}

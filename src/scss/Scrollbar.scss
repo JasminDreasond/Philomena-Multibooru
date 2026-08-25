@@ -1,0 +1,41 @@
+/**
+ * Standard scrollbar styling for Firefox.
+ * Uses the theme's border color for the thumb and background for the track.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--app-border) var(--app-bg);
+}
+
+/**
+ * WebKit-based scrollbar styling (Chrome, Edge, Safari, Brave).
+ * Optimized for a modern, sleek look that matches the UI surfaces.
+ */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+/* The background of the scrollbar area */
+::-webkit-scrollbar-track {
+  background: var(--app-bg);
+}
+
+/* The draggable scrolling element */
+::-webkit-scrollbar-thumb {
+  background-color: var(--app-border);
+  border-radius: 20px;
+  /* Creates a "padding" effect around the thumb */
+  border: 2px solid var(--app-bg);
+  transition: background-color 0.3s ease;
+}
+
+/* Visual feedback when hovering over the scrollbar */
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--app-primary);
+}
+
+/* Visual feedback when clicking/dragging the scrollbar */
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--app-primary-hover);
+}

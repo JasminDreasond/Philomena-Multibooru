@@ -1,0 +1,32 @@
+.custom-navbar {
+  background-color: var(--app-navbar-bg) !important;
+  color: var(--app-navbar-text) !important;
+  transition: background-color 0.4s ease;
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+.app-logo {
+  height: 24px;
+  width: auto;
+  margin-right: 8px;
+  border-radius: 4px;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.navbar-brand {
+  font-size: 1.1rem !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  &:hover {
+    transform: scale(1.02);
+    opacity: 0.9;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &:hover .app-logo {
+    transform: rotate(-8deg) scale(1.1);
+  }
+}

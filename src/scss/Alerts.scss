@@ -1,0 +1,23 @@
+.alert {
+  border: none !important;
+  border-left: 5px solid currentColor !important;
+  border-radius: 8px;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  padding: 1rem 1.25rem;
+}
+
+.alert-warning {
+  background-color: var(--alert-warning-bg) !important;
+  color: var(--alert-warning-text) !important;
+}
+
+.alert-info {
+  background-color: var(--alert-info-bg) !important;
+  color: var(--alert-info-text) !important;
+}
+
+.alert-danger {
+  background-color: var(--alert-danger-bg) !important;
+  color: var(--alert-danger-text) !important;
+}

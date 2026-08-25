@@ -1,0 +1,67 @@
+.btn {
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: 0.3px;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+}
+
+.text-primary {
+  color: var(--app-primary) !important;
+}
+
+.btn-primary,
+.btn-outline-primary {
+  border-color: var(--app-primary) !important;
+  color: #ffffff !important;
+  &:hover {
+    border-color: var(--app-primary-hover) !important;
+    background-color: var(--app-primary-hover) !important;
+  }
+}
+
+.btn-primary {
+  background-color: var(--app-primary) !important;
+}
+
+.btn-secondary {
+  background-color: var(--app-border) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+.btn-danger {
+  background-color: var(--app-danger) !important;
+  border-color: var(--app-danger) !important;
+  color: #ffffff !important;
+  &:hover {
+    background-color: var(--app-danger-hover) !important;
+    border-color: var(--app-danger-hover) !important;
+  }
+}
+
+.btn-outline-light {
+  border-color: var(--app-navbar-text) !important;
+  color: var(--app-navbar-text) !important;
+  &:hover {
+    background-color: var(--app-navbar-text) !important;
+    color: var(--app-navbar-bg) !important;
+  }
+}
+
+.custom-badge {
+  background-color: var(--app-badge-bg) !important;
+  color: var(--app-badge-text) !important;
+}
+
+.spinner-border {
+  color: var(--app-spinner-color) !important;
+}

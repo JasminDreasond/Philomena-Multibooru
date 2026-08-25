@@ -1,0 +1,31 @@
+.pagination {
+  gap: 4px;
+}
+
+.page-link {
+  background-color: var(--app-surface) !important;
+  color: var(--app-text) !important;
+  border: 1px solid var(--app-border) !important;
+  border-radius: 8px !important;
+  margin: 0 2px;
+  transition: all 0.2s ease;
+  font-weight: 600;
+
+  &:hover:not(:disabled) {
+    background-color: var(--app-border) !important;
+    transform: translateY(-2px);
+  }
+}
+
+.page-item.active .page-link {
+  background-color: var(--app-primary) !important;
+  border-color: var(--app-primary) !important;
+  color: #ffffff !important;
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.page-item.disabled .page-link {
+  opacity: 0.5;
+  background-color: transparent !important;
+}

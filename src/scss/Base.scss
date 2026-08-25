@@ -1,0 +1,49 @@
+body {
+  background-color: var(--app-bg) !important;
+  color: var(--app-text) !important;
+  transition:
+    background-color 0.4s ease,
+    color 0.4s ease;
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+a {
+  &:not(.btn):not(.btn-tool),
+  &:not(.btn):not(.btn-tool):link,
+  &:not(.btn):not(.btn-tool):visited {
+    color: var(--app-primary);
+    text-decoration: none;
+  }
+
+  &:not(.btn):not(.btn-tool):hover {
+    color: var(--app-primary-hover);
+  }
+}
+
+.dropdown-item {
+  color: #ffffff;
+  a {
+    color: #ffffff !important;
+  }
+
+  &:hover {
+    color: #000000;
+  }
+
+  &:hover a {
+    color: #000000 !important;
+  }
+
+  &:active {
+    color: #ffffff !important;
+    background-color: var(--app-primary-hover) !important;
+  }
+
+  &:active a {
+    color: #ffffff !important;
+  }
+}

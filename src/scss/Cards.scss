@@ -1,0 +1,50 @@
+.card,
+.list-group-item,
+.modal-content {
+  background-color: var(--app-surface);
+  border: 1px solid var(--app-border);
+}
+
+.list-group-item.active {
+  background-color: var(--app-primary);
+  border: 1px solid var(--app-border);
+}
+
+.interaction-card {
+  border-radius: 12px;
+}
+
+.interaction-container,
+.interaction-card div {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.featured-images {
+  .interaction-card div,
+  .interaction-card,
+  .interaction-container,
+  .card-body {
+    border-radius: 0px;
+  }
+}
+
+.card:not(.no-anim),
+.list-group-item:not(.no-anim),
+.modal-content:not(.no-anim) {
+  transition: all 0.3s ease;
+}
+
+.card:hover:not(.no-anim) {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-theme='dark'] .card:hover:not(.no-anim) {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+.card-header {
+  border-bottom: 1px solid var(--app-border) !important;
+  color: #fff !important;
+}

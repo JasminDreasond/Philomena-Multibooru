@@ -1,0 +1,78 @@
+.interaction-container {
+  background: var(--interaction-bg);
+  backdrop-filter: blur(4px);
+  margin: 0;
+}
+
+.badge-interaction {
+  font-size: 9pt;
+  padding: 2px 4px;
+  transition: all 0.3s ease;
+  font-weight: 700;
+  background-color: transparent;
+}
+
+@media (max-width: 1500px) {
+  .badge-interaction {
+    font-size: 8pt;
+  }
+}
+
+@media (max-width: 1070px) {
+  .badge-interaction {
+    font-size: 8pt;
+  }
+}
+
+@media (max-width: 992px) {
+  .featured-images .badge-interaction {
+    font-size: 15pt;
+  }
+}
+
+@media (max-width: 600px) {
+  .badge-interaction {
+    font-size: 9pt;
+  }
+}
+
+@media (max-width: 400px) {
+  .badge-interaction {
+    font-size: 9pt;
+  }
+  .featured-images .badge-interaction {
+    font-size: 9pt;
+  }
+}
+
+.badge-interaction:hover {
+  transform: scale(1.1);
+}
+
+.badge-inactive {
+  color: var(--interaction-inactive);
+}
+
+.active-fave {
+  color: var(--fave-color);
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+.active-local-fav {
+  color: var(--local-fave-color);
+  text-shadow: 0 0 8px rgba(13, 202, 240, 0.4);
+}
+
+.active-up {
+  color: var(--upvote-color);
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.active-down {
+  color: var(--downvote-color);
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.text-muted {
+  color: var(--app-text-muted) !important;
+}

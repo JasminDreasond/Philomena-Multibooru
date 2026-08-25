@@ -1,0 +1,76 @@
+.viewer-toolbar {
+  background-color: var(--app-surface);
+  color: var(--app-text);
+  font-size: 0.85rem;
+}
+
+.viewer-toolbar .btn-tool,
+.viewer-subinfo .btn-tool {
+  color: var(--app-text);
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  transition: background-color 0.2s;
+  border-radius: 4px;
+}
+
+.viewer-toolbar .btn-tool:hover,
+.viewer-subinfo .btn-tool:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--app-text);
+}
+
+[data-theme='light'] .viewer-toolbar .btn-tool:hover,
+[data-theme='light'] .viewer-subinfo .btn-tool:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.viewer-subinfo {
+  background-color: var(--app-surface);
+  color: var(--app-text);
+  font-size: 0.8rem;
+  padding: 4px;
+  text-align: center;
+  border-bottom: 2px solid var(--app-border);
+}
+
+[data-theme='light'] .viewer-subinfo {
+  background-color: #ecf0f1;
+  color: #34495e;
+}
+
+.philo-panel {
+  border: 1px solid var(--app-border);
+  background-color: var(--app-surface);
+  margin-bottom: 16px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.philo-panel-header {
+  border-bottom: 1px solid var(--app-border);
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+}
+
+.philo-panel-header,
+.card-header {
+  background-color: var(--app-navbar-bg);
+}
+
+.philo-panel-body {
+  font-size: 0.9rem;
+  tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.3);
+  }
+}
