@@ -76,41 +76,46 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
   }, [customQuery]);
 
   useEffect(() => {
-    /**
-     * @param {MessageEvent} event
-     */
-    const handleSwMessage = (event) => {
-      if (event.data?.type === 'SCANNER_LIMIT_REACHED') {
-        setSwError('Security lock: A maximum of 3 tabs can run the scanner simultaneously.');
-        setIsActive(false);
-        setIsWaitingSw(false);
-      } else if (event.data?.type === 'SCANNER_DUPLICATE_QUERY') {
-        setSwError(
-          'Security lock: Another tab is already running a scanner with this exact query.',
-        );
-        setIsActive(false);
-        setIsWaitingSw(false);
-      } else if (event.data?.type === 'SCANNER_STARTED') {
-        setIsActive(true);
-        setSwError('');
-        setIsWaitingSw(false);
-      } else if (event.data?.type === 'SCANNER_STOPPED') {
-        setIsActive(false);
-        setIsWaitingSw(false);
-      }
+    const onScannerLimit = () => {
+      setSwError('Security lock: A maximum of 3 tabs can run the scanner simultaneously.');
+      setIsActive(false);
+      setIsWaitingSw(false);
     };
 
-    swManager.addEventListener(handleSwMessage);
+    const onScannerDuplicate = () => {
+      setSwError('Security lock: Another tab is already running a scanner with this exact query.');
+      setIsActive(false);
+      setIsWaitingSw(false);
+    };
+
+    const onScannerStart = () => {
+      setIsActive(true);
+      setSwError('');
+      setIsWaitingSw(false);
+    };
+
+    const onScannerStop = () => {
+      setIsActive(false);
+      setIsWaitingSw(false);
+    };
+
+    swManager.on('SCANNER_LIMIT_REACHED', onScannerLimit);
+    swManager.on('SCANNER_DUPLICATE_QUERY', onScannerDuplicate);
+    swManager.on('SCANNER_STARTED', onScannerStart);
+    swManager.on('SCANNER_STOPPED', onScannerStop);
 
     return () => {
-      swManager.removeEventListener(handleSwMessage);
+      swManager.off('SCANNER_LIMIT_REACHED', onScannerLimit);
+      swManager.off('SCANNER_DUPLICATE_QUERY', onScannerDuplicate);
+      swManager.off('SCANNER_STARTED', onScannerStart);
+      swManager.off('SCANNER_STOPPED', onScannerStop);
     };
   }, []);
 
   useEffect(() => {
     return () => {
       if (isActive) {
-        swManager.postMessage({ type: 'STOP_SCANNER' });
+        swManager.emit('STOP_SCANNER');
       }
     };
   }, [isActive]);
@@ -130,14 +135,14 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
       if (swManager.isSwAvailable) {
         /** @type {string} */
         const queryKey = searchType === 'custom' ? `custom|${customQuery}` : searchType;
-        swManager.postMessage({ type: 'REQUEST_START_SCANNER', queryKey });
+        swManager.emit('REQUEST_START_SCANNER', { queryKey });
       } else {
         setIsActive(true);
         setIsWaitingSw(false);
       }
     } else {
       if (swManager.isSwAvailable) {
-        swManager.postMessage({ type: 'STOP_SCANNER' });
+        swManager.emit('STOP_SCANNER');
       } else {
         setIsActive(false);
         setIsWaitingSw(false);
@@ -237,7 +242,7 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
               sendNotification(acc.booruUrl, title, body);
 
               // Tell the Service Worker to broadcast the alert icon to all tabs
-              swManager.postMessage({ type: 'FAVICON_UPDATE', icon: 'alert' });
+              swManager.emit('FAVICON_UPDATE', { icon: 'alert' });
             }
 
             lastSeenIds.current[trackerKey] = latestImage.id;

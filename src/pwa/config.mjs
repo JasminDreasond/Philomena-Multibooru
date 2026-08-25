@@ -1,6 +1,6 @@
 import ServiceWorkerEngine from './ServiceWorkerEngine.mjs';
 
-/** @type {import('./ServiceWorkerEngine.mjs').ServiceWorkerSettings} */
+/** @type {Partial<import('./ServiceWorkerEngine.mjs').PartialServiceWorkerSettings>} */
 const MY_CONFIG = {
   fetch: {
     router: {

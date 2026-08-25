@@ -24,25 +24,22 @@ const ServiceWorkerSync = () => {
   useEffect(() => {
     /**
      * Handle incoming broadcasts from the Service Worker.
-     * @param {MessageEvent} event
      */
-    const handleServiceWorkerMessage = (event) => {
-      if (event.data && event.data.type === 'FAVICON_UPDATE') {
-        // Change the URL depending on the requested state.
-        // Note: You need a notification version of your icon here!
-        /** @type {string} */
-        const targetIcon = event.data.icon === 'alert' ? '/icon/512-alert.png' : '/icon/512.png';
+    const onIconUpdate = (data) => {
+      // Change the URL depending on the requested state.
+      // Note: You need a notification version of your icon here!
+      /** @type {string} */
+      const targetIcon = data.icon === 'alert' ? '/icon/512-alert.png' : '/icon/512.png';
 
-        /** @type {HTMLLinkElement | null} */
-        let link = document.querySelector("link[rel~='icon']");
+      /** @type {HTMLLinkElement | null} */
+      let link = document.querySelector("link[rel~='icon']");
 
-        if (!link) {
-          link = document.createElement('link');
-          link.rel = 'icon';
-          document.head.appendChild(link);
-        }
-        link.href = targetIcon;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
       }
+      link.href = targetIcon;
     };
 
     /**
@@ -50,10 +47,10 @@ const ServiceWorkerSync = () => {
      * @returns {void}
      */
     const handleVisibilityAndFocus = () => {
-      if (!document.hidden) swManager.postMessage({ type: 'FAVICON_UPDATE', icon: 'default' });
+      if (!document.hidden) swManager.emit('FAVICON_UPDATE', { icon: 'default' });
     };
 
-    swManager.addEventListener(handleServiceWorkerMessage);
+    swManager.on('FAVICON_UPDATE', onIconUpdate);
     // Listen to focus and visibility changes to clear the notification icon
     window.addEventListener('focus', handleVisibilityAndFocus);
     document.addEventListener('visibilitychange', handleVisibilityAndFocus);
@@ -62,7 +59,7 @@ const ServiceWorkerSync = () => {
     handleVisibilityAndFocus();
 
     return () => {
-      swManager.removeEventListener(handleServiceWorkerMessage);
+      swManager.off('FAVICON_UPDATE', onIconUpdate);
       window.removeEventListener('focus', handleVisibilityAndFocus);
       document.removeEventListener('visibilitychange', handleVisibilityAndFocus);
     };

@@ -1,6 +1,18 @@
 import { EventEmitter } from 'events';
 
 /**
+ * @typedef {Object} PartialServiceWorkerSettings
+ * @property {PartialFetchOptions} fetch - Partial configuration for fetch event interception.
+ * @property {Partial<MessagingOptions>} messaging - Partial configuration for message event handling.
+ */
+
+/**
+ * @typedef {Object} PartialFetchOptions
+ * @property {boolean} [enabled] - Indicates if fetch interception is enabled.
+ * @property {Partial<RouterOptions>} router - Partial configuration for the routing logic.
+ */
+
+/**
  * @typedef {Object} FetchOptions
  * @property {boolean} enabled - Indicates if fetch interception is enabled.
  * @property {RouterOptions} router - Configuration for the routing logic.
@@ -38,6 +50,7 @@ import { EventEmitter } from 'events';
  */
 
 /** @type {ServiceWorkerGlobalScope} */
+// @ts-ignore
 const sw = self;
 
 /**
@@ -96,7 +109,7 @@ class ServiceWorkerEngine extends EventEmitter {
   /**
    * Performs rigorous deep validation of the configuration object.
    *
-   * @param {ServiceWorkerSettings | Partial<ServiceWorkerSettings>} config - The configuration object to validate.
+   * @param {ServiceWorkerSettings | Partial<PartialServiceWorkerSettings>} config - The configuration object to validate.
    * @param {boolean} [strict=false] - If true, ensures all properties defined in the typedef are present.
    * @throws {TypeError} If any property is of the wrong type or is missing when in strict mode.
    */
@@ -107,7 +120,7 @@ class ServiceWorkerEngine extends EventEmitter {
 
     /**
      * Helper to validate existence and type.
-     * @template {Record<any, any>}
+     * @template {Record<any, any>} T
      * @param {T} obj - The object containing the property.
      * @param {string} key - The property name.
      * @param {string} type - The expected typeof result.
@@ -159,7 +172,7 @@ class ServiceWorkerEngine extends EventEmitter {
   }
 
   /**
-   * @param {Partial<ServiceWorkerSettings>} config - The configuration object to apply.
+   * @param {Partial<PartialServiceWorkerSettings>} config - The configuration object to apply.
    * @throws {TypeError} If the configuration does not meet the minimum requirements.
    */
   constructor(config = {}) {
@@ -179,7 +192,7 @@ class ServiceWorkerEngine extends EventEmitter {
         ? { ...this.#config.messaging, ...config.messaging }
         : this.#config.messaging,
     };
-    this.#validateConfig(config, true);
+    this.#validateConfig(this.#config, true);
   }
 
   /**
@@ -263,7 +276,7 @@ class ServiceWorkerEngine extends EventEmitter {
     // Detect fetch events on the website.
     const fetchCfg = this.#config.fetch;
     if (fetchCfg.enabled) {
-      sw.addEventListener('fetch', (event) => {
+      sw.addEventListener('fetch', async (event) => {
         /** @type {FetchEvent} */
         const ev = event;
         /** @type {Request} */
@@ -274,7 +287,8 @@ class ServiceWorkerEngine extends EventEmitter {
 
         const routerCfg = fetchCfg.router;
         if (routerCfg.enabled) {
-          if (!this.#handleNavigation(routerCfg, ev)) return;
+          const contentFound = await this.#handleNavigation(routerCfg, ev);
+          if (!contentFound) return;
         }
       });
     }
@@ -301,10 +315,12 @@ class ServiceWorkerEngine extends EventEmitter {
     sw.addEventListener('message', async (event) => {
       /** @type {ExtendableMessageEvent} */
       const ev = event;
+      /** @type {Client} */
+      const source = event.source instanceof Client ? event.source : null;
       /** @type {any} */
       const data = event.data;
       /** @type {string} */
-      const clientId = event.source.id;
+      const clientId = source.id;
       /** @type {string|null} */
       const type = data?.type ?? null;
 

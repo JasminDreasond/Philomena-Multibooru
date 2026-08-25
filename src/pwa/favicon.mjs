@@ -1,6 +1,7 @@
 import { tinySw } from './config.mjs';
 
 /** @type {ServiceWorkerGlobalScope} */
+// @ts-ignore
 const sw = self;
 
 // Favicon Update Logic
@@ -12,7 +13,7 @@ tinySw.addMessage('FAVICON_UPDATE', async ({ data, event }) => {
       clientList.forEach((client) => {
         client.postMessage({
           type: 'FAVICON_UPDATE',
-          icon: data.icon,
+          data: { icon: data.icon },
         });
       });
     }),

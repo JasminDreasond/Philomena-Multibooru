@@ -1,6 +1,7 @@
 import { tinySw } from './config.mjs';
 
 /** @type {ServiceWorkerGlobalScope} */
+// @ts-ignore
 const sw = self;
 
 /** @type {Map<string, string>} */
