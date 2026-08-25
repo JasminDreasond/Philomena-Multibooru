@@ -6,7 +6,7 @@ const readyPage = new TinyDomReadyManager();
 readyPage.onReady(
   async () => {
     try {
-      await swManager.register();
+      await swManager.register({ type: 'module' });
     } catch (err) {
       console.error('Initialization failed', err);
     }
