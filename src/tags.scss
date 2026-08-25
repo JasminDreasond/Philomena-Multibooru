@@ -1,132 +1,133 @@
-/* Ratings */
-.philo-tag.tag-safe {
-  border-color: #2980b9;
-}
-.philo-tag.tag-safe .philo-tag-name {
-  background-color: #2980b9;
-  color: white;
-}
+.philo-tag {
+  /* Ratings */
+  &.tag-safe {
+    border-color: #2980b9;
+    .philo-tag-name {
+      background-color: #2980b9;
+      color: white;
+    }
+  }
 
-.philo-tag.tag-suggestive {
-  border-color: #2980b9;
-}
-.philo-tag.tag-suggestive .philo-tag-name {
-  background-color: #2980b9;
-  color: white;
-}
+  &.tag-suggestive {
+    border-color: #2980b9;
+    .philo-tag-name {
+      background-color: #2980b9;
+      color: white;
+    }
+  }
 
-.philo-tag.tag-explicit,
-.philo-tag.tag-questionable {
-  border-color: #2980b9;
-}
-.philo-tag.tag-explicit .philo-tag-name,
-.philo-tag.tag-questionable .philo-tag-name {
-  background-color: #2980b9;
-  color: white;
-}
+  &.tag-explicit,
+  &.tag-questionable {
+    border-color: #2980b9;
+    .philo-tag-name {
+      background-color: #2980b9;
+      color: white;
+    }
+  }
 
-/* Artist and Prompter */
-.philo-tag.tag-artist {
-  border-color: #4834d4;
-}
-.philo-tag.tag-artist .philo-tag-name {
-  background-color: #4834d4;
-  color: white;
-}
+  /* Artist and Prompter */
+  &.tag-artist {
+    border-color: #4834d4;
+    .philo-tag-name {
+      background-color: #4834d4;
+      color: white;
+    }
+  }
 
-.philo-tag.tag-prompter {
-  border-color: #4834d4;
-}
-.philo-tag.tag-prompter .philo-tag-name {
-  background-color: #4834d4;
-  color: white;
-}
+  &.tag-prompter {
+    border-color: #4834d4;
+    .philo-tag-name {
+      background-color: #4834d4;
+      color: white;
+    }
+  }
 
-.philo-tag.tag-editor {
-  border-color: #4834d4;
-}
-.philo-tag.tag-editor .philo-tag-name {
-  background-color: #4834d4;
-  color: white;
-}
+  &.tag-editor {
+    border-color: #4834d4;
+    .philo-tag-name {
+      background-color: #4834d4;
+      color: white;
+    }
+  }
 
-.philo-tag.tag-oc {
-  border-color: #833471;
-}
-.philo-tag.tag-oc .philo-tag-name {
-  background-color: #833471;
-  color: white;
-}
+  &.tag-oc {
+    border-color: #833471;
+    .philo-tag-name {
+      background-color: #833471;
+      color: white;
+    }
+  }
 
-.philo-tag.tag-project {
-  border-color: #4834d4;
-}
-.philo-tag.tag-project .philo-tag-name {
-  background-color: #4834d4;
-  color: white;
-}
+  &.tag-project {
+    border-color: #4834d4;
+    .philo-tag-name {
+      background-color: #4834d4;
+      color: white;
+    }
+  }
 
-.philo-tag.tag-anatomy {
-  border-color: #e67e22;
-}
-.philo-tag.tag-anatomy .philo-tag-name {
-  background-color: #e67e22;
-  color: white;
-}
+  &.tag-anatomy {
+    border-color: #e67e22;
+    .philo-tag-name {
+      background-color: #e67e22;
+      color: white;
+    }
+  }
 
-.philo-tag.tag-software {
-  border-color: #4834d4;
-}
-.philo-tag.tag-software .philo-tag-name {
-  background-color: #4834d4;
-  color: white;
-}
+  &.tag-software {
+    border-color: #4834d4;
+    .philo-tag-name {
+      background-color: #4834d4;
+      color: white;
+    }
+  }
 
-.philo-tag.tag-generator {
-  border-color: #4834d4;
-}
-.philo-tag.tag-generator .philo-tag-name {
-  background-color: #4834d4;
-  color: white;
-}
+  &.tag-generator {
+    border-color: #4834d4;
+    .philo-tag-name {
+      background-color: #4834d4;
+      color: white;
+    }
+  }
 
-.philo-tag.tag-warning {
-  border-color: #e84118;
-}
-.philo-tag.tag-warning .philo-tag-name {
-  background-color: #e84118;
-  color: white;
-}
+  &.tag-warning {
+    border-color: #e84118;
+    .philo-tag-name {
+      background-color: #e84118;
+      color: white;
+    }
+  }
 
-.philo-tag.tag-spoiler {
-  border-color: #2f3640;
-}
-.philo-tag.tag-spoiler .philo-tag-name {
-  background-color: #2f3640;
-  color: white;
-}
+  &.tag-spoiler {
+    border-color: #2f3640;
+    .philo-tag-name {
+      background-color: #2f3640;
+      color: white;
+    }
+  }
 
-.philo-tag.tag-series {
-  border-color: #4834d4;
-}
-.philo-tag.tag-series .philo-tag-name {
-  background-color: #4834d4;
-  color: white;
-}
+  &.tag-series {
+    border-color: #4834d4;
+    .philo-tag-name {
+      background-color: #4834d4;
+      color: white;
+    }
+  }
 
-.philo-tag.tag-comic {
-  border-color: #cc52af;
-}
-.philo-tag.tag-comic .philo-tag-name {
-  background-color: #cc52af;
-  color: white;
-}
+  &.tag-comic {
+    border-color: #cc52af;
+    .philo-tag-name {
+      background-color: #cc52af;
+      color: white;
+    }
+  }
 
-/* Meta */
-.philo-tag.tag-meta {
-  border-color: #7f8c8d;
-}
-.philo-tag.tag-meta .philo-tag-name {
-  background-color: #7f8c8d;
-  color: white;
+  /* Meta */
+  &.tag-meta {
+    border-color: #7f8c8d;
+    .philo-tag-name {
+      background-color: #7f8c8d;
+      color: white;
+    }
+  }
 }
