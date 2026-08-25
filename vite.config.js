@@ -66,6 +66,7 @@ export default defineConfig({
     copyIndexTo404(),
     nodePolyfills({ include: ['events'] }),
     tinyVitePwaPlugin({
+      injectRegister: false,
       manifest: manifest,
       manifestPath: '/manifest.json',
       srcDir: 'src/pwa',
