@@ -103,7 +103,7 @@ class ServiceWorkerEngine extends EventEmitter {
     fetch: {
       enabled: true,
       router: {
-        enabled: true,
+        enabled: false,
         // Implementation of your routing logic
         validator: () => true,
         // Implementation of your 404 handler

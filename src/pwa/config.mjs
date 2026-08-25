@@ -4,6 +4,7 @@ import ServiceWorkerEngine from './ServiceWorkerEngine.mjs';
 const MY_CONFIG = {
   fetch: {
     router: {
+      enabled: true,
       // Implementação da sua lógica de rotas
       validator: (url) => {
         const pathname = url.pathname;
