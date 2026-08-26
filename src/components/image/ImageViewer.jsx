@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { shuffleArray } from 'tiny-essentials/basics/array';
 
-import { MediaPlayer, MediaProvider } from '@vidstack/react';
+import { MediaPlayer, MediaPlayerInstance, MediaProvider } from '@vidstack/react';
 import {
   defaultLayoutIcons,
   DefaultVideoLayout,
@@ -143,6 +143,8 @@ export const ImageViewer = ({
   /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isRateLimited, setIsRateLimited] = useState(false);
 
+  /** @type {Ref<MediaPlayerInstance>} */
+  const videoRef = useRef(null);
   /** @type {Ref<HTMLImageElement>} */
   const imgRef = useRef(null);
 
@@ -335,8 +337,39 @@ export const ImageViewer = ({
       setIsInteractionReady(true);
     }
 
+    // Detect content loaded
     if (imgRef.current && imgRef.current.complete) {
       setIsMediaLoaded(true);
+    }
+  }, [image?.id, image?.spoilered]);
+
+  useEffect(() => {
+    if (videoRef.current && !isMediaLoaded) {
+      const player = videoRef.current;
+      const checkMediaStatus = () => {
+        // Exists video
+        if (!videoRef.current) return;
+
+        // Exists provider
+        /** @type {import('@vidstack/react').VideoProvider} */
+        // @ts-ignore
+        const provider = videoRef.current?.provider;
+        if (!provider) return;
+
+        // Exists media
+        const media = provider?.media;
+        if (!(media instanceof HTMLMediaElement)) return;
+
+        // Player is ready
+        if (media.readyState >= 3) setIsMediaLoaded(true);
+        player.removeEventListener('provider-change', checkMediaStatus);
+      };
+
+      // Video event checker
+      player.addEventListener('provider-change', checkMediaStatus);
+      return () => {
+        player.removeEventListener('provider-change', checkMediaStatus);
+      };
     }
   }, [image?.id, image?.spoilered]);
 
@@ -890,9 +923,11 @@ export const ImageViewer = ({
 
         {isVideo ? (
           <MediaPlayer
+            ref={videoRef}
             className="booru-video-player"
             src={image.representations.full}
             onCanPlay={() => setIsMediaLoaded(true)}
+            onCanPlayThrough={() => setIsMediaLoaded(true)}
             style={{ opacity: isMediaLoaded ? 1 : 0, transition: 'opacity 0.2s ease-in' }}
             autoPlay={plyrAutoplay}
             loop={plyrLoop}
