@@ -1401,7 +1401,20 @@ const App = () => {
   }, []);
 
   // Incomplete page load
-  if (!isReady) return <></>;
+  if (!isReady)
+    return (
+      <div
+        className="d-flex justify-content-center align-items-center min-vh-100"
+        style={{ backgroundColor: 'var(--app-bg)' }}
+      >
+        <div className="text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading page...</span>
+          </div>
+          <p className="mt-3 text-muted fw-semibold">Initializing session...</p>
+        </div>
+      </div>
+    );
 
   // Page loaded
   return (
