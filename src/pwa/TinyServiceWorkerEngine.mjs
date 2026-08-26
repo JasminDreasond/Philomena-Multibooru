@@ -222,7 +222,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    */
   constructor(config = {}, lgConfig = {}) {
     super({
-      id: '[_blue_TinyServiceWorkerEngine_reset_]',
+      id: '[_blue_TinySW-Engine_reset_]',
       logger: lgConfig.logger ?? console,
       debugMode: lgConfig.debugMode ?? false,
       useLogColors: lgConfig.useLogColors ?? false,
@@ -319,7 +319,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     // Detect that the Service Worker has been activated.
     sw.addEventListener('activate', (event) => {
       event.waitUntil(sw.clients.claim());
-      console.log('[SW-Engine] Activated and claiming clients.');
+      this.log('info', 'Activated and claiming clients.');
       this.emit('activated', { event });
     });
 
@@ -342,7 +342,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
           const url = new URL(event.request.url);
 
           if (routerCfg.validator(url)) {
-            console.log(`[SW-Engine] Valid route: ${url.pathname}`);
+            this.log('info', `Valid route: ${url.pathname}`);
             event.respondWith(
               fetch('/index.html').catch((err) => {
                 this.emit('fetchError', { event, request, error: err, url });
@@ -350,7 +350,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
               }),
             );
           } else {
-            console.warn(`[SW-Engine] 404 - Route not found: ${url.pathname}`);
+            this.log('warn', `404 - Route not found: ${url.pathname}`);
             this.emit('fetchError', { event, request, error: new Error('404 Not Found'), url });
             event.respondWith(routerCfg.notFoundHandler());
           }
@@ -371,19 +371,19 @@ class TinyServiceWorkerEngine extends TinyDebugger {
       sw.addEventListener('message', async (event) => {
         // Validation: Ensure the source is a valid Client
         if (!(event.source instanceof Client)) {
-          console.error('[SW-Engine] Message received from an invalid source (not a Client).');
+          this.log('error', 'Message received from an invalid source (not a Client).');
           return;
         }
 
         // Validation: Ensure event.data is a non-null object
         if (typeof event.data !== 'object' || event.data === null) {
-          console.error('[SW-Engine] Received message with invalid data format (expected object).');
+          this.log('error', 'Received message with invalid data format (expected object).');
           return;
         }
 
         // Validation: Ensure 'type' exists and is a string
         if (typeof event.data.type !== 'string') {
-          console.error('[SW-Engine] Received message with missing or invalid "type" string.');
+          this.log('error', 'Received message with missing or invalid "type" string.');
           return;
         }
 
@@ -417,7 +417,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
           toReply,
           reply: (nType, payload) => {
             if (!(event.source instanceof Client)) {
-              console.warn('[SW-Engine] Attempted to reply to a non-client source.');
+              this.log('warn', 'Attempted to reply to a non-client source.');
               return;
             }
             toReply(event.source, nType, payload);
@@ -430,7 +430,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
           try {
             await message(msgData);
           } catch (error) {
-            console.error(`[SW-Engine] Error executing handler for message type "${type}":`, error);
+            this.log('error', `Error executing handler for message type "${type}":`, error);
             this.emit('messageError', { type, error, msgData });
           }
         }
@@ -439,7 +439,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     }
 
     this.#started = true;
-    console.log('[SW-Engine] Initialized with custom configuration.');
+    this.log('info', 'Initialized with custom configuration.');
   }
 }
 
