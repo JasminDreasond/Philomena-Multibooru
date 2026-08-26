@@ -8,7 +8,7 @@ import { importantTasks } from '../tools/utils.js';
 
 /**
  * The current status of the database connection.
- * 
+ *
  * 0 - `No connection`.
  * 1 - `Connecting`.
  * 2 - `Connected`.

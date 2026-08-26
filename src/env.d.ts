@@ -9,6 +9,7 @@ import {
 
 declare global {
   interface Window {
+    __TINY_PWA_MANIFEST__: Record<string, any>;
     swManager: TinyServiceWorker;
     alert: alert;
     confirm: confirm;
