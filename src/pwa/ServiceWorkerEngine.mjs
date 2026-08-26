@@ -326,10 +326,18 @@ class ServiceWorkerEngine extends EventEmitter {
         // We only intercept navigation requests (HTML)
         if (request.mode !== 'navigate') return;
 
+        // Handles navigation requests based on the router configuration.
         const routerCfg = fetchCfg.router;
         if (routerCfg.enabled) {
-          const contentFound = await this.#handleNavigation(routerCfg, ev);
-          if (!contentFound) return;
+          const url = new URL(event.request.url);
+
+          if (routerCfg.validator(url)) {
+            console.log(`[SW-Engine] Valid route: ${url.pathname}`);
+            event.respondWith(fetch('/index.html').catch(() => routerCfg.notFoundHandler()));
+          } else {
+            console.warn(`[SW-Engine] 404 - Route not found: ${url.pathname}`);
+            event.respondWith(routerCfg.notFoundHandler());
+          }
         }
       });
     }
@@ -420,26 +428,6 @@ class ServiceWorkerEngine extends EventEmitter {
       }
       this.emit('afterMessage', type, msgData);
     });
-  }
-
-  /**
-   * Handles navigation requests based on the router configuration.
-   * @param {RouterOptions} routerCfg - The router configuration.
-   * @param {FetchEvent} event - The fetch event.
-   * @returns {Promise<boolean>} A promise that resolves to true if the route was valid and handled, false otherwise.
-   */
-  async #handleNavigation(routerCfg, event) {
-    const url = new URL(event.request.url);
-
-    if (routerCfg.validator(url)) {
-      console.log(`[SW-Engine] Valid route: ${url.pathname}`);
-      event.respondWith(fetch('/index.html').catch(() => routerCfg.notFoundHandler()));
-      return true;
-    }
-
-    console.warn(`[SW-Engine] 404 - Route not found: ${url.pathname}`);
-    event.respondWith(routerCfg.notFoundHandler());
-    return false;
   }
 }
 

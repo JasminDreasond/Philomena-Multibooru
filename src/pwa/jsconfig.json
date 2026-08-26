@@ -3,7 +3,7 @@
     "module": "NodeNext",
     "target": "ESNext",
     "lib": ["ESNext", "WebWorker"],
-    "moduleResolution":"nodenext",
+    "moduleResolution": "nodenext",
     "checkJs": true
   }
 }
