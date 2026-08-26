@@ -1,9 +1,28 @@
 import { Connection } from 'jsstore';
+import { importantTasks } from '../tools/utils.js';
 
 /** @typedef {import('jsstore').IDataBase} IDataBase */
 /** @typedef {import('jsstore').ITable} ITable */
 /** @typedef {import('jsstore').TColumns} TColumns */
 /** @typedef {import('jsstore').IAlterQuery} IAlterQuery */
+
+/**
+ * The current status of the database connection.
+ * 
+ * 0 - `No connection`.
+ * 1 - `Connecting`.
+ * 2 - `Connected`.
+ * @typedef {0|1|2} ConnectionStatus
+ */
+
+/** @type {ConnectionStatus} */
+let dbConnStatus = 0;
+
+/**
+ * Retrieves the current database connection status.
+ * @returns {ConnectionStatus} The current status.
+ */
+export const getDbConnStatus = () => dbConnStatus;
 
 /**
  * Initialize JsStore worker
@@ -152,5 +171,7 @@ export const initDatabase = async () => {
     ],
   };
 
-  await dbConnection.initDb(database);
+  dbConnStatus = 1;
+  await importantTasks.enqueue(() => dbConnection.initDb(database));
+  dbConnStatus = 2;
 };

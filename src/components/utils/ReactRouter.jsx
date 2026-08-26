@@ -1,12 +1,15 @@
 import { useEffect } from 'react';
 import TinyDomReadyManager from 'tiny-essentials/libs/html/TinyDomReadyManager';
-import { swManager } from '../../tools/utils.js';
+import { waitForTrue } from 'tiny-essentials/basics/promiseUtils';
+import { getDbConnStatus } from '../../db/connection.js';
+import { importantTasks, swManager } from '../../tools/utils.js';
 
 const readyPage = new TinyDomReadyManager();
 readyPage.onReady(
   async () => {
     try {
-      await swManager.register({ type: 'module' });
+      await waitForTrue(() => getDbConnStatus() >= 2);
+      await importantTasks.enqueue(() => swManager.register({ type: 'module' }));
     } catch (err) {
       console.error('Initialization failed', err);
     }

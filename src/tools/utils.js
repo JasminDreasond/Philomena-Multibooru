@@ -1,9 +1,12 @@
+import TinyPromiseQueue from 'tiny-essentials/libs/utils/TinyPromiseQueue';
 import TinyServiceWorker from 'tiny-essentials/libs/router/TinyServiceWorker';
 import { alert } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 
 import { fetchProfile } from '../services/api/Profile.js';
 import { fetchSingleImage } from '../services/api/Images.js';
 import { getAccountBooruApi } from '../services/api/System.js';
+
+export const importantTasks = new TinyPromiseQueue();
 
 /**
  * Function type to update the loading state.
@@ -128,4 +131,3 @@ export const swManager = new TinyServiceWorker({
 });
 
 if (import.meta.env.DEV) window.swManager = swManager;
-
