@@ -199,7 +199,7 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
       notification.close();
 
       if (clickAction === 'booru') {
-        window.open(booruUrl, '_blank', 'noopener,noreferrer');
+        open(booruUrl, '_blank', 'noopener,noreferrer');
       } else {
         window.focus();
         onGoHome();

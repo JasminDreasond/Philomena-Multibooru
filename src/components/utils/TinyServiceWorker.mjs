@@ -254,7 +254,7 @@ class TinyServiceWorker extends TinyDebugger {
 
         if (savedVersion !== null) {
           this.log('warn', 'Old workers removed. Reloading...');
-          window.location.reload();
+          location.reload();
           return;
         }
       }
@@ -464,7 +464,6 @@ const swManager = new TinyServiceWorker({
   useLogColors: true,
 });
 
-// @ts-ignore
 if (import.meta.env.DEV) window.swManager = swManager;
 
 export default swManager;

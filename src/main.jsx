@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BootstrapDialogs } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
+import { BootstrapDialogs, alert, confirm, prompt } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 import { Modal } from 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 import '@vidstack/react/player/styles/default/theme.css';
@@ -15,11 +15,12 @@ import App from './App.jsx';
 
 // @ts-ignore
 BootstrapDialogs.Modal = Modal;
-window.alert = (msg) => BootstrapDialogs.alert(msg);
 // @ts-ignore
-window.confirm = (msg) => BootstrapDialogs.confirm(msg);
+window.alert = (msg) => alert(msg);
 // @ts-ignore
-window.prompt = (msg, def) => BootstrapDialogs.prompt(msg, def);
+window.confirm = (msg) => confirm(msg);
+// @ts-ignore
+window.prompt = (msg, def) => prompt(msg, def);
 
 const headerConfig = BootstrapDialogs.headerConfig;
 BootstrapDialogs.headerConfig = {

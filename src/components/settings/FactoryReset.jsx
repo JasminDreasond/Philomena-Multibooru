@@ -22,7 +22,7 @@ export const FactoryReset = ({ isLoading }) => {
     );
     if (secondWarning) {
       await factoryResetDatabase();
-      window.location.reload();
+      location.reload();
     }
   };
 

@@ -742,8 +742,8 @@ const App = () => {
           }
 
           // === DEEP LINK PARSING ON INITIAL LOAD ===
-          const path = window.location.pathname;
-          const params = new URLSearchParams(window.location.search);
+          const path = location.pathname;
+          const params = new URLSearchParams(location.search);
           let initialQuery = searchQuery.trim() === '' ? geString : searchQuery;
           let isDeepLinkSpecial = false;
           let skipMainSync = false; // Lock to prevent unnecessary API calls at boot
@@ -1285,7 +1285,7 @@ const App = () => {
    * @param {number} newPage
    */
   const changePage = (newPage) => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(location.search);
     params.set('page', newPage.toString());
 
     router.current.navigate(`/search?${params.toString()}`);
@@ -1420,7 +1420,7 @@ const App = () => {
             href="/"
             onClick={(e) => {
               e.preventDefault();
-              if (is404) return window.open('/', '_self');
+              if (is404) return open('/', '_self');
               goToHome();
             }}
             className="navbar-brand mb-0 fw-bold d-flex align-items-center text-decoration-none"
@@ -1617,7 +1617,7 @@ const App = () => {
                 <button
                   className={`btn btn-sm text-nowrap w-100 w-lg-auto me-lg-2 mb-2 mb-lg-0 fw-bold ${showNotifications ? 'btn-warning' : 'btn-outline-warning'}`}
                   onClick={() => {
-                    if (is404) return window.open('/notifications', '_self');
+                    if (is404) return open('/notifications', '_self');
                     hasSynced.current = false; // Make sure the gallery forces a refetch!
                     if (!showNotifications) {
                       setShowSettings(false);
@@ -1639,7 +1639,7 @@ const App = () => {
                   data-bs-dismiss="offcanvas"
                   style={{ borderColor: 'var(--app-navbar-text)', color: 'var(--app-navbar-text)' }}
                   onClick={() => {
-                    if (is404) return window.open('/settings', '_self');
+                    if (is404) return open('/settings', '_self');
                     hasSynced.current = false; // Make sure the gallery forces a refetch!
                     if (!showSettings) {
                       setShowNotifications(false);

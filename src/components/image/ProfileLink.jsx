@@ -26,8 +26,8 @@ const ContextMenuGroup = ({ id, icon, label, url, openLeft, onActionRecord, onCl
    */
   const handleAction = (type) => {
     if (type === 'copy') navigator.clipboard.writeText(url);
-    if (type === 'tab') window.open(url, '_blank', 'noopener,noreferrer');
-    if (type === 'window') window.open(url, '_blank', 'width=900,height=600,noopener,noreferrer');
+    if (type === 'tab') open(url, '_blank', 'noopener,noreferrer');
+    if (type === 'window') open(url, '_blank', 'width=900,height=600,noopener,noreferrer');
 
     if (onActionRecord) onActionRecord(id, type);
     if (onClose) onClose();
@@ -118,7 +118,7 @@ const ProfileContextMenu = ({ x, y, booruUrl, username, userId, onClose, openPro
   /** @type {string} */
   const booruHostname = new URL(booruUrl).hostname;
   /** @type {string} */
-  const appProfileUrl = `${window.location.origin}/${booruHostname}/profiles/${userId}`;
+  const appProfileUrl = `${location.origin}/${booruHostname}/profiles/${userId}`;
   /** @type {string} */
   const booruProfileUrl = `${booruUrl}/profiles/${encodeURIComponent(username.replace(/ /g, '+'))}`;
 
@@ -234,9 +234,9 @@ const ProfileContextMenu = ({ x, y, booruUrl, username, userId, onClose, openPro
                 const url = lastAction.group.url;
 
                 if (type === 'copy') navigator.clipboard.writeText(url);
-                if (type === 'tab') window.open(url, '_blank', 'noopener,noreferrer');
+                if (type === 'tab') open(url, '_blank', 'noopener,noreferrer');
                 if (type === 'window')
-                  window.open(url, '_blank', 'width=900,height=600,noopener,noreferrer');
+                  open(url, '_blank', 'width=900,height=600,noopener,noreferrer');
 
                 handleActionRecord(lastAction.groupId, type);
                 onClose();

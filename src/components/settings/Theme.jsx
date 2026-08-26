@@ -236,7 +236,7 @@ export const ThemeSettings = ({ isDark }) => {
 
         if (importedCount > 0) {
           await alert('Theme imported successfully! Reloading to apply all colors.');
-          window.location.reload();
+          location.reload();
         } else {
           alert('No valid colors found in the file.');
         }

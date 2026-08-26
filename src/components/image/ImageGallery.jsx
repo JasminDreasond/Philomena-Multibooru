@@ -31,8 +31,8 @@ const ContextMenuGroup = ({ id, icon, label, url, openLeft, onActionRecord, onCl
    */
   const handleAction = (type) => {
     if (type === 'copy') navigator.clipboard.writeText(url);
-    if (type === 'tab') window.open(url, '_blank', 'noopener,noreferrer');
-    if (type === 'window') window.open(url, '_blank', 'width=900,height=600,noopener,noreferrer');
+    if (type === 'tab') open(url, '_blank', 'noopener,noreferrer');
+    if (type === 'window') open(url, '_blank', 'width=900,height=600,noopener,noreferrer');
 
     if (onActionRecord) onActionRecord(id, type);
     if (onClose) onClose();
@@ -117,7 +117,7 @@ const ContextMenuGroup = ({ id, icon, label, url, openLeft, onActionRecord, onCl
  */
 const ContextMenu = ({ x, y, img, onClose, onOpenImage, hostname }) => {
   /** @type {string} */
-  const appImageUrl = `${window.location.origin}/${hostname}/images/${img.id}`;
+  const appImageUrl = `${location.origin}/${hostname}/images/${img.id}`;
   /** @type {string} */
   const booruImageUrl = `${img.booruUrl}/images/${img.id}`;
   /** @type {string | undefined} */
@@ -129,7 +129,7 @@ const ContextMenu = ({ x, y, img, onClose, onOpenImage, hostname }) => {
 
   /** @type {string} */
   const appProfileUrl = hasProfile
-    ? `${window.location.origin}/${hostname}/profiles/${img.uploaderId || img.uploader}`
+    ? `${location.origin}/${hostname}/profiles/${img.uploaderId || img.uploader}`
     : '';
 
   /** @type {string} */
@@ -279,9 +279,9 @@ const ContextMenu = ({ x, y, img, onClose, onOpenImage, hostname }) => {
                 const url = lastAction.group.url;
 
                 if (type === 'copy') navigator.clipboard.writeText(url);
-                if (type === 'tab') window.open(url, '_blank', 'noopener,noreferrer');
+                if (type === 'tab') open(url, '_blank', 'noopener,noreferrer');
                 if (type === 'window')
-                  window.open(url, '_blank', 'width=900,height=600,noopener,noreferrer');
+                  open(url, '_blank', 'width=900,height=600,noopener,noreferrer');
 
                 handleActionRecord(lastAction.groupId, type);
                 onClose();

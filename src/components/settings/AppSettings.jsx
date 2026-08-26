@@ -217,7 +217,7 @@ export const AppSettings = ({
         await alert(`Successfully imported ${successCount} Local Favorites!`);
 
         // Reload the page to update the application status.
-        window.location.reload();
+        location.reload();
       } catch (err) {
         console.error(err);
         alert('Invalid JSON file format or error during import.');
@@ -247,7 +247,7 @@ export const AppSettings = ({
         await clearLocalFaves();
         await alert('All Local Favorites have been successfully deleted.');
         // Reload the page to clear the UI.
-        window.location.reload();
+        location.reload();
       } catch (err) {
         console.error(err);
         alert('Failed to reset Local Favorites.');
