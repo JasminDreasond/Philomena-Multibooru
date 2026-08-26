@@ -4,8 +4,9 @@ import { shuffleArray } from 'tiny-essentials/basics/array';
 import { alert } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 import TinyRouter from 'tiny-essentials/libs/router/TinyRouter';
 import TinyMapCache from 'tiny-essentials/libs/router/TinyMapCache';
+import { waitForTrue } from 'tiny-essentials/basics/promiseUtils';
 
-import { initDatabase } from './db/connection.js';
+import { getDbConnStatus, initDatabase } from './db/connection.js';
 import { applyThemeFromStorage } from './services/theme.js';
 
 import {
@@ -33,7 +34,7 @@ import { PaginationBar } from './components/utils/PaginationBar.jsx';
 import { SearchControls } from './components/search/SearchControls.jsx';
 import { geString, parseQueryResults } from './queries/globalTags.js';
 import { WatchedImages } from './components/home/WatchedImages.jsx';
-import { updateEmbedMetadata } from './tools/utils.js';
+import { swManager, updateEmbedMetadata } from './tools/utils.js';
 
 /** @typedef {import('./services/api/Images.jsx').ImageResult} ImageResult */
 /** @typedef {import('./services/api/Images.jsx').ImageObj} ImageObj */
@@ -70,6 +71,8 @@ const scrollUp = () => window.scrollTo({ top: 0, behavior: 'smooth' });
  */
 
 const App = () => {
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
+  const [isReady, setIsReady] = useState(false);
   /** @type {[number, Dispatch<SetStateAction<number>>]} */
   const [totalItems, setTotalItems] = useState(0);
 
@@ -1392,6 +1395,15 @@ const App = () => {
     ? startItem - 1 + currentImages.length
     : Math.min(currentPage * pageLimit, totalItems);
 
+  // Wait page load
+  useEffect(() => {
+    waitForTrue(() => getDbConnStatus() >= 2 && swManager.isReady).then(() => setIsReady(true));
+  }, []);
+
+  // Incomplete page load
+  if (!isReady) return <></>;
+
+  // Page loaded
   return (
     <div className="min-vh-100 pb-5" style={{ backgroundColor: 'var(--app-bg)' }}>
       {/* Custom styles to allow a flexible and adaptable Grid on large screens */}
@@ -1442,7 +1454,7 @@ const App = () => {
 
           <div
             className="offcanvas offcanvas-end"
-            tabIndex="-1"
+            tabIndex={-1}
             id="mobileMenu"
             style={{ backgroundColor: 'var(--app-navbar-bg)' }}
           >
