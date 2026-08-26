@@ -10,12 +10,15 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 import 'bootstrap/dist/css/bootstrap.min.css'; // Bootstrap import
 import './index.scss';
 
-import ServiceWorkerSync from './components/utils/ReactRouter';
+import ServiceWorkerSync from './components/utils/ReactRouter.jsx';
 import App from './App.jsx';
 
+// @ts-ignore
 BootstrapDialogs.Modal = Modal;
 window.alert = (msg) => BootstrapDialogs.alert(msg);
+// @ts-ignore
 window.confirm = (msg) => BootstrapDialogs.confirm(msg);
+// @ts-ignore
 window.prompt = (msg, def) => BootstrapDialogs.prompt(msg, def);
 
 const headerConfig = BootstrapDialogs.headerConfig;

@@ -1,13 +1,14 @@
-import { ImageGallery } from '../image/ImageGallery';
+import { ImageGallery } from '../image/ImageGallery.jsx';
 
-/** @typedef {import('../../services/api/Images').ImageResult} ImageResult */
+/** @typedef {import('../../services/api/Images.js').ImageResult} ImageResult */
+/** @typedef {import('react').MouseEvent} MouseEvent */
 
 /**
  * @param {Object} options
  * @param {ImageResult[]} options.watchedImages
  * @param {boolean} options.showSpecialContent
  * @param {(img: ImageResult) => void} options.handleOpenImage
- * @param {(e: MouseEvent<HTMLAnchorElement, MouseEvent>, query: string, sf: string, sd: string) => void} options.handleQuickLinkClick
+ * @param {(e: MouseEvent, query: string, sf: string, sd: string) => void} options.handleQuickLinkClick
  */
 export const WatchedImages = ({
   showSpecialContent,

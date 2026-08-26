@@ -1,17 +1,27 @@
 import { useState, useEffect } from 'react';
 
+/**
+ * @template T
+ * @typedef {import('react').SetStateAction<T>} SetStateAction
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Dispatch<T>} Dispatch
+ */
+
 export const RecommendationsSettings = () => {
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [enableRecs, setEnableRecs] = useState(() => {
     return localStorage.getItem('app_enableRecs') === 'true';
   });
 
-  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  /** @type {[number, Dispatch<SetStateAction<number>>]} */
   const [recTagLimit, setRecTagLimit] = useState(() => {
     return parseInt(localStorage.getItem('app_recTagLimit') || '5', 10);
   });
 
-  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  /** @type {[number, Dispatch<SetStateAction<number>>]} */
   const [recDaysLimit, setRecDaysLimit] = useState(() => {
     const saved = localStorage.getItem('app_recDaysLimit');
     return saved ? parseInt(saved, 10) : 3;

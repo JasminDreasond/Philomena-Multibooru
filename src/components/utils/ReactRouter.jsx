@@ -17,7 +17,6 @@ readyPage.init();
 
 /**
  * Hook to synchronize and validate routes with the Service Worker
- * @returns {void}
  */
 const ServiceWorkerSync = () => {
   // Global listener for Favicon Sync across tabs
@@ -64,6 +63,7 @@ const ServiceWorkerSync = () => {
       document.removeEventListener('visibilitychange', handleVisibilityAndFocus);
     };
   }, []);
+  return <></>;
 };
 
 export default ServiceWorkerSync;

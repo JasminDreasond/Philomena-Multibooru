@@ -10,33 +10,51 @@ import {
 
 import { alert } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 
-import { fetchComments, searchImages, syncUserGalleryPages } from '../../services/api/Images';
-import { getAccountBooruApi } from '../../services/api/System';
-import { checkLocalFave, toggleLocalFave, updateLocalFave } from '../../services/api/LocalFaves';
+import { fetchComments, searchImages, syncUserGalleryPages } from '../../services/api/Images.js';
+import { getAccountBooruApi } from '../../services/api/System.js';
+import { checkLocalFave, toggleLocalFave, updateLocalFave } from '../../services/api/LocalFaves.js';
 
-import { CommentBody } from '../utils/CommentBody';
-import { Loading } from '../utils/Loading';
-import { ProfileLink } from './ProfileLink';
-import { Image } from './ImageGallery';
+import { CommentBody } from '../utils/CommentBody.jsx';
+import { Loading } from '../utils/Loading.jsx';
+import { ProfileLink } from './ProfileLink.jsx';
+import { Image } from './ImageGallery.jsx';
 
-import CORE_TAGS from '../../queries/core';
-import BLACKLIST_TAGS from '../../queries/blacklistTags';
-import BLACKLIST_PREFIXES from '../../queries/blacklistPrefixes';
-import tagsPrefixCssList from '../../queries/tagsPrefixCssList';
-import { parseQueryResults } from '../../queries/globalTags';
+import CORE_TAGS from '../../queries/core.js';
+import BLACKLIST_TAGS from '../../queries/blacklistTags.js';
+import BLACKLIST_PREFIXES from '../../queries/blacklistPrefixes.js';
+import tagsPrefixCssList from '../../queries/tagsPrefixCssList.js';
+import { parseQueryResults } from '../../queries/globalTags.js';
 
 /**
- * @typedef {import('../../services/api/Images').ImageResult} ImageResult
- * @typedef {import('../../services/api/Images').CommentData} CommentData
+ * @template T
+ * @typedef {import('react').SetStateAction<T>} SetStateAction
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Dispatch<T>} Dispatch
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Ref<T>} Ref
+ */
+
+/**
+ * @typedef {import('../../services/api/Images.js').ImageResult} ImageResult
+ * @typedef {import('../../services/api/Images.js').CommentData} CommentData
  */
 
 /**
  * Calculates a relative time string (e.g., "11 years ago")
- * @param {Date} date
+ * @param {Date|number} date
  * @returns {string}
  */
 const timeSince = (date) => {
-  const seconds = Math.floor((new Date() - date) / 1000);
+  const seconds = Math.floor(
+    (new Date().valueOf() - (date instanceof Date ? date.valueOf() : date)) / 1000,
+  );
+
   let interval = seconds / 31536000;
   if (interval > 1) return Math.floor(interval) + ' years ago';
   interval = seconds / 2592000;
@@ -79,64 +97,64 @@ export const ImageViewer = ({
   onOpenImage,
   onNavigateImage,
 }) => {
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isLoading, setIsLoading] = useState(false);
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isNavigating, setIsNavigating] = useState(false);
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isInteractionReady, setIsInteractionReady] = useState(true);
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isZoomed, setIsZoomed] = useState(false);
 
-  /** @type {[CommentData[], import('react').Dispatch<import('react').SetStateAction<CommentData[]>>]} */
+  /** @type {[CommentData[], Dispatch<SetStateAction<CommentData[]>>]} */
   const [comments, setComments] = useState([]);
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isLoadingComments, setIsLoadingComments] = useState(true);
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [showShare, setShowShare] = useState(false);
 
-  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  /** @type {[number, Dispatch<SetStateAction<number>>]} */
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // State to control the loading visual of the main image/video
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isMediaLoaded, setIsMediaLoaded] = useState(false);
 
   // Recommendations States
-  /** @type {[ImageResult[], import('react').Dispatch<import('react').SetStateAction<ImageResult[]>>]} */
+  /** @type {[ImageResult[], Dispatch<SetStateAction<ImageResult[]>>]} */
   const [recommendations, setRecommendations] = useState([]);
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isLoadingRecs, setIsLoadingRecs] = useState(false);
-  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  /** @type {[number, Dispatch<SetStateAction<number>>]} */
   const [recPage, setRecPage] = useState(1);
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [hasMoreRecs, setHasMoreRecs] = useState(true);
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isAllowedToFetch, setIsAllowedToFetch] = useState(false);
-  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  /** @type {[number, Dispatch<SetStateAction<number>>]} */
   const [retryRecsCount, setRetryRecsCount] = useState(0);
 
   // Security Anti-Spam State
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isRateLimited, setIsRateLimited] = useState(false);
 
-  /** @type {import('react').MutableRefObject<string>} */
+  /** @type {Ref<string>} */
   const currentRecQuery = useRef('');
-  /** @type {import('react').MutableRefObject<number|null>} */
+  /** @type {Ref<HTMLDivElement|null>} */
   const observerTarget = useRef(null);
-  /** @type {import('react').MutableRefObject<number>} */
+  /** @type {Ref<number>} */
   const lastFetchTime = useRef(0); // Tracks the timestamp of the last fetch start
-  /** @type {import('react').MutableRefObject<boolean>} */
+  /** @type {Ref<boolean>} */
   const pendingNavigation = useRef(false);
-  /** @type {import('react').MutableRefObject<number>} */
+  /** @type {Ref<number>} */
   const lastNavActionTime = useRef(0); // Security cooldown for keyboard events
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isLocalFaved, setIsLocalFaved] = useState(false);
 
   /** @type {boolean} */
@@ -199,7 +217,7 @@ export const ImageViewer = ({
   // Initial Spoiler check
   const isImageSpoiler = image?.spoilered;
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [revealed, setRevealed] = useState(!isImageSpoiler);
 
   const enableRecs = localStorage.getItem('app_enableRecs') === 'true';
@@ -257,7 +275,11 @@ export const ImageViewer = ({
      */
     const handleKeyDown = (e) => {
       // Ignore key events originating from form elements like <input> or <textarea>
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (
+        e.target instanceof HTMLElement &&
+        (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')
+      )
+        return;
 
       // Listen for the ESC key to close the viewer
       if (e.key === 'Escape') {
@@ -287,6 +309,7 @@ export const ImageViewer = ({
 
   // Reset Core States When a New Image is Loaded
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMediaLoaded(false);
     setRecommendations([]);
     setRecPage(1);
@@ -377,6 +400,7 @@ export const ImageViewer = ({
     };
 
     if (!document.hidden && document.hasFocus()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsAllowedToFetch(true);
     } else {
       window.addEventListener('focus', checkFocus);
@@ -475,7 +499,6 @@ export const ImageViewer = ({
           allowedBoorus: activeBoorus,
           sd: 'desc',
           sf: 'wilson_score',
-          signal: controller.signal,
         });
 
         const data = await searchImages({
@@ -1094,7 +1117,7 @@ export const ImageViewer = ({
                         </div>
                         <textarea
                           className="form-control form-control-sm bg-dark text-light border-secondary"
-                          rows="3"
+                          rows={3}
                           readOnly
                           value={bbcodeFull}
                         ></textarea>
@@ -1111,7 +1134,7 @@ export const ImageViewer = ({
                         </div>
                         <textarea
                           className="form-control form-control-sm bg-dark text-light border-secondary"
-                          rows="3"
+                          rows={3}
                           readOnly
                           value={bbcodeThumb}
                         ></textarea>

@@ -1,11 +1,21 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
-import { checkLocalFave, toggleLocalFave } from '../../services/api/LocalFaves';
+import { checkLocalFave, toggleLocalFave } from '../../services/api/LocalFaves.js';
 
 /**
- * @typedef {import('../../services/api/Images').ImageResult} ImageResult
- * @typedef {import('../../services/api/Images').ImageObj} ImageObj
+ * @template T
+ * @typedef {import('react').SetStateAction<T>} SetStateAction
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Dispatch<T>} Dispatch
+ */
+
+/**
+ * @typedef {import('../../services/api/Images.js').ImageResult} ImageResult
+ * @typedef {import('../../services/api/Images.js').ImageObj} ImageObj
  */
 
 /**
@@ -13,7 +23,7 @@ import { checkLocalFave, toggleLocalFave } from '../../services/api/LocalFaves';
  * @param {{ id: string, icon: string, label: string, url: string, openLeft: boolean, onActionRecord: (id: string, actionType: string) => void, onClose: () => void }} props
  */
 const ContextMenuGroup = ({ id, icon, label, url, openLeft, onActionRecord, onClose }) => {
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isOpen, setIsOpen] = useState(false);
 
   /**
@@ -335,10 +345,10 @@ const ContextMenu = ({ x, y, img, onClose, onOpenImage, hostname }) => {
  * @param {{ img: ImageResult; className?: string; onOpenImage?: (img: ImageResult) => void }} props
  */
 export const Image = ({ img, className, onOpenImage }) => {
-  /** @type {[Set<number>, import('react').Dispatch<import('react').SetStateAction<Set<number>>>]} */
+  /** @type {[Set<number>, Dispatch<SetStateAction<Set<number>>>]} */
   const [unspoileredIds, setUnspoileredIds] = useState(new Set());
 
-  /** @type {[{ visible: boolean, x: number, y: number }, import('react').Dispatch<import('react').SetStateAction<{ visible: boolean, x: number, y: number }>>]} */
+  /** @type {[{ visible: boolean, x: number, y: number }, Dispatch<SetStateAction<{ visible: boolean, x: number, y: number }>>]} */
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
 
   /** @type {boolean} */
@@ -347,7 +357,7 @@ export const Image = ({ img, className, onOpenImage }) => {
   /** @type {boolean} */
   const localFavesEnabled = localStorage.getItem('app_localFavesEnabled') === 'true';
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isLocal, setIsLocal] = useState(false);
 
   useEffect(() => {
@@ -460,7 +470,7 @@ export const Image = ({ img, className, onOpenImage }) => {
           target="_blank"
           rel="noopener noreferrer"
           className="text-decoration-none d-block h-100"
-          onClick={(e) => handleImageClick(e, img.id, img.spoilered)}
+          onClick={(e) => handleImageClick(e, img.id, img.spoilered ? true : false)}
         >
           <div
             className={`${className ? className : ''}`}

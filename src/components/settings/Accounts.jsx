@@ -8,8 +8,22 @@ import {
   deleteAllAccounts,
   getAllAccounts,
   getSystemSettings,
-} from '../../services/api/System';
-import { fixBooruUrl } from '../../services/api/utils';
+} from '../../services/api/System.js';
+import { fixBooruUrl } from '../../services/api/utils.js';
+
+/**
+ * @template T
+ * @typedef {import('react').SetStateAction<T>} SetStateAction
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Dispatch<T>} Dispatch
+ */
+
+/**
+ * @typedef {import('../../services/api/System.js').Account} Account
+ */
 
 export const Accounts = ({
   setMaxItemsLimit,
@@ -19,22 +33,22 @@ export const Accounts = ({
   setIsLoading,
   loadAccounts,
 }) => {
-  /** @type {[Account[], import('react').Dispatch<import('react').SetStateAction<Account[]>>]} */
+  /** @type {[Account[], Dispatch<SetStateAction<Account[]>>]} */
   const [accountsList, setAccountsList] = useState([]);
 
-  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  /** @type {[string, Dispatch<SetStateAction<string>>]} */
   const [urlInput, setUrlInput] = useState('');
 
-  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  /** @type {[string, Dispatch<SetStateAction<string>>]} */
   const [keyInput, setKeyInput] = useState('');
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [acceptRisk, setAcceptRisk] = useState(false);
 
-  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  /** @type {[string, Dispatch<SetStateAction<string>>]} */
   const [errorMessage, setErrorMessage] = useState('');
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [warnRisk, setWarnRisk] = useState(false);
 
   /** @type {string} */

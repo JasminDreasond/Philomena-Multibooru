@@ -25,4 +25,7 @@ const MY_CONFIG = {
   },
 };
 
-export const tinySw = new TinyServiceWorkerEngine(MY_CONFIG);
+export const tinySw = new TinyServiceWorkerEngine(MY_CONFIG, {
+  debugMode: import.meta.env.DEV,
+  useLogColors: true,
+});

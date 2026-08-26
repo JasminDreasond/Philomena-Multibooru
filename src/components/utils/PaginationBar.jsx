@@ -1,13 +1,24 @@
 import { useEffect, useState } from 'react';
 
 /**
+ * @template T
+ * @typedef {import('react').SetStateAction<T>} SetStateAction
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Dispatch<T>} Dispatch
+ */
+
+/**
  * @param {{ currentPage: number, isHomepage: boolean, totalPages: number, onPageChange: (page: number) => void, className?: string }} props
  */
 export const PaginationBar = ({ currentPage, isHomepage, totalPages, onPageChange, className }) => {
-  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  /** @type {[string, Dispatch<SetStateAction<string>>]} */
   const [jumpValue, setJumpValue] = useState(currentPage.toString());
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setJumpValue(currentPage.toString());
   }, [currentPage]);
 

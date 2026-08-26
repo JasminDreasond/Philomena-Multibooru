@@ -1,4 +1,4 @@
-import { dbConnection } from '../../db/connection';
+import { dbConnection } from '../../db/connection.js';
 
 /**
  * Represents the global application configuration stored in the local database.

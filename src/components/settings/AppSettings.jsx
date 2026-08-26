@@ -1,14 +1,35 @@
 import { useState, useEffect, useRef } from 'react';
-
 import { alert, confirm } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
-import { getActiveAccounts, updateSystemSettings } from '../../services/api/System';
-import { exportLocalFaves, clearLocalFaves, importLocalFaves } from '../../services/api/LocalFaves';
+
+import { getActiveAccounts, updateSystemSettings } from '../../services/api/System.js';
+import {
+  exportLocalFaves,
+  clearLocalFaves,
+  importLocalFaves,
+} from '../../services/api/LocalFaves.js';
+
+/**
+ * @template T
+ * @typedef {import('react').SetStateAction<T>} SetStateAction
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Dispatch<T>} Dispatch
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Ref<T>} Ref
+ */
 
 /**
  * @param {Object} config
  * @param {boolean} config.isLoading
  * @param {number} config.maxItemsLimit
  * @param {boolean} config.isPersistent
+ * @param {Dispatch<SetStateAction<boolean>>} config.setIsPersistent
+ * @param {Dispatch<SetStateAction<number>>} config.setMaxItemsLimit
  */
 export const AppSettings = ({
   isPersistent,
@@ -17,7 +38,7 @@ export const AppSettings = ({
   setMaxItemsLimit,
   isLoading,
 }) => {
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(
     localStorage.getItem('app_autoRefreshEnabled') === 'true',
   );
@@ -35,7 +56,7 @@ export const AppSettings = ({
     localStorage.getItem('app_plyrAutoplay') !== 'false',
   );
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [recVideoMode, setRecVideoMode] = useState(() => {
     return localStorage.getItem('app_recVideoMode') === 'true';
   });
@@ -49,13 +70,13 @@ export const AppSettings = ({
     localStorage.getItem('app_plyrStorage') === 'true',
   );
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [localFavesEnabled, setLocalFavesEnabled] = useState(false);
 
-  /** @type {import('react').MutableRefObject<HTMLInputElement | null>} */
+  /** @type {Ref<HTMLInputElement | null>} */
   const fileInputRef = useRef(null);
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isProcessingFaves, setIsProcessingFaves] = useState(false);
 
   useEffect(() => {
@@ -101,7 +122,7 @@ export const AppSettings = ({
 
   /**
    * @param {string} key
-   * @param {import('react').Dispatch<import('react').SetStateAction<boolean>>} setter
+   * @param {Dispatch<SetStateAction<boolean>>} setter
    * @param {boolean} value
    */
   const handlePlyrSettingChange = (key, setter, value) => {
@@ -185,7 +206,7 @@ export const AppSettings = ({
 
     reader.onload = async (e) => {
       try {
-        const json = JSON.parse(e.target.result);
+        const json = JSON.parse(typeof e.target.result === 'string' ? e.target.result : '');
 
         if (!Array.isArray(json)) {
           alert('Invalid JSON format. Expected an array of favorite images.');
@@ -283,7 +304,7 @@ export const AppSettings = ({
               checked={inAppViewer}
               onChange={(e) => {
                 setInAppViewer(e.target.checked);
-                localStorage.setItem('app_inAppViewer', e.target.checked);
+                localStorage.setItem('app_inAppViewer', String(e.target.checked));
               }}
               disabled={isLoading}
             />
@@ -303,7 +324,7 @@ export const AppSettings = ({
               checked={inAppProfileViewer}
               onChange={(e) => {
                 setInAppProfileViewer(e.target.checked);
-                localStorage.setItem('app_inAppProfileViewer', e.target.checked);
+                localStorage.setItem('app_inAppProfileViewer', String(e.target.checked));
               }}
               disabled={isLoading}
             />

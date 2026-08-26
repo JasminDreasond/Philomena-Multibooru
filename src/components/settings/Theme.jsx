@@ -2,14 +2,29 @@ import { useRef, useState } from 'react';
 import { alert } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 
 /**
+ * @template T
+ * @typedef {import('react').SetStateAction<T>} SetStateAction
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Dispatch<T>} Dispatch
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Ref<T>} Ref
+ */
+
+/**
  * @param {Object} config
  * @param {boolean} config.isDark
  */
 export const ThemeSettings = ({ isDark }) => {
-  /** @type {import('react').MutableRefObject<HTMLInputElement | null>} */
+  /** @type {Ref<HTMLInputElement | null>} */
   const fileInputRef = useRef(null);
 
-  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  /** @type {[string, Dispatch<SetStateAction<string>>]} */
   const [themeMode, setThemeMode] = useState(localStorage.getItem('app_themeMode') || 'system');
 
   /* Global Colors */
@@ -67,7 +82,7 @@ export const ThemeSettings = ({ isDark }) => {
   /**
    * @param {string} key
    * @param {string} value
-   * @param {import('react').Dispatch<import('react').SetStateAction<string>>} setter
+   * @param {Dispatch<SetStateAction<string>>} setter
    */
   const handleColorChange = (key, value, setter) => {
     localStorage.setItem(key, value);
@@ -181,7 +196,7 @@ export const ThemeSettings = ({ isDark }) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
-        const json = JSON.parse(e.target.result);
+        const json = JSON.parse(typeof e.target.result === 'string' ? e.target.result : '');
         const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
         const validKeys = [
           'app_primary',

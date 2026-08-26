@@ -12,7 +12,7 @@ let globalExpression = ['*'];
 
 // Video mode
 if (localStorage.getItem('app_recVideoMode') === 'true') {
-  globalExpression.push([...videoTags]);
+  globalExpression.push(...videoTags);
   globalExpression = globalExpression.filter((v) => v !== '*');
 }
 

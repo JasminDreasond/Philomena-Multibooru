@@ -1,5 +1,10 @@
 import { Connection } from 'jsstore';
 
+/** @typedef {import('jsstore').IDataBase} IDataBase */
+/** @typedef {import('jsstore').ITable} ITable */
+/** @typedef {import('jsstore').TColumns} TColumns */
+/** @typedef {import('jsstore').IAlterQuery} IAlterQuery */
+
 /**
  * Initialize JsStore worker
  * @returns {Worker}
@@ -15,13 +20,14 @@ export const dbConnection = new Connection(getWorkerPath());
  * @returns {Promise<void>}
  */
 export const initDatabase = async () => {
-  /** @type {Object} */
+  /** @type {TColumns} */
   const imageColumns = {
     id: { primaryKey: true, dataType: 'number', notNull: true },
     booruUrl: { dataType: 'string', notNull: true },
     name: { dataType: 'string', notNull: true },
     viewUrl: { dataType: 'string', notNull: true },
     tagIds: { dataType: 'array', notNull: true },
+    format: { dataType: 'string', notNull: true },
     tags: { dataType: 'array', notNull: true },
     sourceUrls: { dataType: 'array', notNull: true },
     faves: { dataType: 'number', notNull: true },
@@ -52,16 +58,30 @@ export const initDatabase = async () => {
     wilsonScore: { dataType: 'number', notNull: true },
   };
 
+  /** @type {IAlterQuery} */
+  const imageColumnsAlter = {
+    4: {
+      add: {
+        format: { dataType: 'string', notNull: true },
+      },
+    },
+  };
+
+  /** @type {ITable} */
   const tblImages = {
     name: 'Images',
     columns: imageColumns,
+    alter: imageColumnsAlter,
   };
 
+  /** @type {ITable} */
   const tblLocalFaves = {
     name: 'LocalFaves',
     columns: { ...imageColumns },
+    alter: { ...imageColumnsAlter },
   };
 
+  /** @type {ITable} */
   const tblAccounts = {
     name: 'Accounts',
     columns: {
@@ -72,6 +92,7 @@ export const initDatabase = async () => {
     },
   };
 
+  /** @type {ITable} */
   const tblQueries = {
     name: 'Queries',
     columns: {
@@ -83,6 +104,7 @@ export const initDatabase = async () => {
     },
   };
 
+  /** @type {ITable} */
   const tblSettings = {
     name: 'Settings',
     columns: {
@@ -92,6 +114,7 @@ export const initDatabase = async () => {
     },
   };
 
+  /** @type {ITable} */
   const tblInteractions = {
     name: 'Interactions',
     columns: {
@@ -102,6 +125,7 @@ export const initDatabase = async () => {
     },
   };
 
+  /** @type {ITable} */
   const tblTotalImagesCounter = {
     name: 'TotalImagesCounter',
     columns: {
@@ -113,9 +137,10 @@ export const initDatabase = async () => {
     },
   };
 
+  /** @type {IDataBase} */
   const database = {
     name: 'PhilomenaMultiBooru',
-    version: 3,
+    version: 4,
     tables: [
       tblImages,
       tblLocalFaves,

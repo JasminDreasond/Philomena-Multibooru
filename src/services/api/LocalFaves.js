@@ -1,5 +1,8 @@
-import { dbConnection } from '../../db/connection';
-import { fixImageObj } from './Images';
+import { dbConnection } from '../../db/connection.js';
+import { fixImageObj } from './Images.js';
+
+/** @typedef {import('./Images.js').ImageObj} ImageObj */
+/** @typedef {import('./Images.js').ImageResult} ImageResult */
 
 /**
  * @param {ImageObj|ImageResult} img
@@ -17,6 +20,7 @@ const formatLocalFaveData = (img) => {
 
   delete faveData.interaction;
 
+  // @ts-ignore
   return faveData;
 };
 
@@ -273,5 +277,5 @@ export const importLocalFaves = async (favesList) => {
     upsert: true,
   });
 
-  return result;
+  return typeof result === 'number' ? result : NaN;
 };

@@ -1,5 +1,5 @@
-import { clearImageCache } from './Images';
-import { fetchPhilomena, throwApiError } from './Philomena';
+import { clearImageCache } from './Images.js';
+import { fetchPhilomena, throwApiError } from './Philomena.js';
 
 /**
  * Represents a content filter configuration from the Philomena API.

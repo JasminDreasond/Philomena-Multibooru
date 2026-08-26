@@ -1,58 +1,77 @@
 import { useState, useEffect, useRef } from 'react';
-import { searchImagesApi } from '../../services/api/Images';
-import { geString, parseQueryResults } from '../../queries/globalTags';
+import { searchImagesApi } from '../../services/api/Images.js';
+import { geString, parseQueryResults } from '../../queries/globalTags.js';
 import swManager from '../utils/TinyServiceWorker.mjs';
 
 /**
- * @param {{ accounts: import('../../services/api/System').Account[], visibleBoorus: string[], onClose: () => void, onGoHome: () => void }} props
+ * @template T
+ * @typedef {import('react').SetStateAction<T>} SetStateAction
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Dispatch<T>} Dispatch
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Ref<T>} Ref
+ */
+
+/**
+ * @param {{ accounts: import('../../services/api/System.js').Account[], visibleBoorus: string[], onClose: () => void, onGoHome: () => void }} props
  * @returns {import('react').JSX.Element}
  */
 export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }) => {
-  /** @type {[NotificationPermission, import('react').Dispatch<import('react').SetStateAction<NotificationPermission>>]} */
+  /** @type {[NotificationPermission, Dispatch<SetStateAction<NotificationPermission>>]} */
   const [permission, setPermission] = useState(Notification.permission);
 
-  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  /** @type {[number, Dispatch<SetStateAction<number>>]} */
   const [intervalMinutes, setIntervalMinutes] = useState(() => {
     /** @type {string | null} */
     const saved = localStorage.getItem('app_notifInterval');
     return saved ? Math.max(30, parseInt(saved, 10)) : 30;
   });
 
-  /** @type {['app' | 'booru', import('react').Dispatch<import('react').SetStateAction<'app' | 'booru'>>]} */
-  const [clickAction, setClickAction] = useState(() => {
-    return localStorage.getItem('app_notifAction') === 'booru' ? 'booru' : 'app';
-  });
+  /** @type {['app' | 'booru', Dispatch<SetStateAction<'app' | 'booru'>>]} */
+  const [clickAction, setClickAction] = useState(
+    /** @type {() => 'booru'|'app'} */ () => {
+      return localStorage.getItem('app_notifAction') === 'booru' ? 'booru' : 'app';
+    },
+  );
 
-  /** @type {['default' | 'watched' | 'custom', import('react').Dispatch<import('react').SetStateAction<'default' | 'watched' | 'custom'>>]} */
-  const [searchType, setSearchType] = useState(() => {
-    /** @type {string | null} */
-    const saved = localStorage.getItem('app_notifSearchType');
-    return saved === 'watched' || saved === 'custom' ? saved : 'default';
-  });
+  /** @type {['default' | 'watched' | 'custom', Dispatch<SetStateAction<'default' | 'watched' | 'custom'>>]} */
+  const [searchType, setSearchType] = useState(
+    /** @type {() => 'default' | 'watched' | 'custom'} */ () => {
+      /** @type {string | null} */
+      const saved = localStorage.getItem('app_notifSearchType');
+      return saved === 'watched' || saved === 'custom' ? saved : 'default';
+    },
+  );
 
-  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  /** @type {[string, Dispatch<SetStateAction<string>>]} */
   const [customQuery, setCustomQuery] = useState(() => {
     return localStorage.getItem('app_notifCustomQuery') || '';
   });
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [enableSound, setEnableSound] = useState(() => {
     return localStorage.getItem('app_notifSound') !== 'false';
   });
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isActive, setIsActive] = useState(false);
 
-  /** @type {[Date | null, import('react').Dispatch<import('react').SetStateAction<Date | null>>]} */
+  /** @type {[Date | null, Dispatch<SetStateAction<Date | null>>]} */
   const [lastChecked, setLastChecked] = useState(null);
 
-  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  /** @type {[string, Dispatch<SetStateAction<string>>]} */
   const [swError, setSwError] = useState('');
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isWaitingSw, setIsWaitingSw] = useState(false);
 
-  /** @type {import('react').MutableRefObject<Record<string, number>>} */
+  /** @type {Ref<Record<string, number>>} */
   const lastSeenIds = useRef({});
 
   useEffect(() => {
@@ -194,7 +213,7 @@ export const NotificationsMode = ({ accounts, visibleBoorus, onClose, onGoHome }
     const checkNewImages = async () => {
       if (visibleBoorus.length === 0 || accounts.length === 0) return;
 
-      /** @type {import('../../services/api/System').Account[]} */
+      /** @type {import('../../services/api/System.js').Account[]} */
       const activeAccounts = accounts.filter((a) => visibleBoorus.includes(a.booruUrl));
 
       /** @type {string} */

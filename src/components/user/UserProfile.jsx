@@ -1,19 +1,34 @@
 import { useState, useEffect, useRef } from 'react';
 
-import { fetchProfile } from '../../services/api/Profile';
-import { fetchComments, searchImages, syncUserGalleryPages } from '../../services/api/Images';
-import { getAccountBooru } from '../../services/api/System';
+import { fetchProfile } from '../../services/api/Profile.js';
+import { fetchComments, searchImages, syncUserGalleryPages } from '../../services/api/Images.js';
+import { getAccountBooru } from '../../services/api/System.js';
 
-import { Image } from '../image/ImageGallery';
-import { ProfileLink } from '../image/ProfileLink';
-import { CommentBody } from '../utils/CommentBody';
-import { openImageLink } from '../../tools/utils';
-import { parseQueryResults } from '../../queries/globalTags';
+import { Image } from '../image/ImageGallery.jsx';
+import { ProfileLink } from '../image/ProfileLink.jsx';
+import { CommentBody } from '../utils/CommentBody.jsx';
+import { openImageLink } from '../../tools/utils.js';
+import { parseQueryResults } from '../../queries/globalTags.js';
 
 /**
- * @typedef {import('../../services/api/Profile').UserProfileData} UserProfileData
- * @typedef {import('../../services/api/Images').ImageResult} ImageResult
- * @typedef {import('../../services/api/Images').CommentData} CommentData
+ * @template T
+ * @typedef {import('react').SetStateAction<T>} SetStateAction
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Dispatch<T>} Dispatch
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Ref<T>} Ref
+ */
+
+/**
+ * @typedef {import('../../services/api/Profile.js').UserProfileData} UserProfileData
+ * @typedef {import('../../services/api/Images.js').ImageResult} ImageResult
+ * @typedef {import('../../services/api/Images.js').CommentData} CommentData
  */
 
 /**
@@ -21,8 +36,8 @@ import { parseQueryResults } from '../../queries/globalTags';
  * @returns {string}
  */
 const timeSince = (date) => {
-  const d = new Date(date);
-  const seconds = Math.floor((new Date() - d) / 1000);
+  const d = new Date(date).valueOf();
+  const seconds = Math.floor((new Date().valueOf() - d) / 1000);
   let interval = seconds / 31536000;
   if (interval > 1) return Math.floor(interval) + ' years ago';
   interval = seconds / 2592000;
@@ -37,7 +52,7 @@ const timeSince = (date) => {
 };
 
 /**
- * @param {{ booruUrl: string, username: string, userId: number, handleQuickLinkClick: import('../../App').HandleQuickLinkClick, onClose: () => void, onOpenImage: (img: ImageResult) => void, onOpenProfile: (booruUrl: string, username: string, id: number) => void }} props
+ * @param {{ booruUrl: string, username: string, userId: number, handleQuickLinkClick: import('../../App.jsx').HandleQuickLinkClick, onClose: () => void, onOpenImage: (img: ImageResult) => void, onOpenProfile: (booruUrl: string, username: string, id: number) => void }} props
  */
 export const UserProfile = ({
   booruUrl,
@@ -48,25 +63,25 @@ export const UserProfile = ({
   onOpenProfile,
   handleQuickLinkClick,
 }) => {
-  /** @type {[UserProfileData|null, import('react').Dispatch<import('react').SetStateAction<UserProfileData|null>>]} */
+  /** @type {[UserProfileData|null, Dispatch<SetStateAction<UserProfileData|null>>]} */
   const [pf, setProfile] = useState(null);
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isLoading, setIsLoading] = useState(true);
 
-  /** @type {[ImageResult[], import('react').Dispatch<import('react').SetStateAction<ImageResult[]>>]} */
+  /** @type {[ImageResult[], Dispatch<SetStateAction<ImageResult[]>>]} */
   const [recentUploads, setRecentUploads] = useState([]);
 
-  /** @type {[ImageResult[], import('react').Dispatch<import('react').SetStateAction<ImageResult[]>>]} */
+  /** @type {[ImageResult[], Dispatch<SetStateAction<ImageResult[]>>]} */
   const [recentFaves, setRecentFaves] = useState([]);
 
-  /** @type {[CommentData[], import('react').Dispatch<import('react').SetStateAction<CommentData[]>>]} */
+  /** @type {[CommentData[], Dispatch<SetStateAction<CommentData[]>>]} */
   const [recentComments, setRecentComments] = useState([]);
 
-  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  /** @type {[number, Dispatch<SetStateAction<number>>]} */
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  /** @type {import('react').MutableRefObject<{ url: string|null, id: number|null, trigger: number|null, isMounted: number|null }>} */
+  /** @type {Ref<{ url: string|null, id: number|null, trigger: number|null, isMounted: boolean|null }>} */
   const lastFetched = useRef({ url: null, id: null, trigger: null, isMounted: null });
 
   // Smart Auto Refresh Listener

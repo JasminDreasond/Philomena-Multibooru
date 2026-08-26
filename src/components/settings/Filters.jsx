@@ -4,33 +4,43 @@ import { fixBooruUrl } from '../../services/api/utils';
 import { fetchSystemFilters, fetchUserFilters, saveBooruFilters } from '../../services/api/Filters';
 
 /**
+ * @template T
+ * @typedef {import('react').SetStateAction<T>} SetStateAction
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Dispatch<T>} Dispatch
+ */
+
+/**
  * @typedef {import('../../services/api/System').Account} Account
  */
 
 export const Filters = ({ loadAccounts, accounts, activeTab }) => {
-  /** @type {[FilterObj[], import('react').Dispatch<import('react').SetStateAction<FilterObj[]>>]} */
+  /** @type {[FilterObj[], Dispatch<SetStateAction<FilterObj[]>>]} */
   const [systemFilters, setSystemFilters] = useState([]);
 
-  /** @type {[FilterObj[], import('react').Dispatch<import('react').SetStateAction<FilterObj[]>>]} */
+  /** @type {[FilterObj[], Dispatch<SetStateAction<FilterObj[]>>]} */
   const [userFilters, setUserFilters] = useState([]);
 
-  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  /** @type {[number, Dispatch<SetStateAction<number>>]} */
   const [sysPage, setSysPage] = useState(1);
 
-  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  /** @type {[number, Dispatch<SetStateAction<number>>]} */
   const [userPage, setUserPage] = useState(1);
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isLoadingFilters, setIsLoadingFilters] = useState(false);
 
-  /** @type {[Record<string, number>, import('react').Dispatch<import('react').SetStateAction<Record<string, number>>>]} */
+  /** @type {[Record<string, number>, Dispatch<SetStateAction<Record<string, number>>>]} */
   const [pendingFilters, setPendingFilters] = useState({});
 
-  /** @type {[Record<string, number>, import('react').Dispatch<import('react').SetStateAction<Record<string, number>>>]} */
+  /** @type {[Record<string, number>, Dispatch<SetStateAction<Record<string, number>>>]} */
   const [savedFilters, setSavedFilters] = useState({});
 
   // --- Filters State ---
-  /** @type {[Account|null, import('react').Dispatch<import('react').SetStateAction<Account|null>>]} */
+  /** @type {[Account|null, Dispatch<SetStateAction<Account|null>>]} */
   const [selectedFilterAccount, setSelectedFilterAccount] = useState(null);
 
   useEffect(() => {

@@ -464,6 +464,7 @@ const swManager = new TinyServiceWorker({
   useLogColors: true,
 });
 
+// @ts-ignore
 if (import.meta.env.DEV) window.swManager = swManager;
 
 export default swManager;

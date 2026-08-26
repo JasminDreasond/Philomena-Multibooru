@@ -1,38 +1,40 @@
 import TinySimpleDice from 'tiny-essentials/libs/math/TinySimpleDice';
-import { dbConnection } from '../../db/connection';
-import { getBooruFilterId } from './Filters';
-import { fetchPhilomena, throwApiError } from './Philomena';
-import { enforceStorageLimit, getActiveAccounts } from './System';
-import { checkArray, checkItem } from './utils';
+import { dbConnection } from '../../db/connection.js';
+import { getBooruFilterId } from './Filters.js';
+import { fetchPhilomena, throwApiError } from './Philomena.js';
+import { enforceStorageLimit, getActiveAccounts } from './System.js';
+import { checkArray, checkItem } from './utils.js';
+
+/** @typedef {import('./System.js').Account} Account */
 
 /**
  * Represents a single user comment retrieved from the booru.
  * @typedef {Object} CommentData
- * @property {string} author The username of the commenter.
- * @property {string} avatar The URL to the commenter's avatar.
- * @property {string} body The markdown content of the comment.
- * @property {Date} createdAt The timestamp of creation.
- * @property {string|null} editReason The reason provided for the last edit.
- * @property {Date|null} editedAt The timestamp of the last edit, if any.
- * @property {number} id Unique identifier for the comment.
- * @property {number} imageId The ID of the image this comment belongs to.
- * @property {Date} updatedAt The timestamp of the last update.
- * @property {number|null} userId The ID of the user who posted the comment.
+ * @property {string} author - The username of the commenter.
+ * @property {string} avatar - The URL to the commenter's avatar.
+ * @property {string} body - The markdown content of the comment.
+ * @property {Date} createdAt - The timestamp of creation.
+ * @property {string|null} editReason - The reason provided for the last edit.
+ * @property {Date|null} editedAt - The timestamp of the last edit, if any.
+ * @property {number} id - Unique identifier for the comment.
+ * @property {number} imageId - The ID of the image this comment belongs to.
+ * @property {Date} updatedAt - The timestamp of the last update.
+ * @property {number|null} userId - The ID of the user who posted the comment.
  */
 
 /**
  * A wrapper object containing a paginated list of comments and the total count.
  * @typedef {Object} CommentObj
- * @property {number} total The total number of comments matching the query.
- * @property {CommentData[]} comments The list of comment data objects.
+ * @property {number} total - The total number of comments matching the query.
+ * @property {CommentData[]} comments - The list of comment data objects.
  */
 
 /**
  * Fetches and parses comments based on a specific query.
- * @param {string} booruUrl Base URL of the booru.
- * @param {string} apiKey User API key.
- * @param {string} [query='*'] Search query for comments.
- * @param {number} [page=1] Page number for pagination.
+ * @param {string} booruUrl - Base URL of the booru.
+ * @param {string} apiKey - User API key.
+ * @param {string} [query='*'] - Search query for comments.
+ * @param {number} [page=1] - Page number for pagination.
  * @param {AbortSignal} [signal]
  * @returns {Promise<CommentObj>} Parsed comments and metadata.
  */
@@ -96,70 +98,74 @@ export const fetchComments = async (
 /**
  * Represents a user's interaction record for a specific image on a specific booru.
  * @typedef {Object} InteractionObj
- * @property {string} id Unique composite key for the interaction.
- * @property {string} booruUrl The source booru URL.
- * @property {number} imageId The ID of the image.
- * @property {InteractionValue} value The type of interaction performed.
+ * @property {string} id - Unique composite key for the interaction.
+ * @property {string} booruUrl - The source booru URL.
+ * @property {number} imageId - The ID of the image.
+ * @property {InteractionValue} value - The type of interaction performed.
  */
 
 /**
  * Contains URLs for various sizes and formats of a processed image.
  * @typedef {Object} ImageRepresentations
- * @property {string} full Original full-size image URL.
- * @property {string} small Small version URL.
- * @property {string} thumb_tiny Tiny thumbnail URL.
- * @property {string} thumb_small Small thumbnail URL.
- * @property {string} thumb Standard thumbnail URL.
- * @property {string} medium Medium size URL.
- * @property {string} large Large size URL.
- * @property {string} tall Tall version URL.
+ * @property {string} full - Original full-size image URL.
+ * @property {string} small - Small version URL.
+ * @property {string} thumb_tiny - Tiny thumbnail URL.
+ * @property {string} thumb_small - Small thumbnail URL.
+ * @property {string} thumb - Standard thumbnail URL.
+ * @property {string} medium - Medium size URL.
+ * @property {string} large - Large size URL.
+ * @property {string} tall - Tall version URL.
  */
 
 /**
  * Represents the color or light intensity values for different quadrants of an image.
  * @typedef {Object} ImageIntensities
- * @property {number} ne Northeast quadrant intensity.
- * @property {number} nw Northwest quadrant intensity.
- * @property {number} se Southeast quadrant intensity.
- * @property {number} sw Southwest quadrant intensity.
+ * @property {number} ne - Northeast quadrant intensity.
+ * @property {number} nw - Northwest quadrant intensity.
+ * @property {number} se - Southeast quadrant intensity.
+ * @property {number} sw - Southwest quadrant intensity.
  */
 
 /**
  * Represents the comprehensive data of a single image parsed from the API.
  * @typedef {Object} ImageObj
- * @property {number} id The image's unique ID.
- * @property {string} booruUrl The source booru URL.
- * @property {string} name The filename or title.
- * @property {string[]} tags List of tags associated with the image.
- * @property {string[]} sourceUrls List of source links.
- * @property {number} faves Number of favorites.
- * @property {number} size File size in bytes.
- * @property {number|null} uploaderId ID of the uploader.
- * @property {string} description Image description markdown.
- * @property {string} mimeType The file MIME type.
- * @property {number} downvotes Number of downvotes.
- * @property {number} upvotes Number of upvotes.
- * @property {number} origSize Original file size before processing.
- * @property {ImageRepresentations} representations Object containing different image sizes.
- * @property {number} updatedAt Unix timestamp of the last update.
- * @property {number} createdAt Unix timestamp of creation.
- * @property {number} firstSeenAt Unix timestamp of when the image was first indexed.
- * @property {string|null} sha512Hash SHA512 hash of the file.
- * @property {string|null} uploader Username of the uploader.
- * @property {string|null} origSha512Hash Original SHA512 hash.
- * @property {number} hiddenFromUsers Binary flag (0/1) for hidden status.
- * @property {number} spoilered Binary flag (0/1) for spoiler status.
- * @property {number} processed Binary flag (0/1) for processing status.
- * @property {number} thumbnailsGenerated Binary flag (0/1) for thumbnail status.
- * @property {number} animated Binary flag (0/1) for animation status.
- * @property {number} aspectRatio The width/height ratio.
- * @property {number|null} duplicateOf ID of the original image if this is a duplicate.
- * @property {string|null} deletionReason Reason for deletion if applicable.
- * @property {number} height Pixel height.
- * @property {number} width Pixel width.
- * @property {string} sourceUrl Primary source URL.
- * @property {number} wilsonScore Calculated popularity score.
- * @property {ImageIntensities|null} intensities Brightness data for the image.
+ * @property {string} format - File format.
+ * @property {number} commentCount - Number of comments.
+ * @property {number} id - The image's unique ID.
+ * @property {string} booruUrl - The source booru URL.
+ * @property {string} name - The filename or title.
+ * @property {string[]} tags - List of tags associated with the image.
+ * @property {number[]} tagIds - List of tag ids associated with the image.
+ * @property {string[]} sourceUrls - List of source links.
+ * @property {string} viewUrl - File link.
+ * @property {number} faves - Number of favorites.
+ * @property {number} size - File size in bytes.
+ * @property {number|null} uploaderId - ID of the uploader.
+ * @property {string} description - Image description markdown.
+ * @property {string} mimeType - The file MIME type.
+ * @property {number} downvotes - Number of downvotes.
+ * @property {number} upvotes - Number of upvotes.
+ * @property {number} origSize - Original file size before processing.
+ * @property {ImageRepresentations} representations - Object containing different image sizes.
+ * @property {number} updatedAt - Unix timestamp of the last update.
+ * @property {number} createdAt - Unix timestamp of creation.
+ * @property {number} firstSeenAt - Unix timestamp of when the image was first indexed.
+ * @property {string|null} sha512Hash - SHA512 hash of the file.
+ * @property {string|null} uploader - Username of the uploader.
+ * @property {string|null} origSha512Hash - Original SHA512 hash.
+ * @property {number} hiddenFromUsers - Binary flag (0/1) for hidden status.
+ * @property {number} spoilered - Binary flag (0/1) for spoiler status.
+ * @property {number} processed - Binary flag (0/1) for processing status.
+ * @property {number} thumbnailsGenerated - Binary flag (0/1) for thumbnail status.
+ * @property {number} animated - Binary flag (0/1) for animation status.
+ * @property {number} aspectRatio - The width/height ratio.
+ * @property {number|null} duplicateOf - ID of the original image if this is a duplicate.
+ * @property {string|null} deletionReason - Reason for deletion if applicable.
+ * @property {number} height - Pixel height.
+ * @property {number} width - Pixel width.
+ * @property {string} sourceUrl - Primary source URL.
+ * @property {number} wilsonScore - Calculated popularity score.
+ * @property {ImageIntensities|null} intensities - Brightness data for the image.
  */
 
 /**
@@ -169,14 +175,14 @@ export const fetchComments = async (
 
 /**
  * Fetches images from the booru API using a search query and automatically applies the user's selected filter.
- * @param {string} booruUrl The source booru.
- * @param {string} apiKey Authentication key.
- * @param {string} query Search query string.
- * @param {number} [page] Page number.
- * @param {number} [perPage] Items per page.
- * @param {string} [sd] Sort direction ('asc' or 'desc').
- * @param {string} [sf] Sort field (e.g., 'created_at').
- * @param {number} [limit=null] Content limit.
+ * @param {string} booruUrl - The source booru.
+ * @param {string} apiKey - Authentication key.
+ * @param {string} query - Search query string.
+ * @param {number} [page] - Page number.
+ * @param {number} [perPage] - Items per page.
+ * @param {string} [sd] - Sort direction ('asc' or 'desc').
+ * @param {string} [sf] - Sort field (e.g., 'created_at').
+ * @param {number} [limit=null] - Content limit.
  * @param {AbortSignal} [signal]
  * @returns {Promise<{ total: number; interactions: any[]; images: any[] }>} Raw API response data.
  */
@@ -217,7 +223,7 @@ export const searchImagesApi = async (
 
 /**
  * Normalizes a query string by sorting tags alphabetically to ensure consistent caching.
- * @param {string} rawQuery The original query string.
+ * @param {string} rawQuery - The original query string.
  * @returns {string} The normalized query string.
  */
 const normalizeQueryString = (rawQuery) => {
@@ -251,14 +257,15 @@ const normalizeQueryString = (rawQuery) => {
 
 /**
  * Parses raw image data from the Philomena API into the format required by the local database.
- * @param {string} booruUrl The source booru URL.
- * @param {Record<string, any>} img Raw image object from API.
+ * @param {string} booruUrl - The source booru URL.
+ * @param {Record<string, any>} img - Raw image object from API.
  * @returns {ImageObj} Formatted and validated image object.
  */
 export const parseImageData = (booruUrl, img) => ({
   id: img.id,
   booruUrl,
   name: img.name,
+  format: img.format,
   tags: checkArray(img.tags, 'string'),
   tagIds: checkArray(img.tag_ids, 'number'),
   viewUrl: img.view_url,
@@ -312,15 +319,22 @@ export const parseImageData = (booruUrl, img) => ({
 
 /**
  * Normalizes an Image object restoring boolean fields.
- * @param {Record<string, any>} img The database image record (using 0/1).
- * @returns {Record<string, any>} The object with restored boolean types.
+ *
+ * The argument is database image record (using 0/1).
+ * This returns the object with restored boolean types.
  */
 export const fixImageObj = (img) => {
+  // @ts-ignore
   img.animated = img.animated ? true : false;
+  // @ts-ignore
   img.hiddenFromUsers = img.hiddenFromUsers ? true : false;
+  // @ts-ignore
   img.processed = img.processed ? true : false;
+  // @ts-ignore
   img.spoilered = img.spoilered ? true : false;
+  // @ts-ignore
   img.thumbnailsGenerated = img.thumbnailsGenerated ? true : false;
+  // @ts-ignore
   return img;
 };
 
@@ -329,8 +343,8 @@ const syncTimes = {};
 
 /**
  * Formats interaction data from an API response into local InteractionObj records.
- * @param {string} booruUrl The source booru URL.
- * @param {{ total: number; interactions: any[]; images: any[] }} data The API response data.
+ * @param {string} booruUrl - The source booru URL.
+ * @param {{ total: number; interactions: any[]; images: any[] }} data - The API response data.
  * @returns {InteractionObj[]} List of formatted interactions.
  */
 const getInteractions = (booruUrl, data) => {
@@ -370,15 +384,14 @@ const getInteractions = (booruUrl, data) => {
 
 /**
  * Downloads a page of images from the specified booru and inserts it into the local IndexedDB.
- * @param {string} booruUrl The booru instance URL.
- * @param {string} apiKey The user's API key.
- * @param {string} [query='*'] The search query.
- * @param {number} [page=1] The page number to fetch.
- * @param {number} [perPage] Results per page.
- * @param {string} [sd] Sort direction.
- * @param {string} [sf] Sort field.
- * @param {number} [limit=null] Content limit.
- * @param {AbortSignal} [signal]
+ * @param {string} booruUrl - The booru instance URL.
+ * @param {string} apiKey - The user's API key.
+ * @param {string} [query='*'] - The search query.
+ * @param {number} [page=1] - The page number to fetch.
+ * @param {number} [perPage] - Results per page.
+ * @param {string} [sd] - Sort direction.
+ * @param {string} [sf] - Sort field.
+ * @param {number} [limit=null] - Content limit.
  * @returns {Promise<any>} The raw data returned by the API.
  */
 const syncGalleryPage = async (
@@ -390,7 +403,6 @@ const syncGalleryPage = async (
   sd = undefined,
   sf = undefined,
   limit = null,
-  signal = undefined,
 ) => {
   if (typeof syncTimes[booruUrl] !== 'number') syncTimes[booruUrl] = 0;
   syncTimes[booruUrl]++;
@@ -409,7 +421,6 @@ const syncGalleryPage = async (
       allowedBoorus: [booruUrl],
       sd,
       sf,
-      signal,
     });
 
     /** @type {number[]} */
@@ -500,16 +511,15 @@ const syncGalleryPage = async (
 
 /**
  * Background task that syncs gallery pages for multiple connected accounts.
- * @param {Object} [config] Configuration object.
- * @param {string} [config.query='*'] Search query.
- * @param {number} [config.page=1] Page number.
- * @param {number} [config.limit=null] Content limit.
- * @param {string[]|null} [config.allowedBoorus=null] Boorus to sync.
- * @param {number} [config.perPage=50] Limit per booru.
- * @param {Account} [config.account] Specific account to sync.
- * @param {string} [config.sd='desc'] Sort direction.
- * @param {string} [config.sf='created_at'] Sort field.
- * @param {AbortSignal} [config.signal]
+ * @param {Object} [config] - Configuration object.
+ * @param {string} [config.query='*'] - Search query.
+ * @param {number} [config.page=1] - Page number.
+ * @param {number} [config.limit=null] - Content limit.
+ * @param {string[]|null} [config.allowedBoorus=null] - Boorus to sync.
+ * @param {number} [config.perPage=50] - Limit per booru.
+ * @param {Account} [config.account] - Specific account to sync.
+ * @param {string} [config.sd='desc'] - Sort direction.
+ * @param {string} [config.sf='created_at'] - Sort field.
  * @returns {Promise<{ accounts: Account[]; syncLimit: number; totalCount: number; }>} Sync operation summary.
  */
 export const syncUserGalleryPages = async ({
@@ -521,7 +531,6 @@ export const syncUserGalleryPages = async ({
   account,
   sd = 'desc',
   sf = 'created_at',
-  signal = undefined,
 } = {}) => {
   const allAccounts = !account ? await getActiveAccounts() : [account];
 
@@ -533,7 +542,7 @@ export const syncUserGalleryPages = async ({
   if (accounts.length === 0) return { accounts: [], syncLimit: perPage, totalCount: 0 };
 
   const syncs = accounts.map((account) =>
-    syncGalleryPage(account.booruUrl, account.apiKey, query, page, perPage, sd, sf, limit, signal),
+    syncGalleryPage(account.booruUrl, account.apiKey, query, page, perPage, sd, sf, limit),
   );
 
   const results = await Promise.all(syncs);
@@ -551,13 +560,13 @@ export const syncUserGalleryPages = async ({
 
 /**
  * Queries the local IndexedDB for images that match a given search string.
- * @param {Object} config Configuration object.
- * @param {string} [config.query='*'] Filter query.
- * @param {number} [config.limit=50] Result limit.
- * @param {number} [config.page=1] Page number.
- * @param {string[]|null} [config.allowedBoorus=null] List of boorus to include.
- * @param {string} [config.sd='desc'] Sort direction.
- * @param {string} [config.sf='created_at'] Sort field.
+ * @param {Object} config - Configuration object.
+ * @param {string} [config.query='*'] - Filter query.
+ * @param {number} [config.limit=50] - Result limit.
+ * @param {number} [config.page=1] - Page number.
+ * @param {string[]|null} [config.allowedBoorus=null] - List of boorus to include.
+ * @param {string} [config.sd='desc'] - Sort direction.
+ * @param {string} [config.sf='created_at'] - Sort field.
  * @returns {Promise<ImageResult[]>} The list of matching images from local DB.
  */
 export const searchImages = async ({
@@ -629,7 +638,7 @@ export const searchImages = async ({
   /** @type {string} */
   const sortType = sd && sd.toLowerCase() === 'asc' ? 'asc' : 'desc';
 
-  /** @type {ImageObj[]} */
+  /** @type {ImageResult[]} */
   let results = [];
 
   if (normalizedQuery === '*') {
@@ -686,12 +695,19 @@ export const searchImages = async ({
     }
 
     // Process and clean the results to match the expected format
+    // @ts-ignore
     results = gatheredResults.slice(0, fixedLimit).map((item) => {
+      // @ts-ignore
       item.id = item.imageId;
+      // @ts-ignore
       item.booruUrl = item.imgBooruUrl;
+      // @ts-ignore
       delete item.imageId;
+      // @ts-ignore
       delete item.imgCreatedAt;
+      // @ts-ignore
       delete item.imgBooruUrl;
+      // @ts-ignore
       delete item.query;
       fixImageObj(item);
       return item;
@@ -722,8 +738,8 @@ export const searchImages = async ({
 
 /**
  * Returns the total count of images in the database for a specific query.
- * @param {string} query Search query to count.
- * @param {string[]|null} [allowedBoorus=null] Optional booru whitelist.
+ * @param {string} query - Search query to count.
+ * @param {string[]|null} [allowedBoorus=null] - Optional booru whitelist.
  * @returns {Promise<number>} Total items count.
  */
 export const countImages = async (query = '*', allowedBoorus = null) => {
@@ -746,9 +762,9 @@ export const countImages = async (query = '*', allowedBoorus = null) => {
 
 /**
  * Fetches a single image by its ID, parses it, caches it in the local database, and returns the formatted data.
- * @param {string} booruUrl Source booru URL.
- * @param {string} apiKey User API key.
- * @param {number|string} imageId The target image ID.
+ * @param {string} booruUrl - Source booru URL.
+ * @param {string} apiKey - User API key.
+ * @param {number|string} imageId - The target image ID.
  * @returns {Promise<ImageResult|null>} Formatted image data with interaction status.
  */
 export const fetchSingleImage = async (booruUrl, apiKey, imageId) => {
@@ -762,8 +778,9 @@ export const fetchSingleImage = async (booruUrl, apiKey, imageId) => {
     const formattedImage = parseImageData(booruUrl, result.image);
     const formattedInteractions = getInteractions(booruUrl, result);
 
-    /** @type {ImageResult} */
+    /** @type {ImageObj} */
     const imageResult = { ...formattedImage };
+    // @ts-ignore
     imageResult.interaction =
       formattedInteractions.find((int) => int.imageId === formattedImage.id)?.value ?? null;
 
@@ -777,8 +794,8 @@ export const fetchSingleImage = async (booruUrl, apiKey, imageId) => {
 
 /**
  * Fetches the featured image payload for the given booru URL.
- * @param {string} booruUrl The booru instance URL.
- * @param {string} apiKey User authentication key.
+ * @param {string} booruUrl - The booru instance URL.
+ * @param {string} apiKey - User authentication key.
  * @returns {Promise<ImageResult | null>} Formatted featured image data.
  */
 export const getFeaturedImage = async (booruUrl, apiKey) => {
@@ -801,6 +818,7 @@ export const getFeaturedImage = async (booruUrl, apiKey) => {
     }
 
     /** @type {ImageResult} */
+    // @ts-ignore
     const imageResult = { ...formattedImage };
     imageResult.interaction =
       formattedInteractions.find((int) => int.imageId === formattedImage.id)?.value ?? null;
@@ -814,8 +832,8 @@ export const getFeaturedImage = async (booruUrl, apiKey) => {
 
 /**
  * Picks a random image from active boorus matching the query, utilizing remote totals for true randomness.
- * @param {Account[]} accounts List of accounts to choose from.
- * @param {string} [query='*'] Filter query for randomness.
+ * @param {Account[]} accounts - List of accounts to choose from.
+ * @param {string} [query='*'] - Filter query for randomness.
  * @returns {Promise<ImageResult|null>} A randomly selected image object.
  */
 export const randomImage = async (accounts, query = '*') => {

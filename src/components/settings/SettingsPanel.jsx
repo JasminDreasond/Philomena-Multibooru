@@ -1,17 +1,27 @@
 import { useState } from 'react';
-import { getActiveAccounts } from '../../services/api/System';
+import { getActiveAccounts } from '../../services/api/System.js';
 
-import { Privacy } from './Privacy';
-import { About } from './About';
-import { ThemeSettings } from './Theme';
-import { AppSettings } from './AppSettings';
-import { FactoryReset } from './FactoryReset';
-import { Filters } from './Filters';
-import { Accounts } from './Accounts';
-import { RecommendationsSettings } from './RecommendationsSettings';
+import { Privacy } from './Privacy.jsx';
+import { About } from './About.jsx';
+import { ThemeSettings } from './Theme.jsx';
+import { AppSettings } from './AppSettings.jsx';
+import { FactoryReset } from './FactoryReset.jsx';
+import { Filters } from './Filters.jsx';
+import { Accounts } from './Accounts.jsx';
+import { RecommendationsSettings } from './RecommendationsSettings.jsx';
 
 /**
- * @typedef {import('../../services/api/System').Account} Account
+ * @template T
+ * @typedef {import('react').SetStateAction<T>} SetStateAction
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Dispatch<T>} Dispatch
+ */
+
+/**
+ * @typedef {import('../../services/api/System.js').Account} Account
  */
 
 /**
@@ -25,20 +35,20 @@ import { RecommendationsSettings } from './RecommendationsSettings';
  * @param {{ isDark: boolean; onClose: () => void; }} props
  */
 export const SettingsPanel = ({ isDark }) => {
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isLoading, setIsLoading] = useState(true);
 
-  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  /** @type {[number, Dispatch<SetStateAction<number>>]} */
   const [maxItemsLimit, setMaxItemsLimit] = useState(10000);
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isPersistent, setIsPersistent] = useState(false);
 
   /* More Stuff */
-  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  /** @type {[string, Dispatch<SetStateAction<string>>]} */
   const [activeTab, setActiveTab] = useState('accounts');
 
-  /** @type {[Account[], import('react').Dispatch<import('react').SetStateAction<Account[]>>]} */
+  /** @type {[Account[], Dispatch<SetStateAction<Account[]>>]} */
   const [accounts, setAccounts] = useState([]);
 
   /**

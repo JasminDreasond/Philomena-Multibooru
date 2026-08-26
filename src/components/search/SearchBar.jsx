@@ -2,22 +2,34 @@ import { useState, useEffect } from 'react';
 import { alert } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 
 /**
+ * @template T
+ * @typedef {import('react').SetStateAction<T>} SetStateAction
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Dispatch<T>} Dispatch
+ */
+
+/**
  * @param {{ onSearchSubmit: (query: string, mode: string) => void, initialQuery: string, initialMode: string, isLoading: boolean }} props
  */
 export const SearchBar = ({ onSearchSubmit, initialQuery, initialMode, isLoading }) => {
-  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  /** @type {[string, Dispatch<SetStateAction<string>>]} */
   const [inputValue, setInputValue] = useState(initialQuery);
 
-  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  /** @type {[string, Dispatch<SetStateAction<string>>]} */
   const [mode, setMode] = useState(initialMode || 'api');
 
   const localFavesEnabled = localStorage.getItem('app_localFavesEnabled') === 'true';
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setInputValue(initialQuery);
   }, [initialQuery]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMode(initialMode || 'api');
   }, [initialMode]);
 

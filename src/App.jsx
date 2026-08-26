@@ -2,10 +2,11 @@ import { useEffect, useState, useRef } from 'react';
 import TinySimpleDice from 'tiny-essentials/libs/math/TinySimpleDice';
 import { shuffleArray } from 'tiny-essentials/basics/array';
 import { alert } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
-import TinyRouter from './TinyRouter.mjs';
-import TinyMapCache from './tools/DataCache';
-import { initDatabase } from './db/connection';
-import { applyThemeFromStorage } from './services/theme';
+import TinyRouter from 'tiny-essentials/libs/router/TinyRouter';
+import TinyMapCache from 'tiny-essentials/libs/router/TinyMapCache';
+
+import { initDatabase } from './db/connection.js';
+import { applyThemeFromStorage } from './services/theme.js';
 
 import {
   clearImageCache,
@@ -15,31 +16,32 @@ import {
   randomImage,
   searchImages,
   syncUserGalleryPages,
-} from './services/api/Images';
-import { getActiveAccounts } from './services/api/System';
-import { fetchProfile } from './services/api/Profile';
-import { searchLocalFaves } from './services/api/LocalFaves';
+} from './services/api/Images.js';
+import { getActiveAccounts } from './services/api/System.js';
+import { fetchProfile } from './services/api/Profile.js';
+import { searchLocalFaves } from './services/api/LocalFaves.js';
 
-import { SearchBar } from './components/search/SearchBar';
-import { ImageGallery, Image } from './components/image/ImageGallery';
-import { SettingsPanel } from './components/settings/SettingsPanel';
-import { NotificationsMode } from './components/home/NotificationsMode';
-import { ImageViewer } from './components/image/ImageViewer';
-import { UserProfile } from './components/user/UserProfile';
-import { Welcome } from './components/home/Welcome';
-import { Error404 } from './components/errors/404';
-import { PaginationBar } from './components/utils/PaginationBar';
-import { SearchControls } from './components/search/SearchControls';
-import { geString, parseQueryResults } from './queries/globalTags';
-import { WatchedImages } from './components/home/WatchedImages';
-import { updateEmbedMetadata } from './tools/utils';
+import { SearchBar } from './components/search/SearchBar.jsx';
+import { ImageGallery, Image } from './components/image/ImageGallery.jsx';
+import { SettingsPanel } from './components/settings/SettingsPanel.jsx';
+import { NotificationsMode } from './components/home/NotificationsMode.jsx';
+import { ImageViewer } from './components/image/ImageViewer.jsx';
+import { UserProfile } from './components/user/UserProfile.jsx';
+import { Welcome } from './components/home/Welcome.jsx';
+import { Error404 } from './components/errors/404.jsx';
+import { PaginationBar } from './components/utils/PaginationBar.jsx';
+import { SearchControls } from './components/search/SearchControls.jsx';
+import { geString, parseQueryResults } from './queries/globalTags.js';
+import { WatchedImages } from './components/home/WatchedImages.jsx';
+import { updateEmbedMetadata } from './tools/utils.js';
 
-/** @typedef {import('./services/api/Images').ImageResult} ImageResult */
-/** @typedef {import('./services/api/Images').ImageObj} ImageObj */
-/** @typedef {import('./services/api/System').Account} Account */
+/** @typedef {import('./services/api/Images.jsx').ImageResult} ImageResult */
+/** @typedef {import('./services/api/Images.jsx').ImageObj} ImageObj */
+/** @typedef {import('./services/api/System.jsx').Account} Account */
+/** @typedef {import('react').MouseEvent} MouseEvent */
 
 /**
- * @typedef {(e: import('react').MouseEvent<HTMLAnchorElement, MouseEvent>, query: string, sf: string, sd: string) => void} HandleQuickLinkClick
+ * @typedef {(e: MouseEvent, query: string, sf: string, sd: string) => void} HandleQuickLinkClick
  */
 
 /** @type {TinyMapCache<ImageResult>} */
@@ -48,110 +50,126 @@ const imageCache = new TinyMapCache();
 /** @type {TinyMapCache<{ booruUrl: string; username: string; id: number; }>} */
 const profileCache = new TinyMapCache();
 
+// @ts-ignore
 if (import.meta.env.DEV) window.TinyMapCache = TinyMapCache;
 const scrollUp = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
+/**
+ * @template T
+ * @typedef {import('react').SetStateAction<T>} SetStateAction
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Dispatch<T>} Dispatch
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Ref<T>} Ref
+ */
+
 const App = () => {
-  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  /** @type {[number, Dispatch<SetStateAction<number>>]} */
   const [totalItems, setTotalItems] = useState(0);
 
-  /** @type {[ImageResult[], import('react').Dispatch<import('react').SetStateAction<ImageResult[]>>]} */
+  /** @type {[ImageResult[], Dispatch<SetStateAction<ImageResult[]>>]} */
   const [currentImages, setCurrentImages] = useState([]);
 
-  /** @type {[ImageResult[], import('react').Dispatch<import('react').SetStateAction<ImageResult[]>>]} */
+  /** @type {[ImageResult[], Dispatch<SetStateAction<ImageResult[]>>]} */
   const [trendingImages, setTrendingImages] = useState([]);
 
-  /** @type {[ImageResult[], import('react').Dispatch<import('react').SetStateAction<ImageResult[]>>]} */
+  /** @type {[ImageResult[], Dispatch<SetStateAction<ImageResult[]>>]} */
   const [watchedImages, setWatchedImages] = useState([]);
 
-  /** @type {[{account: Account, image: ImageResult}|null, import('react').Dispatch<import('react').SetStateAction<{account: Account, image: ImageResult}[]>>]} */
+  /** @type {[{account: Account, image: ImageResult}|null, Dispatch<SetStateAction<{account: Account, image: ImageResult}[]>>]} */
   const [featuredImage, setFeaturedImage] = useState(null);
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isDbReady, setIsDbReady] = useState(false);
 
-  /** @type {[Account[]|null, import('react').Dispatch<import('react').SetStateAction<Account[]>>]} */
+  /** @type {[Account[]|null, Dispatch<SetStateAction<Account[]>>]} */
   const [connectedAccounts, setConnectedAccounts] = useState(null);
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [showSettings, setShowSettings] = useState(false);
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [showNotifications, setShowNotifications] = useState(false);
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isHomepage, setIsHomepage] = useState(true);
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [is404, setIs404] = useState(false);
 
-  /** @type {[ImageResult|null, import('react').Dispatch<import('react').SetStateAction<ImageResult|null>>]} */
+  /** @type {[ImageResult|null, Dispatch<SetStateAction<ImageResult|null>>]} */
   const [viewingImage, setViewingImage] = useState(null);
 
-  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  /** @type {[number, Dispatch<SetStateAction<number>>]} */
   const [pageLimit, setPageLimit] = useState(50);
 
-  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  /** @type {[number, Dispatch<SetStateAction<number>>]} */
   const [currentPage, setCurrentPage] = useState(1);
 
-  /** @type {[number, import('react').Dispatch<import('react').SetStateAction<number>>]} */
+  /** @type {[number, Dispatch<SetStateAction<number>>]} */
   const [totalPages, setTotalPages] = useState(1);
 
-  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  /** @type {[string, Dispatch<SetStateAction<string>>]} */
   const [searchQuery, setSearchQuery] = useState('');
 
-  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  /** @type {[string, Dispatch<SetStateAction<string>>]} */
   const [searchMode, setSearchMode] = useState('api');
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isSearching, setIsSearching] = useState(false);
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isRandomizing, setIsRandomizing] = useState(false);
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isDark, setIsDark] = useState(false);
 
-  /** @type {[{ booruUrl: string, username: string, id: number }|null, import('react').Dispatch<import('react').SetStateAction<{ booruUrl: string, username: string, id: number }|null>>]} */
+  /** @type {[{ booruUrl: string, username: string, id: number }|null, Dispatch<SetStateAction<{ booruUrl: string, username: string, id: number }|null>>]} */
   const [viewingProfile, setViewingProfile] = useState(null);
 
-  /** @type {[string[], import('react').Dispatch<import('react').SetStateAction<string[]>>]} */
+  /** @type {[string[], Dispatch<SetStateAction<string[]>>]} */
   const [visibleBoorus, setVisibleBoorus] = useState(() => {
     const saved = localStorage.getItem('app_visibleBoorus');
     return saved ? JSON.parse(saved) : [];
   });
 
-  /** @type {[Account|null, import('react').Dispatch<import('react').SetStateAction<Account|null>>]} */
+  /** @type {[Account|null, Dispatch<SetStateAction<Account|null>>]} */
   const [selectedLinkAccount, setSelectedLinkAccount] = useState(null);
 
-  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  /** @type {[string, Dispatch<SetStateAction<string>>]} */
   const [sortField, setSortField] = useState('created_at');
 
-  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
+  /** @type {[string, Dispatch<SetStateAction<string>>]} */
   const [sortDirection, setSortDirection] = useState('desc');
 
   // --- Infinite Scroll States ---
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isInfiniteScroll, setIsInfiniteScroll] = useState(() => {
     return localStorage.getItem('app_infiniteScroll') === 'true';
   });
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [galleryRateLimited, setGalleryRateLimited] = useState(false);
 
-  /** @type {import('react').MutableRefObject<boolean>} */
+  /** @type {Ref<boolean>} */
   const hasInitialized = useRef(false);
 
-  /** @type {import('react').MutableRefObject<null|TinyRouter>} */
+  /** @type {Ref<null|TinyRouter>} */
   const router = useRef(null);
 
-  /** @type {import('react').MutableRefObject<boolean>} */
+  /** @type {Ref<boolean>} */
   const hasSynced = useRef(false);
 
-  /** @type {import('react').MutableRefObject<boolean>} */
+  /** @type {Ref<boolean>} */
   const isFirstLoad = useRef(true);
 
   // Refs for Dropdown, Sync control and Infinite Scroll
@@ -159,10 +177,10 @@ const App = () => {
   const lastSyncedBoorus = useRef(visibleBoorus);
   const latestVisibleBoorus = useRef(visibleBoorus);
 
-  /** @type {import('react').MutableRefObject<number|null>} */
+  /** @type {Ref<HTMLDivElement|null>} */
   const galleryObserverTarget = useRef(null);
 
-  /** @type {import('react').MutableRefObject<number>} */
+  /** @type {Ref<number>} */
   const lastGalleryFetchTime = useRef(0);
 
   // Synchronize Infinite Scroll Setting
@@ -1289,7 +1307,7 @@ const App = () => {
 
   /**
    * Opens the link search query inside the application, unless it's a middle/ctrl click.
-   * @param {import('react').MouseEvent<HTMLAnchorElement, MouseEvent>} e
+   * @param {MouseEvent} e
    * @param {string} query
    * @param {string} sf
    * @param {string} sd

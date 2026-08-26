@@ -1,4 +1,4 @@
-import { fetchPhilomena, throwApiError } from './Philomena';
+import { fetchPhilomena, throwApiError } from './Philomena.js';
 
 /**
  * Represents a social or external link attached to a user's profile.
@@ -45,7 +45,7 @@ import { fetchPhilomena, throwApiError } from './Philomena';
  */
 export const fetchProfile = async (booruUrl, userId) => {
   try {
-    const result = await fetchPhilomena(booruUrl, `profiles/${userId}`);
+    const result = await fetchPhilomena(booruUrl, `profiles/${userId}`, '');
     if (!result) return null;
     const user = result.user;
 

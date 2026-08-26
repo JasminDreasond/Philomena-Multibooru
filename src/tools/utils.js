@@ -1,8 +1,8 @@
 import { alert } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 
-import { fetchProfile } from '../services/api/Profile';
-import { fetchSingleImage } from '../services/api/Images';
-import { getAccountBooruApi } from '../services/api/System';
+import { fetchProfile } from '../services/api/Profile.js';
+import { fetchSingleImage } from '../services/api/Images.js';
+import { getAccountBooruApi } from '../services/api/System.js';
 
 /**
  * Function type to update the loading state.
@@ -11,17 +11,17 @@ import { getAccountBooruApi } from '../services/api/System';
 
 /**
  * Represents an image object from the API.
- * @typedef {import("../../services/api").ImageObj} ImageObj
+ * @typedef {import('../services/api/Images.js').ImageObj} ImageObj
  */
 
 /**
  * Function type to handle opening an image link.
- * @typedef {(img: import('../services/api').ImageResult) => void} OnOpenImageLink
+ * @typedef {(img: import('../services/api/Images.js').ImageResult) => void} OnOpenImageLink
  */
 
 /**
  * Fetches image data from a Booru API and executes a callback to open the link.
- * @param {string} refId - The reference ID of the image to fetch.
+ * @param {string|number} refId - The reference ID of the image to fetch.
  * @param {SetIsLoading} setIsLoading - Function to toggle the loading state.
  * @param {string} booruUrl - The base URL of the Booru service.
  * @param {OnOpenImageLink} onOpenImageLink - Callback function to handle the fetched image data.
@@ -53,7 +53,7 @@ export const openImageLink = async (booruUrl, onOpenImageLink, setIsLoading, ref
 
 /**
  * Fetches profile data from a Booru API and executes a callback to open the profile.
- * @param {string} matchTarget - The username or target to match the profile.
+ * @param {number} matchTarget - The username or target to match the profile.
  * @param {SetIsLoading} setIsLoading - Function to toggle the loading state.
  * @param {OnOpenProfileLink} onOpenProfileLink - Callback function to handle the profile data.
  * @param {string} booruUrl - The base URL of the Booru service.

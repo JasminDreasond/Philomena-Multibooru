@@ -1,11 +1,24 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
+/** @typedef {import('react').MouseEvent} MouseEvent */
+/** @typedef {import('react').MouseEventHandler} MouseEventHandler */
+
+/**
+ * @template T
+ * @typedef {import('react').SetStateAction<T>} SetStateAction
+ */
+
+/**
+ * @template T
+ * @typedef {import('react').Dispatch<T>} Dispatch
+ */
+
 /**
  * @param {{ id: string, icon: string, label: string, url: string, openLeft: boolean, onActionRecord: (id: string, actionType: string) => void, onClose: () => void }} props
  */
 const ContextMenuGroup = ({ id, icon, label, url, openLeft, onActionRecord, onClose }) => {
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
+  /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isOpen, setIsOpen] = useState(false);
 
   /**
@@ -252,7 +265,7 @@ const ProfileContextMenu = ({ x, y, booruUrl, username, userId, onClose, openPro
               }}
               onClick={(e) => {
                 e.preventDefault();
-                openProfile(booruUrl, userId, userId);
+                openProfile(booruUrl, String(userId), userId);
                 onClose();
               }}
             >
@@ -285,7 +298,7 @@ const ProfileContextMenu = ({ x, y, booruUrl, username, userId, onClose, openPro
 };
 
 /**
- * @param {{ booruUrl: string, username: string, userId?: number | null, className?: string, children: import('react').ReactNode, openProfile: OpenProfile }} props
+ * @param {{ booruUrl: string, username: string, userId?: number | null, className?: string, children: import('react').ReactNode, openProfile: OpenProfile, onClick: MouseEventHandler }} props
  */
 export const ProfileLink = ({
   booruUrl,
@@ -296,7 +309,7 @@ export const ProfileLink = ({
   onClick,
   openProfile,
 }) => {
-  /** @type {[{ visible: boolean, x: number, y: number }, import('react').Dispatch<import('react').SetStateAction<{ visible: boolean, x: number, y: number }>>]} */
+  /** @type {[{ visible: boolean, x: number, y: number }, Dispatch<SetStateAction<{ visible: boolean, x: number, y: number }>>]} */
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
 
   /** @type {boolean} */
@@ -322,7 +335,7 @@ export const ProfileLink = ({
   }, [contextMenu.visible]);
 
   /**
-   * @param {import('react').MouseEvent} e
+   * @param {MouseEvent} e
    */
   const handleContextMenu = (e) => {
     e.preventDefault();
