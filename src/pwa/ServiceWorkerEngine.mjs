@@ -308,10 +308,9 @@ class ServiceWorkerEngine extends EventEmitter {
 
     // Detect that the Service Worker has been activated.
     sw.addEventListener('activate', (event) => {
-      /** @type {ExtendableEvent} */
-      const ev = event;
-      ev.waitUntil(sw.clients.claim());
+      event.waitUntil(sw.clients.claim());
       console.log('[SW-Engine] Activated and claiming clients.');
+      this.emit('activated', { event });
     });
 
     // Detect fetch events on the website.
@@ -325,6 +324,7 @@ class ServiceWorkerEngine extends EventEmitter {
 
         // We only intercept navigation requests (HTML)
         if (request.mode !== 'navigate') return;
+        this.emit('fetchRequested', { event, request });
 
         // Handles navigation requests based on the router configuration.
         const routerCfg = fetchCfg.router;
@@ -333,9 +333,15 @@ class ServiceWorkerEngine extends EventEmitter {
 
           if (routerCfg.validator(url)) {
             console.log(`[SW-Engine] Valid route: ${url.pathname}`);
-            event.respondWith(fetch('/index.html').catch(() => routerCfg.notFoundHandler()));
+            event.respondWith(
+              fetch('/index.html').catch((err) => {
+                this.emit('fetchError', { event, request, error: err, url });
+                return routerCfg.notFoundHandler();
+              }),
+            );
           } else {
             console.warn(`[SW-Engine] 404 - Route not found: ${url.pathname}`);
+            this.emit('fetchError', { event, request, error: new Error('404 Not Found'), url });
             event.respondWith(routerCfg.notFoundHandler());
           }
         }
@@ -415,6 +421,7 @@ class ServiceWorkerEngine extends EventEmitter {
             await message(msgData);
           } catch (error) {
             console.error(`[SW-Engine] Error executing handler for message type "${type}":`, error);
+            this.emit('messageError', { type, error, msgData });
           }
         }
         this.emit('afterMessage', type, msgData);
