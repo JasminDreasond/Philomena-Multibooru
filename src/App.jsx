@@ -1416,6 +1416,15 @@ const App = () => {
       </div>
     );
 
+  /**
+   * Back page function
+   * @param {() => void} [alternativeCallback]
+   */
+  const backPage = async (alternativeCallback = () => goToHome()) => {
+    const result = router.current ? await router.current.back() : false;
+    if (!result) alternativeCallback();
+  };
+
   // Page loaded
   return (
     <div className="min-vh-100 pb-5" style={{ backgroundColor: 'var(--app-bg)' }}>
@@ -1640,6 +1649,7 @@ const App = () => {
                 </div>
 
                 <button
+                  disabled={showSettings}
                   className={`btn btn-sm text-nowrap w-100 w-lg-auto me-lg-2 mb-2 mb-lg-0 fw-bold ${showNotifications ? 'btn-warning' : 'btn-outline-warning'}`}
                   onClick={() => {
                     if (is404) return open('/notifications', '_self');
@@ -1647,11 +1657,12 @@ const App = () => {
                     if (!showNotifications) {
                       setShowSettings(false);
                     }
-                    setShowNotifications(!showNotifications);
+                    if (!showNotifications) router.current.navigate('/notifications');
+                    else backPage();
                   }}
                 >
                   {showNotifications ? (
-                    'Back to Gallery'
+                    'Back to Page'
                   ) : (
                     <>
                       <i className="fa-solid fa-bell"></i> <span> Notifications</span>
@@ -1660,6 +1671,7 @@ const App = () => {
                 </button>
 
                 <button
+                  disabled={showNotifications}
                   className="btn btn-sm btn-outline-light text-nowrap w-100 w-lg-auto"
                   data-bs-dismiss="offcanvas"
                   style={{ borderColor: 'var(--app-navbar-text)', color: 'var(--app-navbar-text)' }}
@@ -1669,10 +1681,11 @@ const App = () => {
                     if (!showSettings) {
                       setShowNotifications(false);
                     }
-                    setShowSettings(!showSettings);
+                    if (!showSettings) router.current.navigate('/settings');
+                    else backPage();
                   }}
                 >
-                  {showSettings ? 'Back to Gallery' : 'Settings'}
+                  {showSettings ? 'Back to Page' : 'Settings'}
                 </button>
               </div>
             </div>
@@ -1704,10 +1717,7 @@ const App = () => {
       ) : viewingImage ? (
         <ImageViewer
           image={viewingImage}
-          onClose={() => {
-            setViewingImage(null);
-            refreshHomepage();
-          }}
+          onClose={() => backPage()}
           onSearch={handleSearchSubmit}
           onOpenProfile={handleOpenProfile}
           onOpenImage={handleOpenImage}
