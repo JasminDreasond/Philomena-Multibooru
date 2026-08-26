@@ -85,7 +85,7 @@ const App = () => {
   /** @type {[ImageResult[], Dispatch<SetStateAction<ImageResult[]>>]} */
   const [watchedImages, setWatchedImages] = useState([]);
 
-  /** @type {[{account: Account, image: ImageResult}|null, Dispatch<SetStateAction<{account: Account, image: ImageResult}[]>>]} */
+  /** @type {[{account: Account, image: ImageResult}|null, Dispatch<SetStateAction<{account: Account, image: ImageResult}>>]} */
   const [featuredImage, setFeaturedImage] = useState(null);
 
   /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
@@ -1279,7 +1279,7 @@ const App = () => {
     const params = new URLSearchParams();
     params.set('q', newQuery);
     params.set('mode', newMode);
-    params.set('page', 1);
+    params.set('page', '1');
 
     router.current.navigate(`/search?${params.toString()}`);
   };
@@ -1323,7 +1323,7 @@ const App = () => {
     params.set('q', query);
     params.set('sf', sf);
     params.set('sd', sd);
-    params.set('page', 1);
+    params.set('page', '1');
     params.set('mode', 'api');
 
     router.current.navigate(`/search?${params.toString()}`);
@@ -1505,6 +1505,7 @@ const App = () => {
                       // Trigger visual close for manual DOM if you need it, but Bootstrap already manages well
                       const offcanvasElement = document.getElementById('mobileMenu');
                       if (offcanvasElement && offcanvasElement.classList.contains('show')) {
+                        /** @type {HTMLButtonElement} */
                         const closeBtn = offcanvasElement.querySelector('.btn-close');
                         if (closeBtn) closeBtn.click();
                       }

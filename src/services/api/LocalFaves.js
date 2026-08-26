@@ -123,7 +123,7 @@ export const countLocalFaves = async (query = '*', allowedBoorus = null) => {
  * @param {string[]} [config.boorusToUse]
  * @param {string} [config.sd='desc']
  * @param {string} [config.sf='createdAt']
- * @returns {Promise<{images: ImageObj[], total: number}>}
+ * @returns {Promise<{images: ImageResult[], total: number}>}
  */
 export const searchLocalFaves = async ({
   query = '*',
@@ -187,7 +187,7 @@ export const searchLocalFaves = async ({
   /** @type {number} */
   const total = await countLocalFaves(query, boorusToUse);
 
-  /** @type {ImageObj[]} */
+  /** @type {ImageResult[]} */
   let results = [];
 
   if (query === '*' || query.trim() === '') {

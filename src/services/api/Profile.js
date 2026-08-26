@@ -40,7 +40,7 @@ import { fetchPhilomena, throwApiError } from './Philomena.js';
 /**
  * Fetches and parses a user's profile data from the specified booru.
  * @param {string} booruUrl The base URL of the booru.
- * @param {number} userId The ID of the user to retrieve.
+ * @param {number|string} userId The ID of the user to retrieve.
  * @returns {Promise<UserProfileData|null>} The formatted profile data or null on failure.
  */
 export const fetchProfile = async (booruUrl, userId) => {
