@@ -422,66 +422,6 @@ const App = () => {
   }, [visibleBoorus]);
 
   /**
-   * Shoot refresh of the boorus if there was a real change
-   * @param {string[]} newBoorus
-   */
-  const applyBooruChanges = async (newBoorus) => {
-    const oldSet = new Set(lastSyncedBoorus.current);
-    const newSet = new Set(newBoorus);
-    const isSame = oldSet.size === newSet.size && [...oldSet].every((x) => newSet.has(x));
-
-    if (isSame) return; // Just gives refresh if you really changed something
-
-    setIsSearching(true);
-    setGalleryRateLimited(false);
-    lastGalleryFetchTime.current = 0;
-    setCurrentPage(1);
-    await clearImageCache(); // Cleans old images
-    lastSyncedBoorus.current = newBoorus;
-
-    // Selects a new Featured Image and fixes Link Account if the current one was hidden
-    if (connectedAccounts && connectedAccounts.length > 0) {
-      const activeAccounts = connectedAccounts.filter((a) => newBoorus.includes(a.booruUrl));
-
-      if (activeAccounts.length > 0) {
-        const randomAcc = activeAccounts[TinySimpleDice.rollArrayIndex(activeAccounts)];
-        const feat = await getFeaturedImage(randomAcc.booruUrl, randomAcc.apiKey);
-        setFeaturedImage(feat ? { account: randomAcc, image: feat } : null);
-
-        if (!selectedLinkAccount || !newBoorus.includes(selectedLinkAccount.booruUrl)) {
-          setSelectedLinkAccount(randomAcc);
-        }
-      } else {
-        setFeaturedImage(null);
-        setSelectedLinkAccount(null);
-      }
-    }
-
-    await executeBackgroundSync(newBoorus);
-    setIsSearching(false);
-  };
-
-  // Bootstrap native listener to capture the exact moment that dropdown closes
-  useEffect(() => {
-    const el = booruDropdownRef.current;
-    if (!el) return;
-
-    const handleHidden = () => {
-      window.dispatchEvent(new CustomEvent('boorusDropdownClosed'));
-    };
-
-    el.addEventListener('hidden.bs.dropdown', handleHidden);
-    return () => el.removeEventListener('hidden.bs.dropdown', handleHidden);
-  }, []);
-
-  // Engages sync with the most current state variables
-  useEffect(() => {
-    const onDropdownClosed = () => applyBooruChanges(latestVisibleBoorus.current);
-    window.addEventListener('boorusDropdownClosed', onDropdownClosed);
-    return () => window.removeEventListener('boorusDropdownClosed', onDropdownClosed);
-  });
-
-  /**
    * @param {number} limitToUse
    * @param {number} pageToUse
    * @param {string} queryToUse
@@ -560,69 +500,6 @@ const App = () => {
   };
 
   /**
-   * Infinite scroll specific function: Appends the next page silently
-   */
-  const loadNextPage = async () => {
-    setIsFetchingMore(true);
-    lastGalleryFetchTime.current = Date.now();
-    const nextPage = currentPage + 1;
-    const queryToUse = searchQuery.trim() === '' ? geString : searchQuery;
-
-    try {
-      if (searchMode === 'local_fav') {
-        const localResults = await searchLocalFaves({
-          boorusToUse: visibleBoorus,
-          query: parseQueryResults(queryToUse),
-          limit: pageLimit,
-          page: nextPage,
-          sd: sortDirection,
-          sf: sortField,
-        });
-
-        setTotalItems(localResults.total);
-        setCurrentImages((prev) => {
-          const prevIds = new Set(prev.map((p) => p.id));
-          const uniqueNew = localResults.images.filter((f) => !prevIds.has(f.id));
-          return [...prev, ...uniqueNew];
-        });
-
-        setTotalPages(Math.max(1, Math.ceil(localResults.total / pageLimit)));
-        setCurrentPage(nextPage);
-        return;
-      }
-
-      await syncUserGalleryPages({
-        query: parseQueryResults(queryToUse),
-        page: nextPage,
-        allowedBoorus: visibleBoorus,
-        sd: sortDirection,
-        sf: sortField,
-      });
-
-      const newImages = await searchImages({
-        query: parseQueryResults(queryToUse),
-        limit: pageLimit,
-        page: nextPage,
-        allowedBoorus: visibleBoorus,
-        sd: sortDirection,
-        sf: sortField,
-      });
-
-      setCurrentImages((prev) => {
-        const prevIds = new Set(prev.map((p) => p.id));
-        const uniqueNew = newImages.filter((f) => !prevIds.has(f.id));
-        return [...prev, ...uniqueNew];
-      });
-
-      setCurrentPage(nextPage);
-    } catch (err) {
-      console.error('Error fetching next page via Infinite Scroll:', err);
-    } finally {
-      setIsFetchingMore(false);
-    }
-  };
-
-  /**
    * @param {string[]} boorusToUse
    * @returns {Promise<void>}
    */
@@ -696,6 +573,130 @@ const App = () => {
       );
     } catch (err) {
       console.error('Error on background sync:', err);
+    }
+  };
+
+  /**
+   * Shoot refresh of the boorus if there was a real change
+   * @param {string[]} newBoorus
+   */
+  const applyBooruChanges = async (newBoorus) => {
+    const oldSet = new Set(lastSyncedBoorus.current);
+    const newSet = new Set(newBoorus);
+    const isSame = oldSet.size === newSet.size && [...oldSet].every((x) => newSet.has(x));
+
+    if (isSame) return; // Just gives refresh if you really changed something
+
+    setIsSearching(true);
+    setGalleryRateLimited(false);
+    lastGalleryFetchTime.current = 0;
+    setCurrentPage(1);
+    await clearImageCache(); // Cleans old images
+    lastSyncedBoorus.current = newBoorus;
+
+    // Selects a new Featured Image and fixes Link Account if the current one was hidden
+    if (connectedAccounts && connectedAccounts.length > 0) {
+      const activeAccounts = connectedAccounts.filter((a) => newBoorus.includes(a.booruUrl));
+
+      if (activeAccounts.length > 0) {
+        const randomAcc = activeAccounts[TinySimpleDice.rollArrayIndex(activeAccounts)];
+        const feat = await getFeaturedImage(randomAcc.booruUrl, randomAcc.apiKey);
+        setFeaturedImage(feat ? { account: randomAcc, image: feat } : null);
+
+        if (!selectedLinkAccount || !newBoorus.includes(selectedLinkAccount.booruUrl)) {
+          setSelectedLinkAccount(randomAcc);
+        }
+      } else {
+        setFeaturedImage(null);
+        setSelectedLinkAccount(null);
+      }
+    }
+
+    await executeBackgroundSync(newBoorus);
+    setIsSearching(false);
+  };
+
+  // Bootstrap native listener to capture the exact moment that dropdown closes
+  useEffect(() => {
+    const el = booruDropdownRef.current;
+    if (!el) return;
+
+    const handleHidden = () => {
+      window.dispatchEvent(new CustomEvent('boorusDropdownClosed'));
+    };
+
+    el.addEventListener('hidden.bs.dropdown', handleHidden);
+    return () => el.removeEventListener('hidden.bs.dropdown', handleHidden);
+  }, []);
+
+  // Engages sync with the most current state variables
+  useEffect(() => {
+    const onDropdownClosed = () => applyBooruChanges(latestVisibleBoorus.current);
+    window.addEventListener('boorusDropdownClosed', onDropdownClosed);
+    return () => window.removeEventListener('boorusDropdownClosed', onDropdownClosed);
+  });
+
+
+  /**
+   * Infinite scroll specific function: Appends the next page silently
+   */
+  const loadNextPage = async () => {
+    setIsFetchingMore(true);
+    lastGalleryFetchTime.current = Date.now();
+    const nextPage = currentPage + 1;
+    const queryToUse = searchQuery.trim() === '' ? geString : searchQuery;
+
+    try {
+      if (searchMode === 'local_fav') {
+        const localResults = await searchLocalFaves({
+          boorusToUse: visibleBoorus,
+          query: parseQueryResults(queryToUse),
+          limit: pageLimit,
+          page: nextPage,
+          sd: sortDirection,
+          sf: sortField,
+        });
+
+        setTotalItems(localResults.total);
+        setCurrentImages((prev) => {
+          const prevIds = new Set(prev.map((p) => p.id));
+          const uniqueNew = localResults.images.filter((f) => !prevIds.has(f.id));
+          return [...prev, ...uniqueNew];
+        });
+
+        setTotalPages(Math.max(1, Math.ceil(localResults.total / pageLimit)));
+        setCurrentPage(nextPage);
+        return;
+      }
+
+      await syncUserGalleryPages({
+        query: parseQueryResults(queryToUse),
+        page: nextPage,
+        allowedBoorus: visibleBoorus,
+        sd: sortDirection,
+        sf: sortField,
+      });
+
+      const newImages = await searchImages({
+        query: parseQueryResults(queryToUse),
+        limit: pageLimit,
+        page: nextPage,
+        allowedBoorus: visibleBoorus,
+        sd: sortDirection,
+        sf: sortField,
+      });
+
+      setCurrentImages((prev) => {
+        const prevIds = new Set(prev.map((p) => p.id));
+        const uniqueNew = newImages.filter((f) => !prevIds.has(f.id));
+        return [...prev, ...uniqueNew];
+      });
+
+      setCurrentPage(nextPage);
+    } catch (err) {
+      console.error('Error fetching next page via Infinite Scroll:', err);
+    } finally {
+      setIsFetchingMore(false);
     }
   };
 
