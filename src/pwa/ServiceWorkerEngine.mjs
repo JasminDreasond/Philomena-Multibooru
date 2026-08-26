@@ -342,92 +342,87 @@ class ServiceWorkerEngine extends EventEmitter {
       });
     }
 
-    this.#registerMessage();
-    this.#started = true;
-    console.log('[SW-Engine] Initialized with custom configuration.');
-  }
-
-  /**
-   * Registers the message event listener for communication with application pages.
-   */
-  #registerMessage() {
+    // Registers the message event listener for communication with application pages.
     const msgCfg = this.#config.messaging;
-    if (!msgCfg.enabled) return;
+    if (msgCfg.enabled) {
+      // Ping/Pong Logic
+      if (msgCfg.allowPingPong) {
+        this.#messages.set('ping', ({ event }) => {
+          event.source.postMessage({ type: 'pong' });
+        });
+      }
 
-    // Ping/Pong Logic
-    if (msgCfg.allowPingPong) {
-      this.#messages.set('ping', ({ event }) => {
-        event.source.postMessage({ type: 'pong' });
+      sw.addEventListener('message', async (event) => {
+        // Validation: Ensure the source is a valid Client
+        if (!(event.source instanceof Client)) {
+          console.error('[SW-Engine] Message received from an invalid source (not a Client).');
+          return;
+        }
+
+        // Validation: Ensure event.data is a non-null object
+        if (typeof event.data !== 'object' || event.data === null) {
+          console.error('[SW-Engine] Received message with invalid data format (expected object).');
+          return;
+        }
+
+        // Validation: Ensure 'type' exists and is a string
+        if (typeof event.data.type !== 'string') {
+          console.error('[SW-Engine] Received message with missing or invalid "type" string.');
+          return;
+        }
+
+        /** @type {Client} */
+        const source = event.source;
+        /** @type {string} */
+        const clientId = source.id;
+        /** @type {string} */
+        const type = event.data.type;
+        /** @type {MessagePayload} */
+        const data = event.data.data;
+
+        // Get the registered message callback
+        const message = this.#messages.get(type);
+
+        /** @type {MessageReplyTemplate} */
+        const replyTemplate = (nType, payload) => {
+          return { type: nType, data: payload };
+        };
+
+        /** @type {MessageToReplyTemplate} */
+        const toReply = (targetSource, nType, payload) =>
+          targetSource.postMessage(replyTemplate(nType, payload));
+
+        /** @type {MessageObj} */
+        const msgData = {
+          event,
+          data,
+          clientId,
+          replyTemplate,
+          toReply,
+          reply: (nType, payload) => {
+            if (!(event.source instanceof Client)) {
+              console.warn('[SW-Engine] Attempted to reply to a non-client source.');
+              return;
+            }
+            toReply(event.source, nType, payload);
+          },
+        };
+
+        // Emit events
+        this.emit('beforeMessage', type, msgData);
+        if (message) {
+          try {
+            await message(msgData);
+          } catch (error) {
+            console.error(`[SW-Engine] Error executing handler for message type "${type}":`, error);
+          }
+        }
+        this.emit('afterMessage', type, msgData);
       });
     }
 
-    sw.addEventListener('message', async (event) => {
-      // Validation: Ensure the source is a valid Client
-      if (!(event.source instanceof Client)) {
-        console.error('[SW-Engine] Message received from an invalid source (not a Client).');
-        return;
-      }
-
-      // Validation: Ensure event.data is a non-null object
-      if (typeof event.data !== 'object' || event.data === null) {
-        console.error('[SW-Engine] Received message with invalid data format (expected object).');
-        return;
-      }
-
-      // Validation: Ensure 'type' exists and is a string
-      if (typeof event.data.type !== 'string') {
-        console.error('[SW-Engine] Received message with missing or invalid "type" string.');
-        return;
-      }
-
-      /** @type {Client} */
-      const source = event.source;
-      /** @type {string} */
-      const clientId = source.id;
-      /** @type {string} */
-      const type = event.data.type;
-      /** @type {MessagePayload} */
-      const data = event.data.data;
-
-      // Get the registered message callback
-      const message = this.#messages.get(type);
-
-      /** @type {MessageReplyTemplate} */
-      const replyTemplate = (nType, payload) => {
-        return { type: nType, data: payload };
-      };
-
-      /** @type {MessageToReplyTemplate} */
-      const toReply = (targetSource, nType, payload) =>
-        targetSource.postMessage(replyTemplate(nType, payload));
-
-      /** @type {MessageObj} */
-      const msgData = {
-        event,
-        data,
-        clientId,
-        replyTemplate,
-        toReply,
-        reply: (nType, payload) => {
-          if (!(event.source instanceof Client)) {
-            console.warn('[SW-Engine] Attempted to reply to a non-client source.');
-            return;
-          }
-          toReply(event.source, nType, payload);
-        },
-      };
-
-      // Emit events
-      this.emit('beforeMessage', type, msgData);
-      if (message) {
-        try {
-          await message(msgData);
-        } catch (error) {
-          console.error(`[SW-Engine] Error executing handler for message type "${type}":`, error);
-        }
-      }
-      this.emit('afterMessage', type, msgData);
-    });
+    this.#started = true;
+    console.log('[SW-Engine] Initialized with custom configuration.');
   }
 }
 
