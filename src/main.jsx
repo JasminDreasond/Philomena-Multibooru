@@ -1,6 +1,11 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BootstrapDialogs, alert, confirm, prompt } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
+import {
+  BootstrapDialogs,
+  alert,
+  confirm,
+  prompt,
+} from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 import { Modal } from 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 import '@vidstack/react/player/styles/default/theme.css';

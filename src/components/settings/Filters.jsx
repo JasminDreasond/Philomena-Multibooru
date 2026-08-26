@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import { alert } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
-import { fixBooruUrl } from '../../services/api/utils';
-import { fetchSystemFilters, fetchUserFilters, saveBooruFilters } from '../../services/api/Filters';
+import { fixBooruUrl } from '../../services/api/utils.js';
+import {
+  fetchSystemFilters,
+  fetchUserFilters,
+  saveBooruFilters,
+} from '../../services/api/Filters.js';
 
 /**
  * @template T
@@ -14,14 +18,18 @@ import { fetchSystemFilters, fetchUserFilters, saveBooruFilters } from '../../se
  */
 
 /**
- * @typedef {import('../../services/api/System').Account} Account
+ * @typedef {import('../../services/api/System.js').Account} Account
+ */
+
+/**
+ * @typedef {import('../../services/api/Filters.js').FilterItem} FilterItem
  */
 
 export const Filters = ({ loadAccounts, accounts, activeTab }) => {
-  /** @type {[FilterObj[], Dispatch<SetStateAction<FilterObj[]>>]} */
+  /** @type {[FilterItem[], Dispatch<SetStateAction<FilterItem[]>>]} */
   const [systemFilters, setSystemFilters] = useState([]);
 
-  /** @type {[FilterObj[], Dispatch<SetStateAction<FilterObj[]>>]} */
+  /** @type {[FilterItem[], Dispatch<SetStateAction<FilterItem[]>>]} */
   const [userFilters, setUserFilters] = useState([]);
 
   /** @type {[number, Dispatch<SetStateAction<number>>]} */
@@ -47,12 +55,14 @@ export const Filters = ({ loadAccounts, accounts, activeTab }) => {
     loadAccounts();
     /** @type {Record<string, number>} */
     const currentSavedFilters = JSON.parse(localStorage.getItem('app_booruFilters') || '{}');
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSavedFilters(currentSavedFilters);
     setPendingFilters(currentSavedFilters);
   }, []);
 
   useEffect(() => {
     if (accounts.length > 0 && !selectedFilterAccount) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedFilterAccount(accounts[0]);
     } else if (accounts.length === 0 && selectedFilterAccount) {
       setSelectedFilterAccount(null);
@@ -61,38 +71,38 @@ export const Filters = ({ loadAccounts, accounts, activeTab }) => {
 
   useEffect(() => {
     if (selectedFilterAccount) {
+      /**
+       * @param {Account} account
+       * @param {number} sPage
+       * @param {number} uPage
+       * @returns {Promise<void>}
+       */
+      const loadFiltersData = async (account, sPage, uPage) => {
+        setIsLoadingFilters(true);
+        try {
+          /** @type {string} */
+          const fixedUrl = fixBooruUrl(account.booruUrl);
+
+          const sysPromise = fetchSystemFilters(fixedUrl, sPage).catch(() => ({ filters: [] }));
+          const userPromise =
+            account.apiKey && account.apiKey.trim() !== ''
+              ? fetchUserFilters(fixedUrl, account.apiKey, uPage).catch(() => ({ filters: [] }))
+              : Promise.resolve({ filters: [] });
+
+          const [sysRes, userRes] = await Promise.all([sysPromise, userPromise]);
+
+          setSystemFilters(sysRes.filters || []);
+          setUserFilters(userRes.filters || []);
+        } catch (err) {
+          console.error('Failed to load filters', err);
+        } finally {
+          setIsLoadingFilters(false);
+        }
+      };
+
       loadFiltersData(selectedFilterAccount, sysPage, userPage);
     }
   }, [selectedFilterAccount, sysPage, userPage]);
-
-  /**
-   * @param {Account} account
-   * @param {number} sPage
-   * @param {number} uPage
-   * @returns {Promise<void>}
-   */
-  const loadFiltersData = async (account, sPage, uPage) => {
-    setIsLoadingFilters(true);
-    try {
-      /** @type {string} */
-      const fixedUrl = fixBooruUrl(account.booruUrl);
-
-      const sysPromise = fetchSystemFilters(fixedUrl, sPage).catch(() => ({ filters: [] }));
-      const userPromise =
-        account.apiKey && account.apiKey.trim() !== ''
-          ? fetchUserFilters(fixedUrl, account.apiKey, uPage).catch(() => ({ filters: [] }))
-          : Promise.resolve({ filters: [] });
-
-      const [sysRes, userRes] = await Promise.all([sysPromise, userPromise]);
-
-      setSystemFilters(sysRes.filters || []);
-      setUserFilters(userRes.filters || []);
-    } catch (err) {
-      console.error('Failed to load filters', err);
-    } finally {
-      setIsLoadingFilters(false);
-    }
-  };
 
   /**
    * @param {string} booruUrl

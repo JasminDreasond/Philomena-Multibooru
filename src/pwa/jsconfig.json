@@ -3,6 +3,7 @@
     "module": "NodeNext",
     "target": "ESNext",
     "lib": ["ESNext", "WebWorker"],
+    "types": ["vite/client"],
     "moduleResolution": "nodenext",
     "checkJs": true
   }

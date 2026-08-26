@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { searchImagesApi } from '../../services/api/Images.js';
 import { geString, parseQueryResults } from '../../queries/globalTags.js';
-import swManager from '../utils/TinyServiceWorker.mjs';
+import { swManager } from '../../tools/utils.js';
 
 /**
  * @template T

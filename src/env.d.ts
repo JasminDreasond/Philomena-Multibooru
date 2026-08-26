@@ -1,7 +1,11 @@
 /// <reference types="vite/client" />
 
 import TinyServiceWorker from 'tiny-essentials/libs/router/TinyServiceWorker';
-import { alert, confirm, prompt } from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
+import {
+  alert,
+  confirm,
+  prompt,
+} from 'tiny-essentials/webTemplates/bootstrap/5.3/html/BootstrapDialogs';
 
 declare global {
   interface Window {
