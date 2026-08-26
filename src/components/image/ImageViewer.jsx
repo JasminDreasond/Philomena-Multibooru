@@ -143,6 +143,9 @@ export const ImageViewer = ({
   /** @type {[boolean, Dispatch<SetStateAction<boolean>>]} */
   const [isRateLimited, setIsRateLimited] = useState(false);
 
+  /** @type {Ref<HTMLImageElement>} */
+  const imgRef = useRef(null);
+
   /** @type {Ref<string>} */
   const currentRecQuery = useRef('');
   /** @type {Ref<HTMLDivElement|null>} */
@@ -330,6 +333,10 @@ export const ImageViewer = ({
       pendingNavigation.current = false;
     } else {
       setIsInteractionReady(true);
+    }
+
+    if (imgRef.current && imgRef.current.complete) {
+      setIsMediaLoaded(true);
     }
   }, [image?.id, image?.spoilered]);
 
@@ -900,6 +907,7 @@ export const ImageViewer = ({
           </MediaPlayer>
         ) : (
           <img
+            ref={imgRef}
             src={imageSrc}
             alt={image.tags?.join(', ')}
             onLoad={() => setIsMediaLoaded(true)}
