@@ -42,9 +42,9 @@ tinySw.addMessage('REQUEST_START_SCANNER', async ({ clientId, data, reply }) => 
     }
   }
 
-  if (isDuplicate) {
+  if (isDuplicate || activeScanners.has(clientId)) {
     reply('SCANNER_DUPLICATE_QUERY');
-  } else if (activeScanners.size >= 3 && !activeScanners.has(clientId)) {
+  } else if (activeScanners.size > 3) {
     reply('SCANNER_LIMIT_REACHED');
   } else {
     activeScanners.set(clientId, queryKey);
