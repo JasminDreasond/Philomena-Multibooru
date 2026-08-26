@@ -127,7 +127,7 @@ class TinyServiceWorker extends TinyDebugger {
    */
   constructor({ id, swUrl, version, logger, debugMode, useLogColors }) {
     super({
-      id: '[_blue_TinyServiceWorker_reset_] :debug:',
+      id: '[_blue_TinyServiceWorker_reset_]',
       logger: logger ?? console,
       debugMode: debugMode ?? false,
       useLogColors: useLogColors ?? false,

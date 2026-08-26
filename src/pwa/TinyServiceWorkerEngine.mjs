@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
 
 ///////////////////////////////////////////////////////////////////
 
@@ -97,7 +97,7 @@ const sw = self;
 /**
  * Manages the lifecycle and execution of modules based on the provided configuration.
  */
-class ServiceWorkerEngine extends EventEmitter {
+class TinyServiceWorkerEngine extends TinyDebugger {
   /** @type {ServiceWorkerSettings} */
   #config = {
     fetch: {
@@ -214,10 +214,20 @@ class ServiceWorkerEngine extends EventEmitter {
 
   /**
    * @param {Partial<PartialServiceWorkerSettings>} config - The configuration object to apply.
+   * @param {Object} [lgConfig] - Configuration options for the instance.
+   * @param {boolean} [lgConfig.debugMode=false] - Whether to enable internal debug logging.
+   * @param {boolean} [lgConfig.useLogColors=false] - Whether to enable log color support.
+   * @param {Partial<Console>} [lgConfig.logger=console] - A custom logger object (must implement console methods).
    * @throws {TypeError} If the configuration does not meet the minimum requirements.
    */
-  constructor(config = {}) {
-    super();
+  constructor(config = {}, lgConfig = {}) {
+    super({
+      id: '[_blue_TinyServiceWorkerEngine_reset_]',
+      logger: lgConfig.logger ?? console,
+      debugMode: lgConfig.debugMode ?? false,
+      useLogColors: lgConfig.useLogColors ?? false,
+    });
+
     this.#validateConfig(config, false);
     this.#config = {
       fetch: config.fetch
@@ -304,7 +314,7 @@ class ServiceWorkerEngine extends EventEmitter {
    * @throws {Error} If the engine has already been started.
    */
   init() {
-    if (this.#started) throw new Error('ServiceWorkerEngine is already initialized.');
+    if (this.#started) throw new Error('TinyServiceWorkerEngine is already initialized.');
 
     // Detect that the Service Worker has been activated.
     sw.addEventListener('activate', (event) => {
@@ -433,4 +443,4 @@ class ServiceWorkerEngine extends EventEmitter {
   }
 }
 
-export default ServiceWorkerEngine;
+export default TinyServiceWorkerEngine;

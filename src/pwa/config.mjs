@@ -1,6 +1,6 @@
-import ServiceWorkerEngine from './ServiceWorkerEngine.mjs';
+import TinyServiceWorkerEngine from './TinyServiceWorkerEngine.mjs';
 
-/** @type {Partial<import('./ServiceWorkerEngine.mjs').PartialServiceWorkerSettings>} */
+/** @type {Partial<import('./TinyServiceWorkerEngine.mjs').PartialServiceWorkerSettings>} */
 const MY_CONFIG = {
   fetch: {
     router: {
@@ -25,4 +25,4 @@ const MY_CONFIG = {
   },
 };
 
-export const tinySw = new ServiceWorkerEngine(MY_CONFIG);
+export const tinySw = new TinyServiceWorkerEngine(MY_CONFIG);

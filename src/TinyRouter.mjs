@@ -87,7 +87,7 @@ class TinyRouter extends TinyDebugger {
       throw new TypeError('onRouteNotFound must be a function.');
 
     super({
-      id: '[_blue_TinyRouter_reset_] :debug:',
+      id: '[_blue_TinyRouter_reset_]',
       logger: options.logger ?? console,
       debugMode: options.debugMode ?? false,
       useLogColors: options.useLogColors ?? false,
