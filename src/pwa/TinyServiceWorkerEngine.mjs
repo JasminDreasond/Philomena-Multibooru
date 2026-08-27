@@ -560,9 +560,8 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   init() {
     if (this.#started) throw new Error('TinyServiceWorkerEngine is already initialized.');
 
+    // Force the new Service Worker to become active immediately after installation
     sw.addEventListener('install', (event) => {
-      // Força o novo Service Worker a tornar-se o ativo imediatamente,
-      // mesmo que existam clientes usando a versão antiga.
       this.emit('beforeSkipWaiting', { event });
       event.waitUntil(
         sw
@@ -579,7 +578,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
       );
     });
 
-    // Detect that the Service Worker has been activated.
+    // Ensure the new Service Worker takes control of all open clients immediately
     sw.addEventListener('activate', (event) => {
       this.emit('beforeActivated', { event });
       event.waitUntil(
@@ -679,8 +678,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         if (event.data.type === 'PREPARE_UPDATE') {
           this.log('info', 'Update signal received. Starting installation...');
 
-          // Força o navegador a buscar a versão mais recente do script do SW
-          // e inicia o processo de instalação.
+          // Force the browser to fetch the latest version of the SW script
           event.waitUntil(
             sw.registration
               .update()
