@@ -675,7 +675,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
           return;
         }
 
-        if (event.data.type === 'PREPARE_UPDATE') {
+        if (event.data.type === 'sw:PrepareUpdate') {
           this.log('info', 'Update signal received. Starting installation...');
 
           // Force the browser to fetch the latest version of the SW script
