@@ -65,7 +65,7 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
 
 /**
  * A function that handles the actual postMessage call to a specific Client using a reply template.
- * @callback MessageToReplyTemplate
+ * @callback MessageReplyToTemplate
  * @param {Client} client - The target client to receive the message.
  * @param {string} type - The type identifier for the reply message.
  * @param {MessagePayload} data - The payload to be sent in the reply.
@@ -77,7 +77,7 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
  * @property {ExtendableMessageEvent} event - The original message event.
  * @property {string} clientId - The ID of the client that sent the message.
  * @property {MessagePayload} data - The payload sent within the message.
- * @property {MessageToReplyTemplate} toReply - A function to send a reply to the message source.
+ * @property {MessageReplyToTemplate} replyTo - A function to send a reply to the message source.
  * @property {MessageReplyTemplate} replyTemplate - A template function to format reply messages.
  * @property {(type: string, data: MessagePayload) => void} reply - A convenience method to reply to the message source.
  */
@@ -103,7 +103,7 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
  * @property {URL} url - The parsed URL of the request.
  * @property {FetchObjParams} params - Parameters extracted from the URL (e.g., /:id).
  * @property {boolean} isValidRoute - Whether the route passed the initial router validation.
- * @property {MessageToReplyTemplate} toReply - A function to send a reply to the message source.
+ * @property {MessageReplyToTemplate} replyTo - A function to send a reply to the message source.
  * @property {MessageReplyTemplate} replyTemplate - A template function to format reply messages.
  * @property {Error} [error] - An error object if the plugin execution failed.
  */
@@ -131,8 +131,8 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     return { type: nType, data: payload };
   };
 
-  /** @type {MessageToReplyTemplate} */
-  static toReply = (targetSource, nType, payload) =>
+  /** @type {MessageReplyToTemplate} */
+  static replyTo = (targetSource, nType, payload) =>
     targetSource.postMessage(TinyServiceWorkerEngine.replyTemplate(nType, payload));
 
   /** @type {ServiceWorkerSettings} */
@@ -446,7 +446,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         url,
         params: routeParams,
         replyTemplate: TinyServiceWorkerEngine.replyTemplate,
-        toReply: TinyServiceWorkerEngine.toReply,
+        replyTo: TinyServiceWorkerEngine.replyTo,
         isValidRoute,
       };
       try {
@@ -564,13 +564,13 @@ class TinyServiceWorkerEngine extends TinyDebugger {
           data,
           clientId,
           replyTemplate: TinyServiceWorkerEngine.replyTemplate,
-          toReply: TinyServiceWorkerEngine.toReply,
+          replyTo: TinyServiceWorkerEngine.replyTo,
           reply: (nType, payload) => {
             if (!(event.source instanceof Client)) {
               this.log('warn', 'Attempted to reply to a non-client source.');
               return;
             }
-            TinyServiceWorkerEngine.toReply(event.source, nType, payload);
+            TinyServiceWorkerEngine.replyTo(event.source, nType, payload);
           },
         };
 

@@ -5,7 +5,7 @@ import { tinySw } from './config.mjs';
 const sw = self;
 
 // Favicon Update Logic
-tinySw.addMessage('FAVICON_UPDATE', async ({ data, event, toReply }) => {
+tinySw.addMessage('FAVICON_UPDATE', async ({ data, event, replyTo }) => {
   if (typeof data !== 'object' || data === null) {
     console.error(
       '[ServiceWorker] FAVICON_UPDATE error: Payload "data" is missing or not an object.',
@@ -25,7 +25,7 @@ tinySw.addMessage('FAVICON_UPDATE', async ({ data, event, toReply }) => {
   event.waitUntil(
     sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       clientList.forEach((client) => {
-        toReply(client, 'FAVICON_UPDATE', { icon: data.icon });
+        replyTo(client, 'FAVICON_UPDATE', { icon: data.icon });
       });
     }),
   );
