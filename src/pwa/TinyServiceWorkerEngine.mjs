@@ -560,19 +560,25 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   init() {
     if (this.#started) throw new Error('TinyServiceWorkerEngine is already initialized.');
 
-    sw.addEventListener('install', async (event) => {
+    sw.addEventListener('install', (event) => {
       // Força o novo Service Worker a tornar-se o ativo imediatamente,
       // mesmo que existam clientes usando a versão antiga.
       this.emit('beforeSkipWaiting', { event });
-      await sw.skipWaiting();
-      this.emit('afterSkipWaiting', { event });
+      event.waitUntil(
+        sw.skipWaiting().then(() => {
+          this.emit('afterSkipWaiting', { event });
+        }),
+      );
     });
 
     // Detect that the Service Worker has been activated.
     sw.addEventListener('activate', (event) => {
-      event.waitUntil(sw.clients.claim());
-      this.log('info', 'Activated and claiming clients.');
-      this.emit('activated', { event });
+      event.waitUntil(
+        sw.clients.claim().then(() => {
+          this.log('info', 'Activated and claiming clients.');
+          this.emit('activated', { event });
+        }),
+      );
     });
 
     // Detect fetch events on the website.
@@ -625,7 +631,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         });
       }
 
-      sw.addEventListener('message', async (event) => {
+      sw.addEventListener('message', (event) => {
         // Validation: Ensure the source is a valid Client
         if (!(event.source instanceof Client)) {
           this.log('error', 'Message received from an invalid source (not a Client).');
@@ -651,6 +657,21 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         if (typeof event.data.type !== 'string') {
           this.log('error', 'Received message with missing or invalid "type" string.');
           return;
+        }
+
+        if (event.data && event.data.type === 'PREPARE_UPDATE') {
+          this.log('info', 'Update signal received. Starting installation...');
+
+          // Força o navegador a buscar a versão mais recente do script do SW
+          // e inicia o processo de instalação.
+          sw.registration
+            .update()
+            .then(() => {
+              this.log('info', 'Update successful, waiting for activation.');
+            })
+            .catch((err) => {
+              this.log('error', 'Update failed:', err);
+            });
         }
 
         /** @type {Client} */
@@ -686,16 +707,18 @@ class TinyServiceWorkerEngine extends TinyDebugger {
 
         // Emit events
         this.emit('beforeMessage', { type, data: msgData });
+        const afterData = () => ({ type, error: err, data: msgData });
         if (message) {
-          try {
-            await message(msgData);
-          } catch (error) {
-            err = error instanceof Error ? error : new Error('Unknown Error');
-            this.log('error', `Error executing handler for message type "${type}":`, error);
-            this.emit('messageError', { type, error, data: msgData });
-          }
-        }
-        this.emit('afterMessage', { type, error: err, data: msgData });
+          event.waitUntil(
+            message(msgData)
+              .then(() => this.emit('afterMessage', afterData()))
+              .catch((/** @type {Error} */ error) => {
+                err = error instanceof Error ? error : new Error('Unknown Error');
+                this.log('error', `Error executing handler for message type "${type}":`, error);
+                this.emit('messageError', afterData());
+              }),
+          );
+        } else this.emit('afterMessage', afterData());
       });
     }
 
