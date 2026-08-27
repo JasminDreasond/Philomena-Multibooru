@@ -130,6 +130,11 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
 // @ts-ignore
 const sw = self;
 
+const errorMaker = (/** @type {any} */ err, /** @type {ExtendableEvent} */ event) => ({
+  event,
+  error: err instanceof Error ? err : new Error('Unknown Error'),
+});
+
 /**
  * Manages the lifecycle and execution of modules based on the provided configuration.
  */
@@ -569,12 +574,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
           .then(() => {
             this.emit('afterSkipWaiting', { event });
           })
-          .catch((err) =>
-            this.emit('installError', {
-              event,
-              error: err instanceof Error ? err : new Error('Unknown Error'),
-            }),
-          ),
+          .catch((err) => this.emit('installError', errorMaker(err, event))),
       );
     });
 
@@ -585,15 +585,10 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         sw.clients
           .claim()
           .then(() => {
-            this.log('info', 'Activated and claiming clients.');
             this.emit('afterActivated', { event });
+            this.log('info', 'Activated and claiming clients.');
           })
-          .catch((err) =>
-            this.emit('activateError', {
-              event,
-              error: err instanceof Error ? err : new Error('Unknown Error'),
-            }),
-          ),
+          .catch((err) => this.emit('activateError', errorMaker(err, event))),
       );
     });
 
@@ -679,13 +674,16 @@ class TinyServiceWorkerEngine extends TinyDebugger {
           this.log('info', 'Update signal received. Starting installation...');
 
           // Force the browser to fetch the latest version of the SW script
+          this.emit('beforeUpdated', { event });
           event.waitUntil(
             sw.registration
               .update()
               .then(() => {
+                this.emit('afterUpdated', { event });
                 this.log('info', 'Update successful, waiting for activation.');
               })
               .catch((err) => {
+                this.emit('updatedError', errorMaker(err, event));
                 this.log('error', 'Update failed:', err);
               }),
           );
@@ -723,8 +721,8 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         let err = null;
 
         // Emit events
-        this.emit('beforeMessage', { type, data: msgData });
-        const afterData = () => ({ type, error: err, data: msgData });
+        this.emit('beforeMessage', { event, type, data: msgData });
+        const afterData = () => ({ event, type, error: err, data: msgData });
         if (message) {
           event.waitUntil(
             message(msgData)
