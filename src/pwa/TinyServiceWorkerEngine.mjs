@@ -103,6 +103,8 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
  * @property {URL} url - The parsed URL of the request.
  * @property {FetchObjParams} params - Parameters extracted from the URL (e.g., /:id).
  * @property {boolean} isValidRoute - Whether the route passed the initial router validation.
+ * @property {MessageToReplyTemplate} toReply - A function to send a reply to the message source.
+ * @property {MessageReplyTemplate} replyTemplate - A template function to format reply messages.
  * @property {Error} [error] - An error object if the plugin execution failed.
  */
 
@@ -124,6 +126,15 @@ const sw = self;
  * Manages the lifecycle and execution of modules based on the provided configuration.
  */
 class TinyServiceWorkerEngine extends TinyDebugger {
+  /** @type {MessageReplyTemplate} */
+  static replyTemplate = (nType, payload) => {
+    return { type: nType, data: payload };
+  };
+
+  /** @type {MessageToReplyTemplate} */
+  static toReply = (targetSource, nType, payload) =>
+    targetSource.postMessage(TinyServiceWorkerEngine.replyTemplate(nType, payload));
+
   /** @type {ServiceWorkerSettings} */
   #config = {
     fetch: {
@@ -429,7 +440,15 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     // 3. Execute the plugin if a match is found
     if (matchedCallback) {
       /** @type {FetchObj} */
-      const fetchObj = { event, request, url, params: routeParams, isValidRoute };
+      const fetchObj = {
+        event,
+        request,
+        url,
+        params: routeParams,
+        replyTemplate: TinyServiceWorkerEngine.replyTemplate,
+        toReply: TinyServiceWorkerEngine.toReply,
+        isValidRoute,
+      };
       try {
         this.emit('beforeFetchPlugin', url.pathname, fetchObj);
         const pluginResponse = await matchedCallback(fetchObj);
@@ -539,28 +558,19 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         // Get the registered message callback
         const message = this.#messages.get(type);
 
-        /** @type {MessageReplyTemplate} */
-        const replyTemplate = (nType, payload) => {
-          return { type: nType, data: payload };
-        };
-
-        /** @type {MessageToReplyTemplate} */
-        const toReply = (targetSource, nType, payload) =>
-          targetSource.postMessage(replyTemplate(nType, payload));
-
         /** @type {MessageObj} */
         const msgData = {
           event,
           data,
           clientId,
-          replyTemplate,
-          toReply,
+          replyTemplate: TinyServiceWorkerEngine.replyTemplate,
+          toReply: TinyServiceWorkerEngine.toReply,
           reply: (nType, payload) => {
             if (!(event.source instanceof Client)) {
               this.log('warn', 'Attempted to reply to a non-client source.');
               return;
             }
-            toReply(event.source, nType, payload);
+            TinyServiceWorkerEngine.toReply(event.source, nType, payload);
           },
         };
 
