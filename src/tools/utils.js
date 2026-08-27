@@ -125,7 +125,7 @@ export const updateEmbedMetadata = ({ title, description, image, url }) => {
 export const swManager = new TinyServiceWorker({
   id: 'web-manager',
   swUrl: '/sw.js',
-  version: '1.1.2',
+  version: '1.1.3',
   debugMode: import.meta.env.DEV,
   useLogColors: true,
 });

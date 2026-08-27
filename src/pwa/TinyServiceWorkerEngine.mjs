@@ -565,19 +565,36 @@ class TinyServiceWorkerEngine extends TinyDebugger {
       // mesmo que existam clientes usando a versão antiga.
       this.emit('beforeSkipWaiting', { event });
       event.waitUntil(
-        sw.skipWaiting().then(() => {
-          this.emit('afterSkipWaiting', { event });
-        }),
+        sw
+          .skipWaiting()
+          .then(() => {
+            this.emit('afterSkipWaiting', { event });
+          })
+          .catch((err) =>
+            this.emit('installError', {
+              event,
+              error: err instanceof Error ? err : new Error('Unknown Error'),
+            }),
+          ),
       );
     });
 
     // Detect that the Service Worker has been activated.
     sw.addEventListener('activate', (event) => {
+      this.emit('beforeActivated', { event });
       event.waitUntil(
-        sw.clients.claim().then(() => {
-          this.log('info', 'Activated and claiming clients.');
-          this.emit('activated', { event });
-        }),
+        sw.clients
+          .claim()
+          .then(() => {
+            this.log('info', 'Activated and claiming clients.');
+            this.emit('afterActivated', { event });
+          })
+          .catch((err) =>
+            this.emit('activateError', {
+              event,
+              error: err instanceof Error ? err : new Error('Unknown Error'),
+            }),
+          ),
       );
     });
 
