@@ -91,26 +91,27 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
 ///////////////////////////////////////////////////////////////////
 
 /**
+ * A record of key-value pairs representing URL parameters extracted from a path.
  * @typedef {Record<string, string>} FetchObjParams
  */
 
 /**
- * Um objeto de dados enriquecido para os plugins de fetch.
+ * An enriched data object for fetch plugins.
  * @typedef {Object} FetchObj
- * @property {FetchEvent} event - O evento de fetch original.
- * @property {Request} request - A requisição interceptada.
- * @property {URL} url - A URL parseada da requisição.
- * @property {FetchObjParams} params - Parâmetros extraídos da URL (ex: /:id).
- * @property {boolean} isValidRoute
- * @property {Error} [error]
+ * @property {FetchEvent} event - The original fetch event.
+ * @property {Request} request - The intercepted request.
+ * @property {URL} url - The parsed URL of the request.
+ * @property {FetchObjParams} params - Parameters extracted from the URL (e.g., /:id).
+ * @property {boolean} isValidRoute - Whether the route passed the initial router validation.
+ * @property {Error} [error] - An error object if the plugin execution failed.
  */
 
 /**
- * Função de callback executada quando uma rota do fetchUrls ou fetchRegExp dá match.
- * Se retornar uma Response, ela será enviada para o navegador.
+ * Callback function executed when a fetchUrls or fetchRegExp route matches.
+ * If it returns a boolean `false`, the interception is considered handled.
  * @callback FetchCallback
- * @param {FetchObj} fetchObj - O objeto de requisição enriquecido.
- * @returns {Promise<boolean|void> | boolean | void}
+ * @param {FetchObj} fetchObj - The enriched request object.
+ * @returns {Promise<boolean|void> | boolean | void} A promise or value indicating if the request was handled.
  */
 
 ///////////////////////////////////////////////////////////////////
@@ -168,6 +169,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    */
   #fetchUrls = new Map();
 
+  /** @type {boolean} */
   #started = false;
 
   /**
@@ -370,10 +372,12 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   }
 
   /**
-   * @param {FetchEvent} event
-   * @param {URL} url
-   * @param {boolean} isValidRoute
-   * @returns {Promise<boolean>}
+   * Performs checks against registered fetchUrls and fetchRegExp to determine if a request should be intercepted.
+   *
+   * @param {FetchEvent} event - The original fetch event.
+   * @param {URL} url - The parsed URL of the request.
+   * @param {boolean} isValidRoute - Whether the route passed the initial router validation.
+   * @returns {Promise<boolean>} A promise that resolves to true if the request should proceed normally, or false if it was handled by a plugin.
    */
   async #fetchChecker(event, url, isValidRoute) {
     /** @type {Request} */
@@ -382,18 +386,18 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     /** @type {FetchObjParams} */
     let routeParams = {};
 
-    // 1. Verificação no fetchUrls (Busca exata e Busca com Parâmetros)
+    // 1. Check in fetchUrls (Exact match and Parameterized match)
     for (const [pattern, callback] of this.#fetchUrls.entries()) {
-      // Verificação exata
+      // Exact match
       if (url.pathname === pattern) {
         matchedCallback = callback;
         break;
       }
 
-      // Verificação de parâmetros dinâmicos (ex: /user/:id)
+      // Dynamic parameter matching (e.g., /user/:id)
       if (pattern.includes('/:')) {
-        // Converte o pattern da chave para uma Regex de extração
-        // Substitui :algo por ([^/]+) para capturar aquele segmento
+        // Converts the key pattern into an extraction Regex
+        // Replaces :something with ([^/]+) to capture the segment
         const regexStr = '^' + pattern.replace(/:([^/]+)/g, '([^/]+)') + '$';
         const regex = new RegExp(regexStr);
         const match = url.pathname.match(regex);
@@ -401,28 +405,28 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         if (match) {
           matchedCallback = callback;
 
-          // Extraindo o nome das chaves para popular o objeto params
+          // Extracting the key names to populate the params object
           const paramNames = [...pattern.matchAll(/:([^/]+)/g)].map((m) => m[1]);
           paramNames.forEach((name, index) => {
             routeParams[name] = match[index + 1];
           });
-          break; // Encontramos a rota, interrompe o loop
+          break; // Route found, breaking the loop
         }
       }
     }
 
-    // 2. Verificação no fetchRegExp (Caso não tenha achado no fetchUrls)
+    // 2. Check in fetchRegExp (If no match was found in fetchUrls)
     if (!matchedCallback) {
       for (const [regExpStr, callback] of this.#fetchRegExp.entries()) {
         const regex = new RegExp(regExpStr);
         if (regex.test(url.pathname)) {
           matchedCallback = callback;
-          break; // Encontramos via Regex bruta, interrompe o loop
+          break; // Found via raw Regex, breaking the loop
         }
       }
     }
 
-    // 3. Executar o plugin se houver match
+    // 3. Execute the plugin if a match is found
     if (matchedCallback) {
       /** @type {FetchObj} */
       const fetchObj = { event, request, url, params: routeParams, isValidRoute };
@@ -431,7 +435,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         const pluginResponse = await matchedCallback(fetchObj);
         this.emit('afterFetchPlugin', url.pathname, fetchObj);
 
-        // Se o plugin resolver e retornar um boolean, servimos ele!
+        // If the plugin resolves and returns a boolean, we treat it as handled.
         if (typeof pluginResponse === 'boolean') return pluginResponse;
       } catch (error) {
         fetchObj.error = error instanceof Error ? error : new Error('Unknown Error.');
