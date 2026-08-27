@@ -536,9 +536,9 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         isValidRoute,
       };
       try {
-        this.emit('beforeFetchPlugin', url.pathname, fetchObj);
+        this.emit('beforeFetchPlugin', fetchObj);
         const pluginResponse = await matchedCallback(fetchObj);
-        this.emit('afterFetchPlugin', url.pathname, fetchObj);
+        this.emit('afterFetchPlugin', fetchObj);
 
         // If the plugin resolves and returns a boolean, we treat it as handled.
         if (typeof pluginResponse === 'boolean') return pluginResponse;
@@ -559,6 +559,14 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    */
   init() {
     if (this.#started) throw new Error('TinyServiceWorkerEngine is already initialized.');
+
+    sw.addEventListener('install', async (event) => {
+      // Força o novo Service Worker a tornar-se o ativo imediatamente,
+      // mesmo que existam clientes usando a versão antiga.
+      this.emit('beforeSkipWaiting', { event });
+      await sw.skipWaiting();
+      this.emit('afterSkipWaiting', { event });
+    });
 
     // Detect that the Service Worker has been activated.
     sw.addEventListener('activate', (event) => {
@@ -673,17 +681,21 @@ class TinyServiceWorkerEngine extends TinyDebugger {
           },
         };
 
+        /** @type {Error|null} */
+        let err = null;
+
         // Emit events
-        this.emit('beforeMessage', type, msgData);
+        this.emit('beforeMessage', { type, data: msgData });
         if (message) {
           try {
             await message(msgData);
           } catch (error) {
+            err = error instanceof Error ? error : new Error('Unknown Error');
             this.log('error', `Error executing handler for message type "${type}":`, error);
-            this.emit('messageError', { type, error, msgData });
+            this.emit('messageError', { type, error, data: msgData });
           }
         }
-        this.emit('afterMessage', type, msgData);
+        this.emit('afterMessage', { type, error: err, data: msgData });
       });
     }
 
