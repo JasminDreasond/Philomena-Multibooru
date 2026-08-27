@@ -45,7 +45,7 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
 ///////////////////////////////////////////////////////////////////
 
 /**
- * @typedef {any} MessagePayload
+ * @typedef {Record<any, any>} MessagePayload
  * The data payload contained within the message.
  */
 
@@ -147,6 +147,12 @@ class TinyServiceWorkerEngine extends TinyDebugger {
       throw new TypeError(
         `[TinyServiceWorkerEngine] replyTemplate: nType must be a string. Received: ${typeof nType}`,
       );
+    }
+    if (
+      typeof payload !== 'undefined' &&
+      (Array.isArray(payload) || typeof payload !== 'object' || payload === null)
+    ) {
+      throw new TypeError('Fetch router configuration must be a non-null object.');
     }
     return { type: nType, data: payload };
   };
@@ -553,7 +559,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
             this.log('warn', 'Attempted to reply to a non-client source.');
             return;
           }
-          TinyServiceWorkerEngine.replyTo(event.source, 'pong', 'mio! :3');
+          TinyServiceWorkerEngine.replyTo(event.source, 'pong', { msg: 'mio! :3' });
         });
       }
 
@@ -565,8 +571,17 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         }
 
         // Validation: Ensure event.data is a non-null object
-        if (typeof event.data !== 'object' || event.data === null) {
+        if (Array.isArray(event.data) || typeof event.data !== 'object' || event.data === null) {
           this.log('error', 'Received message with invalid data format (expected object).');
+          return;
+        }
+        if (
+          typeof event.data.data !== 'undefined' &&
+          (Array.isArray(event.data.data) ||
+            typeof event.data.data !== 'object' ||
+            event.data.data === null)
+        ) {
+          this.log('error', 'Received message data with invalid data format (expected object).');
           return;
         }
 
