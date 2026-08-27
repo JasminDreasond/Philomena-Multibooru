@@ -195,7 +195,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     },
     messaging: {
       enabled: true,
-      allowPingPong: true,
+      allowPingPong: false,
     },
   };
 
@@ -549,7 +549,11 @@ class TinyServiceWorkerEngine extends TinyDebugger {
       // Ping/Pong Logic
       if (msgCfg.allowPingPong) {
         this.#messages.set('ping', ({ event }) => {
-          event.source.postMessage({ type: 'pong' });
+          if (!(event.source instanceof Client)) {
+            this.log('warn', 'Attempted to reply to a non-client source.');
+            return;
+          }
+          TinyServiceWorkerEngine.replyTo(event.source, 'pong', 'mio! :3');
         });
       }
 

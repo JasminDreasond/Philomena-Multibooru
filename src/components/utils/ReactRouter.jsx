@@ -9,7 +9,9 @@ readyPage.onReady(
   async () => {
     try {
       await waitForTrue(() => getDbConnStatus() >= 2);
-      await importantTasks.enqueue(() => swManager.register({ type: 'module' }));
+      await importantTasks.enqueue(() =>
+        swManager.register({ type: import.meta.env.DEV ? 'module' : 'classic' }),
+      );
     } catch (err) {
       console.error('Initialization failed', err);
     }
