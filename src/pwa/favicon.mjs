@@ -5,7 +5,7 @@ import { tinySw } from './config.mjs';
 const sw = self;
 
 // Favicon Update Logic
-tinySw.addMessage('FAVICON_UPDATE', async ({ data, event, replyTo }) => {
+tinySw.addMessageListener('FAVICON_UPDATE', async ({ data, event, replyTo }) => {
   if (typeof data !== 'object' || data === null) {
     console.error(
       '[ServiceWorker] FAVICON_UPDATE error: Payload "data" is missing or not an object.',

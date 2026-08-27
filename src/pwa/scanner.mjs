@@ -26,7 +26,7 @@ const cleanGhostScanners = async () => {
 };
 
 // Scanner Logic
-tinySw.addMessage('REQUEST_START_SCANNER', async ({ clientId, data, reply }) => {
+tinySw.addMessageListener('REQUEST_START_SCANNER', async ({ clientId, data, reply }) => {
   await cleanGhostScanners();
 
   /** @type {string} */
@@ -52,7 +52,7 @@ tinySw.addMessage('REQUEST_START_SCANNER', async ({ clientId, data, reply }) => 
   }
 });
 
-tinySw.addMessage('STOP_SCANNER', ({ clientId, reply }) => {
+tinySw.addMessageListener('STOP_SCANNER', ({ clientId, reply }) => {
   activeScanners.delete(clientId);
   reply('SCANNER_STOPPED');
 });
