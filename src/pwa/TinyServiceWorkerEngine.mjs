@@ -90,6 +90,31 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
 
 ///////////////////////////////////////////////////////////////////
 
+/**
+ * @typedef {Record<string, string>} FetchObjParams
+ */
+
+/**
+ * Um objeto de dados enriquecido para os plugins de fetch.
+ * @typedef {Object} FetchObj
+ * @property {FetchEvent} event - O evento de fetch original.
+ * @property {Request} request - A requisição interceptada.
+ * @property {URL} url - A URL parseada da requisição.
+ * @property {FetchObjParams} params - Parâmetros extraídos da URL (ex: /:id).
+ * @property {boolean} isValidRoute
+ * @property {Error} [error]
+ */
+
+/**
+ * Função de callback executada quando uma rota do fetchUrls ou fetchRegExp dá match.
+ * Se retornar uma Response, ela será enviada para o navegador.
+ * @callback FetchCallback
+ * @param {FetchObj} fetchObj - O objeto de requisição enriquecido.
+ * @returns {Promise<boolean|void> | boolean | void}
+ */
+
+///////////////////////////////////////////////////////////////////
+
 /** @type {ServiceWorkerGlobalScope} */
 // @ts-ignore
 const sw = self;
@@ -134,7 +159,12 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   #messages = new Map();
 
   /**
-   * @type {Map<string, MessageCallback>}
+   * @type {Map<string, FetchCallback>}
+   */
+  #fetchRegExp = new Map();
+
+  /**
+   * @type {Map<string, FetchCallback>}
    */
   #fetchUrls = new Map();
 
@@ -247,6 +277,37 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   }
 
   /**
+   * @returns {number} The number of registered fetch RegExp.
+   */
+  get fetchRegExpSize() {
+    return this.#fetchRegExp.size;
+  }
+
+  /**
+   * @param {string} type - The identifier for the fetch type.
+   * @param {FetchCallback} callback - The callback function to execute.
+   */
+  addFetchRegExp(type, callback) {
+    this.#fetchRegExp.set(type, callback);
+  }
+
+  /**
+   * @param {string} type - The identifier for the fetch type.
+   * @returns {boolean} True if an element in the Map object existed and has been removed, false otherwise.
+   */
+  deleteFetchRegExp(type) {
+    return this.#fetchRegExp.delete(type);
+  }
+
+  /**
+   * @param {string} type - The identifier for the fetch type.
+   * @returns {boolean} True if an element with the specified key exists in the Map, false otherwise.
+   */
+  hasFetchRegExp(type) {
+    return this.#fetchRegExp.has(type);
+  }
+
+  /**
    * @returns {number} The number of registered fetch URLs.
    */
   get fetchUrlSize() {
@@ -255,7 +316,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
 
   /**
    * @param {string} type - The identifier for the fetch type.
-   * @param {MessageCallback} callback - The callback function to execute.
+   * @param {FetchCallback} callback - The callback function to execute.
    */
   addFetchUrl(type, callback) {
     this.#fetchUrls.set(type, callback);
@@ -309,6 +370,80 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   }
 
   /**
+   * @param {FetchEvent} event
+   * @param {URL} url
+   * @param {boolean} isValidRoute
+   * @returns {Promise<boolean>}
+   */
+  async #fetchChecker(event, url, isValidRoute) {
+    /** @type {Request} */
+    const request = event.request;
+    let matchedCallback = null;
+    /** @type {FetchObjParams} */
+    let routeParams = {};
+
+    // 1. Verificação no fetchUrls (Busca exata e Busca com Parâmetros)
+    for (const [pattern, callback] of this.#fetchUrls.entries()) {
+      // Verificação exata
+      if (url.pathname === pattern) {
+        matchedCallback = callback;
+        break;
+      }
+
+      // Verificação de parâmetros dinâmicos (ex: /user/:id)
+      if (pattern.includes('/:')) {
+        // Converte o pattern da chave para uma Regex de extração
+        // Substitui :algo por ([^/]+) para capturar aquele segmento
+        const regexStr = '^' + pattern.replace(/:([^/]+)/g, '([^/]+)') + '$';
+        const regex = new RegExp(regexStr);
+        const match = url.pathname.match(regex);
+
+        if (match) {
+          matchedCallback = callback;
+
+          // Extraindo o nome das chaves para popular o objeto params
+          const paramNames = [...pattern.matchAll(/:([^/]+)/g)].map((m) => m[1]);
+          paramNames.forEach((name, index) => {
+            routeParams[name] = match[index + 1];
+          });
+          break; // Encontramos a rota, interrompe o loop
+        }
+      }
+    }
+
+    // 2. Verificação no fetchRegExp (Caso não tenha achado no fetchUrls)
+    if (!matchedCallback) {
+      for (const [regExpStr, callback] of this.#fetchRegExp.entries()) {
+        const regex = new RegExp(regExpStr);
+        if (regex.test(url.pathname)) {
+          matchedCallback = callback;
+          break; // Encontramos via Regex bruta, interrompe o loop
+        }
+      }
+    }
+
+    // 3. Executar o plugin se houver match
+    if (matchedCallback) {
+      /** @type {FetchObj} */
+      const fetchObj = { event, request, url, params: routeParams, isValidRoute };
+      try {
+        this.emit('beforeFetchPlugin', url.pathname, fetchObj);
+        const pluginResponse = await matchedCallback(fetchObj);
+        this.emit('afterFetchPlugin', url.pathname, fetchObj);
+
+        // Se o plugin resolver e retornar um boolean, servimos ele!
+        if (typeof pluginResponse === 'boolean') return pluginResponse;
+      } catch (error) {
+        fetchObj.error = error instanceof Error ? error : new Error('Unknown Error.');
+        this.log('error', `Error executing fetch plugin for "${url.pathname}":`, error);
+        this.emit('fetchPluginError', fetchObj);
+      }
+    }
+
+    return true;
+  }
+
+  /**
    * Initializes the Service Worker event listeners.
    * @returns {void}
    * @throws {Error} If the engine has already been started.
@@ -327,22 +462,21 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     const fetchCfg = this.#config.fetch;
     if (fetchCfg.enabled) {
       sw.addEventListener('fetch', async (event) => {
-        /** @type {FetchEvent} */
-        const ev = event;
         /** @type {Request} */
-        const request = ev.request;
+        const request = event.request;
 
         // We only intercept navigation requests (HTML)
         if (request.mode !== 'navigate') return;
-        this.emit('fetchRequested', { event, request });
+        const url = new URL(request.url);
+        this.emit('fetchRequested', { event, request, url });
 
         // Handles navigation requests based on the router configuration.
         const routerCfg = fetchCfg.router;
         if (routerCfg.enabled) {
-          const url = new URL(event.request.url);
-
           if (routerCfg.validator(url)) {
+            const canContinue = await this.#fetchChecker(event, url, true);
             this.log('info', `Valid route: ${url.pathname}`);
+            if (!canContinue) return;
             event.respondWith(
               fetch('/index.html').catch((err) => {
                 this.emit('fetchError', { event, request, error: err, url });
@@ -350,11 +484,13 @@ class TinyServiceWorkerEngine extends TinyDebugger {
               }),
             );
           } else {
+            const canContinue = await this.#fetchChecker(event, url, false);
             this.log('warn', `404 - Route not found: ${url.pathname}`);
+            if (!canContinue) return;
             this.emit('fetchError', { event, request, error: new Error('404 Not Found'), url });
             event.respondWith(routerCfg.notFoundHandler());
           }
-        }
+        } else await this.#fetchChecker(event, url, true);
       });
     }
 
