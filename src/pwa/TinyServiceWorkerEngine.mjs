@@ -133,14 +133,40 @@ const sw = self;
  * Manages the lifecycle and execution of modules based on the provided configuration.
  */
 class TinyServiceWorkerEngine extends TinyDebugger {
-  /** @type {MessageReplyTemplate} */
+  /**
+   * A function used to format a reply message into a standard MessagingData object.
+   *
+   * @param {string} nType - The type identifier for the reply message.
+   * @param {MessagePayload} payload - The payload to be sent in the reply.
+   * @returns {MessagingData} The formatted message object.
+   * @throws {TypeError} If nType is not a string.
+   */
   static replyTemplate = (nType, payload) => {
+    if (typeof nType !== 'string') {
+      throw new TypeError(
+        `[TinyServiceWorkerEngine] replyTemplate: nType must be a string. Received: ${typeof nType}`,
+      );
+    }
     return { type: nType, data: payload };
   };
 
-  /** @type {MessageReplyTo} */
-  static replyTo = (targetSource, nType, payload) =>
+  /**
+   * A function that handles the actual postMessage call to a specific Client.
+   *
+   * @param {Client} targetSource - The target client to receive the message.
+   * @param {string} nType - The type identifier for the reply message.
+   * @param {MessagePayload} payload - The payload to be sent in the reply.
+   * @returns {void}
+   * @throws {TypeError} If targetSource is invalid or nType is not a string.
+   */
+  static replyTo = (targetSource, nType, payload) => {
+    if (!(targetSource instanceof Client)) {
+      throw new TypeError(
+        `[TinyServiceWorkerEngine] replyTo: targetSource must be a valid Client with a postMessage method.`,
+      );
+    }
     targetSource.postMessage(TinyServiceWorkerEngine.replyTemplate(nType, payload));
+  };
 
   /** @type {ServiceWorkerSettings} */
   #config = {

@@ -636,7 +636,6 @@ const App = () => {
     return () => window.removeEventListener('boorusDropdownClosed', onDropdownClosed);
   });
 
-
   /**
    * Infinite scroll specific function: Appends the next page silently
    */
