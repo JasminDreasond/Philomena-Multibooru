@@ -25,7 +25,7 @@ const MY_CONFIG = {
   },
   messaging: {
     allowPingPong: import.meta.env.DEV,
-  }
+  },
 };
 
 export const tinySw = new TinyServiceWorkerEngine(MY_CONFIG, {

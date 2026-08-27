@@ -175,7 +175,10 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     targetSource.postMessage(TinyServiceWorkerEngine.replyTemplate(nType, payload));
   };
 
-  /** @type {ServiceWorkerSettings} */
+  /**
+   * The internal configuration state of the engine.
+   * @type {ServiceWorkerSettings}
+   */
   #config = {
     fetch: {
       enabled: true,
@@ -206,21 +209,27 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   };
 
   /**
+   * A map containing registered message type listeners.
    * @type {Map<string, MessageCallback>}
    */
   #messages = new Map();
 
   /**
+   * A map containing registered fetch RegExp listeners.
    * @type {Map<string, FetchCallback>}
    */
   #fetchRegExp = new Map();
 
   /**
+   * A map containing registered fetch URL listeners.
    * @type {Map<string, FetchCallback>}
    */
   #fetchUrls = new Map();
 
-  /** @type {boolean} */
+  /**
+   * Flag indicating if the engine has been initialized.
+   * @type {boolean}
+   */
   #started = false;
 
   /**
@@ -354,10 +363,25 @@ class TinyServiceWorkerEngine extends TinyDebugger {
 
   /**
    * @param {string} type - The identifier for the fetch type.
+   * @returns {FetchCallback|undefined}
+   */
+  getFetchRegExpListener(type) {
+    return this.#fetchRegExp.get(type);
+  }
+
+  /**
+   * @param {string} type - The identifier for the fetch type.
    * @returns {boolean} True if an element with the specified key exists in the Map, false otherwise.
    */
   hasFetchRegExp(type) {
     return this.#fetchRegExp.has(type);
+  }
+
+  /**
+   * Clears all registered fetch RegExp listeners.
+   */
+  clearFetchRegExps() {
+    return this.#fetchRegExp.clear();
   }
 
   /**
@@ -385,10 +409,25 @@ class TinyServiceWorkerEngine extends TinyDebugger {
 
   /**
    * @param {string} type - The identifier for the fetch type.
+   * @returns {FetchCallback|undefined}
+   */
+  getFetchUrlListener(type) {
+    return this.#fetchUrls.get(type);
+  }
+
+  /**
+   * @param {string} type - The identifier for the fetch type.
    * @returns {boolean} True if an element with the specified key exists in the Map, false otherwise.
    */
   hasFetchUrl(type) {
     return this.#fetchUrls.has(type);
+  }
+
+  /**
+   * Clears all registered fetch URL listeners.
+   */
+  clearFetchUrls() {
+    return this.#fetchUrls.clear();
   }
 
   /**
@@ -416,10 +455,25 @@ class TinyServiceWorkerEngine extends TinyDebugger {
 
   /**
    * @param {string} type - The identifier for the message type.
+   * @returns {MessageCallback|undefined}
+   */
+  getMessageListener(type) {
+    return this.#messages.get(type);
+  }
+
+  /**
+   * @param {string} type - The identifier for the message type.
    * @returns {boolean} True if an element with the specified key exists in the Map, false otherwise.
    */
   hasMessage(type) {
     return this.#messages.has(type);
+  }
+
+  /**
+   * Clears all registered message listeners.
+   */
+  clearMessages() {
+    return this.#messages.clear();
   }
 
   /**
