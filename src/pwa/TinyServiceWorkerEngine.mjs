@@ -1,3 +1,4 @@
+import { segmentExtractorV1 } from 'tiny-essentials/regexp/SegmentExtractor';
 import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
 
 ///////////////////////////////////////////////////////////////////
@@ -432,30 +433,22 @@ class TinyServiceWorkerEngine extends TinyDebugger {
 
     // 1. Check in fetchUrls (Exact match and Parameterized match)
     for (const [pattern, callback] of this.#fetchUrls.entries()) {
+      // Dynamic parameter matching (e.g., /user/:id)
+      if (pattern.includes('/:')) {
+        // Converts the key pattern into the extraction Regex
+        const seg = segmentExtractorV1(pattern);
+        const { match, params } = seg.exec(url.pathname);
+        routeParams = params;
+        if (match) {
+          matchedCallback = callback;
+        }
+        break; // Route type detected, breaking the loop
+      }
+
       // Exact match
       if (url.pathname === pattern) {
         matchedCallback = callback;
         break;
-      }
-
-      // Dynamic parameter matching (e.g., /user/:id)
-      if (pattern.includes('/:')) {
-        // Converts the key pattern into an extraction Regex
-        // Replaces :something with ([^/]+) to capture the segment
-        const regexStr = '^' + pattern.replace(/:([^/]+)/g, '([^/]+)') + '$';
-        const regex = new RegExp(regexStr);
-        const match = url.pathname.match(regex);
-
-        if (match) {
-          matchedCallback = callback;
-
-          // Extracting the key names to populate the params object
-          const paramNames = [...pattern.matchAll(/:([^/]+)/g)].map((m) => m[1]);
-          paramNames.forEach((name, index) => {
-            routeParams[name] = match[index + 1];
-          });
-          break; // Route found, breaking the loop
-        }
       }
     }
 
