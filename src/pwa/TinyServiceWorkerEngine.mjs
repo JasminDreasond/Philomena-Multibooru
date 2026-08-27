@@ -659,19 +659,21 @@ class TinyServiceWorkerEngine extends TinyDebugger {
           return;
         }
 
-        if (event.data && event.data.type === 'PREPARE_UPDATE') {
+        if (event.data.type === 'PREPARE_UPDATE') {
           this.log('info', 'Update signal received. Starting installation...');
 
           // Força o navegador a buscar a versão mais recente do script do SW
           // e inicia o processo de instalação.
-          sw.registration
-            .update()
-            .then(() => {
-              this.log('info', 'Update successful, waiting for activation.');
-            })
-            .catch((err) => {
-              this.log('error', 'Update failed:', err);
-            });
+          event.waitUntil(
+            sw.registration
+              .update()
+              .then(() => {
+                this.log('info', 'Update successful, waiting for activation.');
+              })
+              .catch((err) => {
+                this.log('error', 'Update failed:', err);
+              }),
+          );
         }
 
         /** @type {Client} */
