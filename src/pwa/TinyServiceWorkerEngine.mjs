@@ -334,7 +334,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * @param {string} type - The identifier for the fetch type.
    * @param {FetchCallback} callback - The callback function to execute.
    */
-  addFetchRegExp(type, callback) {
+  addFetchRegExpListener(type, callback) {
     this.#fetchRegExp.set(type, callback);
   }
 
@@ -342,7 +342,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * @param {string} type - The identifier for the fetch type.
    * @returns {boolean} True if an element in the Map object existed and has been removed, false otherwise.
    */
-  deleteFetchRegExp(type) {
+  removeFetchRegExpListener(type) {
     return this.#fetchRegExp.delete(type);
   }
 
@@ -365,7 +365,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * @param {string} type - The identifier for the fetch type.
    * @param {FetchCallback} callback - The callback function to execute.
    */
-  addFetchUrl(type, callback) {
+  addFetchUrlListener(type, callback) {
     this.#fetchUrls.set(type, callback);
   }
 
@@ -373,7 +373,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * @param {string} type - The identifier for the fetch type.
    * @returns {boolean} True if an element in the Map object existed and has been removed, false otherwise.
    */
-  deleteFetchUrl(type) {
+  removeFetchUrlListener(type) {
     return this.#fetchUrls.delete(type);
   }
 
@@ -396,7 +396,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * @param {string} type - The identifier for the message type.
    * @param {MessageCallback} callback - The callback function to execute.
    */
-  addMessage(type, callback) {
+  addMessageListener(type, callback) {
     this.#messages.set(type, callback);
   }
 
@@ -404,7 +404,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * @param {string} type - The identifier for the message type.
    * @returns {boolean} True if an element in the Map object existed and has been removed, false otherwise.
    */
-  deleteMessage(type) {
+  removeMessageListener(type) {
     return this.#messages.delete(type);
   }
 
