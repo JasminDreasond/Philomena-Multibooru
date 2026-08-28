@@ -26,7 +26,6 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
 /**
  * @typedef {Object} MessagingOptions
  * @property {boolean} enabled - Indicates if message communication is enabled.
- * @property {boolean} allowPingPong - If true, the engine will respond to 'ping' messages with 'pong'.
  */
 
 /**
@@ -293,7 +292,6 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     },
     messaging: {
       enabled: true,
-      allowPingPong: false,
     },
   };
 
@@ -387,7 +385,6 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         throw new TypeError('Messaging configuration must be a non-null object.');
       }
       validateField(config.messaging, 'enabled', 'boolean', 'messaging');
-      validateField(config.messaging, 'allowPingPong', 'boolean', 'messaging');
     } else if (strict) {
       throw new TypeError('Missing required property: "messaging"');
     }
@@ -716,17 +713,6 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     // Registers the message event listener for communication with application pages.
     const msgCfg = this.#config.messaging;
     if (msgCfg.enabled) {
-      // Ping/Pong Logic
-      if (msgCfg.allowPingPong) {
-        this.#messages.set('ping', ({ event }) => {
-          if (!(event.source instanceof Client)) {
-            this.log('warn', 'Attempted to reply to a non-client source.');
-            return;
-          }
-          TinyServiceWorkerEngine.replyTo(event.source, 'pong', { msg: 'mio! :3' });
-        });
-      }
-
       sw.addEventListener('message', (event) => {
         // Validation: Ensure the source is a valid Client
         if (!(event.source instanceof Client)) {

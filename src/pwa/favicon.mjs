@@ -1,9 +1,5 @@
 import { tinySw } from './config.mjs';
 
-/** @type {ServiceWorkerGlobalScope} */
-// @ts-ignore
-const sw = self;
-
 // Favicon Update Logic
 tinySw.addMessageListener('FAVICON_UPDATE', async ({ data, event, replyToAll }) => {
   if (typeof data !== 'object' || data === null) {
