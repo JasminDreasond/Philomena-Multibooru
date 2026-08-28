@@ -579,11 +579,54 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   }
 
   /**
+   * Performs a deep clone of a given value.
+   * Handles Maps, Objects, and Arrays, while preserving function references.
+   * @param {any} item - The item to be cloned.
+   * @returns {any} The deep cloned item.
+   */
+  #deepClone(item) {
+    // 1. Handle primitives and null (they are immutable)
+    if (item === null || typeof item !== 'object') {
+      return item;
+    }
+
+    // 2. Handle functions (preserve reference as requested)
+    if (typeof item === 'function') {
+      return item;
+    }
+
+    // 3. Handle Maps
+    if (item instanceof Map) {
+      const result = new Map();
+      for (const [key, value] of item.entries()) {
+        // Recursively clone both key and value to ensure full integrity
+        result.set(key, this.#deepClone(value));
+      }
+      return result;
+    }
+
+    // 4. Handle Arrays
+    if (Array.isArray(item)) {
+      return item.map((element) => this.#deepClone(element));
+    }
+
+    // 5. Handle Objects
+    const result = {};
+    for (const key in item) {
+      if (Object.prototype.hasOwnProperty.call(item, key)) {
+        result[key] = this.#deepClone(item[key]);
+      }
+    }
+    return result;
+  }
+
+  /**
    * Gets the current engine configuration.
-   * @returns {ServiceWorkerSettings} A clone of the current configuration.
+   * Returns a deep clone to prevent external mutation of the internal state.
+   * @returns {ServiceWorkerSettings} A deep cloned copy of the configuration.
    */
   get config() {
-    return structuredClone(this.#config);
+    return this.#deepClone(this.#config);
   }
 
   /**
