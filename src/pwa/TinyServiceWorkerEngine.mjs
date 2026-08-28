@@ -53,14 +53,14 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
  * Represents the structured data format for messages sent via postMessage.
  * @typedef {Object} MessagingData
  * @property {string} type - The identifier for the message type.
- * @property {MessagePayload} data - The actual payload of the message.
+ * @property {MessagePayload} [data] - The actual payload of the message.
  */
 
 /**
  * A function used to format a reply message into a standard MessagingData object.
  * @callback MessageReplyTemplate
  * @param {string} type - The type identifier for the reply message.
- * @param {MessagePayload} data - The payload to be sent in the reply.
+ * @param {MessagePayload} [data] - The payload to be sent in the reply.
  * @returns {MessagingData} The formatted message object.
  */
 
@@ -69,14 +69,14 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
  * @callback MessageReplyTo
  * @param {Client} client - The target client to receive the message.
  * @param {string} type - The type identifier for the reply message.
- * @param {MessagePayload} data - The payload to be sent in the reply.
+ * @param {MessagePayload} [data] - The payload to be sent in the reply.
  */
 
 /**
  * @typedef {Object} MessageReplyToAllOptions
- * @param {string} ops.type - The type identifier for the reply message.
- * @param {MessagePayload} ops.payload - The payload to be sent in the reply.
- * @param {ClientQueryOptions} ops.options
+ * @property {string} type - The type identifier for the reply message.
+ * @property {MessagePayload} [data] - The payload to be sent in the reply.
+ * @property {ClientQueryOptions} [options]
  */
 
 /**
@@ -102,7 +102,7 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
  * @typedef {Object} MessageObj
  * @property {ExtendableMessageEvent} event - The original message event.
  * @property {string} clientId - The ID of the client that sent the message.
- * @property {MessagePayload} data - The payload sent within the message.
+ * @property {MessagePayload} [data] - The payload sent within the message.
  * @property {MessageReplyTo} replyTo - A function to send a reply to the message source.
  * @property {MessageReplyToAll} replyToAll - A function to send a reply to all clients.
  * @property {MessageReplyTemplate} replyTemplate - A template function to format reply messages.
@@ -163,7 +163,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * A function used to format a reply message into a standard MessagingData object.
    *
    * @param {string} type - The type identifier for the reply message.
-   * @param {MessagePayload} payload - The payload to be sent in the reply.
+   * @param {MessagePayload} [payload] - The payload to be sent in the reply.
    * @returns {MessagingData} The formatted message object.
    * @throws {TypeError} If type is not a string.
    */
@@ -187,7 +187,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    *
    * @param {Client} targetSource - The target client to receive the message.
    * @param {string} type - The type identifier for the reply message.
-   * @param {MessagePayload} payload - The payload to be sent in the reply.
+   * @param {MessagePayload} [payload] - The payload to be sent in the reply.
    * @returns {void}
    * @throws {TypeError} If targetSource is invalid or type is not a string.
    */
@@ -207,10 +207,10 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * @returns {MessageReplyToAllResponse}
    */
   static async replyToAll(ops) {
-    const { type, payload, options = { type: 'window', includeUncontrolled: true } } = ops;
+    const { type, data, options = { type: 'window', includeUncontrolled: true } } = ops;
     return sw.clients.matchAll(options).then((clientList) =>
       clientList.forEach((client) => {
-        TinyServiceWorkerEngine.replyTo(client, type, payload);
+        TinyServiceWorkerEngine.replyTo(client, type, data);
       }),
     );
   }
@@ -716,11 +716,16 @@ class TinyServiceWorkerEngine extends TinyDebugger {
               .update()
               .then(() => {
                 this.emit('afterUpdated', { event });
-
+                TinyServiceWorkerEngine.replyToAll({ type: 'sw:Updated' });
                 this.log('info', 'Update successful, waiting for activation.');
               })
-              .catch((err) => {
-                this.emit('updatedError', errorMaker(err, event));
+              .catch((error) => {
+                const err = error instanceof Error ? error : new Error('Unknown Error.');
+                this.emit('updateError', errorMaker(err, event));
+                TinyServiceWorkerEngine.replyToAll({
+                  type: 'sw:UpdateError',
+                  data: { message: err.message, name: err.name, stack: err.stack },
+                });
                 this.log('error', 'Update failed:', err);
               }),
           );
@@ -732,7 +737,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         const clientId = source.id;
         /** @type {string} */
         const type = event.data.type;
-        /** @type {MessagePayload} */
+        /** @type {MessagePayload|undefined} */
         const data = event.data.data;
 
         // Get the registered message callback
