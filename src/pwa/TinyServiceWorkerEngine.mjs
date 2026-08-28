@@ -5,6 +5,7 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
 
 /**
  * @typedef {Object} PartialServiceWorkerSettings
+ * @property {boolean} [spaMode]
  * @property {PartialFetchOptions} fetch - Partial configuration for fetch event interception.
  * @property {Partial<MessagingOptions>} messaging - Partial configuration for message event handling.
  */
@@ -32,13 +33,51 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
  * @typedef {Object} RouterOptions
  * @property {boolean} enabled - Indicates if the router is active.
  * @property {(url: URL) => boolean} validator - A function that receives a URL and returns true if the route is valid.
- * @property {() => Promise<Response> | Response} notFoundHandler - A function that returns a 404 response when no route matches.
+ * @property {Map<number, RouterCodeConfig>} codes
  */
 
 /**
  * @typedef {Object} ServiceWorkerSettings
+ * @property {boolean} spaMode
  * @property {FetchOptions} fetch - Configuration for fetch event interception.
  * @property {MessagingOptions} messaging - Configuration for message event handling.
+ */
+
+///////////////////////////////////////////////////////////////////
+
+/**
+ * @typedef {(path: string) => string} PathGetter
+ */
+
+/**
+ * @typedef {Object} DefaultCodeData
+ * @property {PathGetter} pathGetter
+ * @property {RouterCodeConfig} data
+ */
+
+/**
+ * @typedef {Object} FnOptions
+ * @property {FetchEvent} event
+ * @property {Request} request
+ * @property {URL} url
+ * @property {HttpResponseType} resType
+ * @property {number} code
+ */
+
+/**
+ * @typedef {Object} RouterCodeConfig
+ * @property {(ops: FnOptions) => Promise<Response> | Response} fn
+ * @property {string} msg
+ * @property {string} logMsg
+ */
+
+/**
+ * @typedef {Object} FetchCheckerValues
+ * @property {number} code
+ */
+
+/**
+ * @typedef {FetchCheckerValues & { [id:string]:any}} FetchCheckerResult
  */
 
 ///////////////////////////////////////////////////////////////////
@@ -128,7 +167,6 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
  * @property {Request} request - The intercepted request.
  * @property {URL} url - The parsed URL of the request.
  * @property {FetchObjParams} params - Parameters extracted from the URL (e.g., /:id).
- * @property {boolean} isValidRoute - Whether the route passed the initial router validation.
  * @property {MessageReplyTo} replyTo - A function to send a reply to the message source.
  * @property {MessageReplyToAll} replyToAll - A function to send a reply to all clients.
  * @property {MessageReplyTemplate} replyTemplate - A template function to format reply messages.
@@ -140,7 +178,8 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
  * If it returns a boolean `false`, the interception is considered handled.
  * @callback FetchCallback
  * @param {FetchObj} fetchObj - The enriched request object.
- * @returns {Promise<boolean|void> | boolean | void} A promise or value indicating if the request was handled.
+ * @param {FetchCheckerResult} result
+ * @returns {Promise<void>|void} A promise or value indicating if the request was handled.
  */
 
 ///////////////////////////////////////////////////////////////////
@@ -149,10 +188,37 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
 // @ts-ignore
 const sw = self;
 
-const errorMaker = (/** @type {any} */ err, /** @type {ExtendableEvent} */ event) => ({
+/**
+ * @param {any} err
+ * @param {ExtendableEvent} event
+ */
+const errorMaker = (err, event) => ({
   event,
   error: err instanceof Error ? err : new Error('Unknown Error'),
 });
+
+/**
+ * @typedef {'info'|'success'|'redirect'|'client-error'|'server-error'|'unknown'} HttpResponseType
+ */
+
+/**
+ * @param {number} code
+ * @returns {HttpResponseType}
+ */
+const getResType = (code) => {
+  // Informational responses
+  if (code >= 100 && code <= 199) return 'info';
+  // Successful responses
+  if (code >= 200 && code <= 299) return 'success';
+  // Redirection messages
+  if (code >= 300 && code <= 399) return 'redirect';
+  // Client error responses
+  if (code >= 400 && code <= 499) return 'client-error';
+  // Server error responses
+  if (code >= 500 && code <= 599) return 'server-error';
+  // Unknown error
+  return 'unknown';
+};
 
 /**
  * Manages the lifecycle and execution of modules based on the provided configuration.
@@ -179,7 +245,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * @returns {MessagingData} The formatted message object.
    * @throws {TypeError} If type is not a string.
    */
-  static #replyTemplate = (type, payload, strict = false) => {
+  static #replyTemplate(type, payload, strict = false) {
     if (typeof type !== 'string') {
       throw new TypeError(
         `[TinyServiceWorkerEngine] replyTemplate: type must be a string. Received: ${typeof type}`,
@@ -193,7 +259,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     }
     if (strict) TinyServiceWorkerEngine.#validateEventType(type);
     return { type, data: payload };
-  };
+  }
 
   /**
    * A function used to format a reply message into a standard MessagingData object.
@@ -203,9 +269,9 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * @returns {MessagingData} The formatted message object.
    * @throws {TypeError} If type is not a string.
    */
-  static replyTemplate = (type, payload) => {
+  static replyTemplate(type, payload) {
     return TinyServiceWorkerEngine.#replyTemplate(type, payload, true);
-  };
+  }
 
   /**
    * A function that handles the actual postMessage call to a specific Client.
@@ -216,14 +282,14 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * @returns {void}
    * @throws {TypeError} If targetSource is invalid or type is not a string.
    */
-  static #replyTo = (targetSource, type, payload, strict = false) => {
+  static #replyTo(targetSource, type, payload, strict = false) {
     if (!(targetSource instanceof Client)) {
       throw new TypeError(
         `[TinyServiceWorkerEngine] replyTo: targetSource must be a valid Client with a postMessage method.`,
       );
     }
     targetSource.postMessage(TinyServiceWorkerEngine.#replyTemplate(type, payload, strict));
-  };
+  }
 
   /**
    * A function that handles the actual postMessage call to a specific Client.
@@ -234,9 +300,9 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * @returns {void}
    * @throws {TypeError} If targetSource is invalid or type is not a string.
    */
-  static replyTo = (targetSource, type, payload) => {
+  static replyTo(targetSource, type, payload) {
     return TinyServiceWorkerEngine.#replyTo(targetSource, type, payload, true);
-  };
+  }
 
   /**
    * A function that handles the actual postMessage call to all Clients.
@@ -264,36 +330,220 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   }
 
   /**
+   * @param {number} c
+   * @returns {RouterCodeConfig}
+   */
+  getCodeCfg(c) {
+    if (typeof c !== 'number') throw new TypeError('');
+    /** @type {RouterCodeConfig} */
+    let routerCodeCfg;
+
+    routerCodeCfg = this.#config.fetch.router.codes.get(c);
+    if (!routerCodeCfg) {
+      for (const code in this.#defaultCode) {
+        routerCodeCfg = this.#defaultCode[code].data;
+        if (routerCodeCfg) break;
+      }
+    }
+
+    if (!routerCodeCfg) {
+      routerCodeCfg = this.createFetchRes({
+        isError: true,
+        msg: this.#globalMsgCode.unknown.msg,
+        logMsg: this.#globalMsgCode.unknown.logMsg,
+        pathGetter: () => this.globalPathGetter(this.#globalMsgCode.unknown.path),
+      });
+    }
+
+    return { ...routerCodeCfg };
+  }
+
+  set spaMode(value) {
+    if (typeof value !== 'boolean') {
+      throw new TypeError(`Invalid type for "spaMode": expected boolean, got ${typeof value}`);
+    }
+    this.#config.spaMode = value;
+  }
+
+  get spaMode() {
+    return this.#config.spaMode;
+  }
+
+  /** @type {PathGetter} */
+  globalPathGetter(path) {
+    return !this.#config.spaMode ? path : this.#globalMsgCode.spaPath;
+  }
+
+  #globalMsgCode = {
+    spaPath: '/index.html',
+    unknown: {
+      path: '/500.html',
+      msg: 'Unknown',
+      logMsg: 'Unknown route error',
+    },
+    200: {
+      path: null,
+      msg: 'Success',
+      logMsg: 'Valid route',
+    },
+    404: {
+      path: '/404.html',
+      msg: 'Not Found',
+      logMsg: 'Route not found',
+    },
+    500: {
+      path: '/500.html',
+      msg: 'Internal Server Error',
+      logMsg: 'Route server error',
+    },
+  };
+
+  /** @type {{ 200: DefaultCodeData, 404: DefaultCodeData, 500: DefaultCodeData }} */
+  #defaultCode = {
+    200: {
+      pathGetter: (path) => this.globalPathGetter(path),
+      data: {
+        fn: (ops) =>
+          this.fetchFn(
+            this.#globalMsgCode[200].msg,
+            this.#globalMsgCode[200].logMsg,
+            this.#defaultCode[200].pathGetter,
+            ops,
+          ),
+        msg: this.#globalMsgCode[200].msg,
+        logMsg: this.#globalMsgCode[200].logMsg,
+      },
+    },
+    404: {
+      pathGetter: () => this.globalPathGetter(this.#globalMsgCode[404].path),
+      data: {
+        fn: (ops) =>
+          this.fetchErrorFn(
+            this.#globalMsgCode[404].msg,
+            this.#globalMsgCode[404].logMsg,
+            this.#defaultCode[404].pathGetter,
+            ops,
+          ),
+        msg: this.#globalMsgCode[404].msg,
+        logMsg: this.#globalMsgCode[404].logMsg,
+      },
+    },
+    500: {
+      pathGetter: () => this.globalPathGetter(this.#globalMsgCode[500].path),
+      data: {
+        fn: (ops) =>
+          this.fetchErrorFn(
+            this.#globalMsgCode[500].msg,
+            this.#globalMsgCode[500].logMsg,
+            this.#defaultCode[500].pathGetter,
+            ops,
+          ),
+        msg: this.#globalMsgCode[500].msg,
+        logMsg: this.#globalMsgCode[500].logMsg,
+      },
+    },
+  };
+
+  /**
+   * @param {string} msg
+   * @param {string} logMsg
+   * @param {string|PathGetter} pathGetter
+   * @param {FnOptions} options
+   * @returns {Promise<Response>}
+   */
+  async fetchFn(msg, logMsg, pathGetter, options) {
+    const { url, code, request } = options;
+    const path = typeof pathGetter === 'string' ? pathGetter : pathGetter(url.toString());
+    this.log('info', `${code} - ${logMsg}: ${url.pathname}`);
+    try {
+      const res = await fetch(path === url.toString() ? request : path);
+      return res;
+    } catch (err) {
+      return this.getCodeCfg(500).fn(options);
+    }
+  }
+
+  /**
+   * @param {string} msg
+   * @param {string} logMsg
+   * @param {string|PathGetter} pathGetter
+   * @param {FnOptions} options
+   * @returns {Promise<Response>}
+   */
+  async fetchErrorFn(msg, logMsg, pathGetter, options) {
+    const { url, code, event, request, resType } = options;
+    const path = typeof pathGetter === 'string' ? pathGetter : pathGetter(url.toString());
+    this.log('warn', `${code} - ${logMsg}: ${url.pathname}`);
+    this.emit('fetchError', {
+      event,
+      request,
+      error: new Error(`${code} ${msg}`),
+      url,
+      resType,
+    });
+
+    // Simulating Apache2 ErrorDocument behavior by serving path.html with a status
+    try {
+      const res = await fetch(path);
+      return new Response(res.body, {
+        status: code,
+        statusText: msg,
+        headers: res.headers,
+      });
+    } catch {
+      return new Response(this.#globalMsgCode[500].msg, { status: 500 });
+    }
+  }
+
+  /**
+   * @param {Object} ops
+   * @param {boolean} ops.isError
+   * @param {string} ops.msg
+   * @param {string} ops.logMsg
+   * @param {string|PathGetter} ops.pathGetter
+   * @returns {RouterCodeConfig}
+   */
+  createFetchRes({ isError, msg, logMsg, pathGetter }) {
+    return {
+      fn: (ops) =>
+        isError
+          ? this.fetchErrorFn(msg, logMsg, pathGetter, ops)
+          : this.fetchFn(msg, logMsg, pathGetter, ops),
+      msg,
+      logMsg,
+    };
+  }
+
+  /**
    * The internal configuration state of the engine.
    * @type {ServiceWorkerSettings}
    */
   #config = {
+    spaMode: false,
     fetch: {
       enabled: true,
       router: {
         enabled: false,
         // Implementation of your routing logic
         validator: () => true,
-        // Implementation of your 404 handler
-        notFoundHandler: async () => {
-          // Simulating Apache2 ErrorDocument 404 behavior by serving index.html with a 404 status
-          try {
-            const res = await fetch('/index.html');
-            return new Response(res.body, {
-              status: 404,
-              statusText: 'Not Found',
-              headers: res.headers,
-            });
-          } catch {
-            return new Response('Not Found', { status: 404 });
-          }
-        },
+        // Implementation of your codes handler
+        codes: new Map(),
       },
     },
     messaging: {
       enabled: true,
     },
   };
+
+  /** @param {ServiceWorkerSettings} config */
+  set config(config) {
+    this.#updateConfig(config, true);
+  }
+
+  /** @returns {ServiceWorkerSettings} */
+  get config() {
+    return structuredClone(this.#config);
+  }
 
   /**
    * A map containing registered message type listeners.
@@ -358,6 +608,8 @@ class TinyServiceWorkerEngine extends TinyDebugger {
       }
     };
 
+    validateField(config, 'spaMode', 'boolean', 'root');
+
     // Deep validation for 'fetch' configuration
     if (config.fetch !== undefined) {
       if (typeof config.fetch !== 'object' || config.fetch === null) {
@@ -371,7 +623,6 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         }
         validateField(config.fetch.router, 'enabled', 'boolean', 'fetch.router');
         validateField(config.fetch.router, 'validator', 'function', 'fetch.router');
-        validateField(config.fetch.router, 'notFoundHandler', 'function', 'fetch.router');
       } else if (strict) {
         throw new TypeError('Missing required property: "fetch.router"');
       }
@@ -391,6 +642,33 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   }
 
   /**
+   * @param {Partial<PartialServiceWorkerSettings>} config
+   * @param {boolean} [forceFullValidation=false]
+   */
+  #updateConfig(config, forceFullValidation = false) {
+    this.#validateConfig(config, forceFullValidation);
+    this.#config = {
+      spaMode: config.spaMode ?? this.#config.spaMode,
+      fetch: config.fetch
+        ? {
+            ...this.#config.fetch,
+            ...config.fetch,
+            router: config.fetch.router
+              ? {
+                  ...this.#config.fetch.router,
+                  ...config.fetch.router,
+                }
+              : this.#config.fetch.router,
+          }
+        : this.#config.fetch,
+      messaging: config.messaging
+        ? { ...this.#config.messaging, ...config.messaging }
+        : this.#config.messaging,
+    };
+    this.#validateConfig(this.#config, true);
+  }
+
+  /**
    * @param {Partial<PartialServiceWorkerSettings>} config - The configuration object to apply.
    * @param {Object} [lgConfig] - Configuration options for the instance.
    * @param {boolean} [lgConfig.debugMode=false] - Whether to enable internal debug logging.
@@ -405,23 +683,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
       debugMode: lgConfig.debugMode ?? false,
       useLogColors: lgConfig.useLogColors ?? false,
     });
-
-    this.#validateConfig(config, false);
-    this.#config = {
-      fetch: config.fetch
-        ? {
-            ...this.#config.fetch,
-            ...config.fetch,
-            router: config.fetch.router
-              ? { ...this.#config.fetch.router, ...config.fetch.router }
-              : this.#config.fetch.router,
-          }
-        : this.#config.fetch,
-      messaging: config.messaging
-        ? { ...this.#config.messaging, ...config.messaging }
-        : this.#config.messaging,
-    };
-    this.#validateConfig(this.#config, true);
+    this.#updateConfig(config);
   }
 
   /**
@@ -567,15 +829,18 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    *
    * @param {FetchEvent} event - The original fetch event.
    * @param {URL} url - The parsed URL of the request.
-   * @param {boolean} isValidRoute - Whether the route passed the initial router validation.
-   * @returns {Promise<boolean>} A promise that resolves to true if the request should proceed normally, or false if it was handled by a plugin.
+   * @returns {Promise<FetchCheckerResult>} A promise that resolves to true if the request should proceed normally, or false if it was handled by a plugin.
    */
-  async #fetchChecker(event, url, isValidRoute) {
+  async #fetchChecker(event, url) {
     /** @type {Request} */
     const request = event.request;
+    /** @type {FetchCallback|null} */
     let matchedCallback = null;
     /** @type {FetchObjParams} */
     let routeParams = {};
+
+    /** @type {FetchCheckerResult} */
+    const result = { code: 200 };
 
     // 1. Check in fetchUrls (Exact match and Parameterized match)
     for (const [pattern, callback] of this.#fetchUrls.entries()) {
@@ -620,23 +885,20 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         replyTemplate: TinyServiceWorkerEngine.replyTemplate,
         replyTo: TinyServiceWorkerEngine.replyTo,
         replyToAll: TinyServiceWorkerEngine.replyToAll,
-        isValidRoute,
       };
       try {
         this.emit('beforeFetchPlugin', fetchObj);
-        const pluginResponse = await matchedCallback(fetchObj);
+        await matchedCallback(fetchObj, result);
         this.emit('afterFetchPlugin', fetchObj);
-
-        // If the plugin resolves and returns a boolean, we treat it as handled.
-        if (typeof pluginResponse === 'boolean') return pluginResponse;
       } catch (error) {
+        result.code = 500;
         fetchObj.error = error instanceof Error ? error : new Error('Unknown Error.');
         this.log('error', `Error executing fetch plugin for "${url.pathname}":`, error);
         this.emit('fetchPluginError', fetchObj);
       }
     }
 
-    return true;
+    return result;
   }
 
   /**
@@ -677,7 +939,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     // Detect fetch events on the website.
     const fetchCfg = this.#config.fetch;
     if (fetchCfg.enabled) {
-      sw.addEventListener('fetch', async (event) => {
+      sw.addEventListener('fetch', (event) => {
         /** @type {Request} */
         const request = event.request;
 
@@ -688,25 +950,17 @@ class TinyServiceWorkerEngine extends TinyDebugger {
 
         // Handles navigation requests based on the router configuration.
         const routerCfg = fetchCfg.router;
-        if (routerCfg.enabled) {
-          if (routerCfg.validator(url)) {
-            const canContinue = await this.#fetchChecker(event, url, true);
-            this.log('info', `Valid route: ${url.pathname}`);
-            if (!canContinue) return;
-            event.respondWith(
-              fetch('/index.html').catch((err) => {
-                this.emit('fetchError', { event, request, error: err, url });
-                return routerCfg.notFoundHandler();
-              }),
-            );
-          } else {
-            const canContinue = await this.#fetchChecker(event, url, false);
-            this.log('warn', `404 - Route not found: ${url.pathname}`);
-            if (!canContinue) return;
-            this.emit('fetchError', { event, request, error: new Error('404 Not Found'), url });
-            event.respondWith(routerCfg.notFoundHandler());
-          }
-        } else await this.#fetchChecker(event, url, true);
+        event.respondWith(
+          (async () => {
+            const fetchResult = await this.#fetchChecker(event, url);
+            const code = fetchResult.code;
+
+            const resType = getResType(code);
+            const codeCfg = this.getCodeCfg(code);
+            if (routerCfg.enabled) return codeCfg.fn({ code, resType, url, request, event });
+            return fetch(request);
+          })(),
+        );
       });
     }
 
