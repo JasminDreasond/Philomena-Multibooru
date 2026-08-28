@@ -73,10 +73,28 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
  */
 
 /**
+ * @typedef {Object} MessageReplyToAllOptions
+ * @param {string} ops.type - The type identifier for the reply message.
+ * @param {MessagePayload} ops.payload - The payload to be sent in the reply.
+ * @param {ClientQueryOptions} ops.options
+ */
+
+/**
+ * @typedef {Promise<void | readonly (Client | WindowClient)[]>} MessageReplyToAllResponse
+ */
+
+/**
+ * A function that handles the actual postMessage call to a specific Client.
+ * @callback MessageReplyToAll
+ * @param {MessageReplyToAllOptions} options
+ * @returns {MessageReplyToAllResponse}
+ */
+
+/**
  * A function that handles the actual postMessage call to the message source.
  * @callback MessageReply
  * @param {string} type - The type identifier for the reply message.
- * @param {MessagePayload} data - The payload to be sent in the reply.
+ * @param {MessagePayload} [data] - The payload to be sent in the reply.
  */
 
 /**
@@ -86,6 +104,7 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
  * @property {string} clientId - The ID of the client that sent the message.
  * @property {MessagePayload} data - The payload sent within the message.
  * @property {MessageReplyTo} replyTo - A function to send a reply to the message source.
+ * @property {MessageReplyToAll} replyToAll - A function to send a reply to all clients.
  * @property {MessageReplyTemplate} replyTemplate - A template function to format reply messages.
  * @property {MessageReply} reply - A convenience method to reply to the message source.
  */
@@ -112,6 +131,7 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
  * @property {FetchObjParams} params - Parameters extracted from the URL (e.g., /:id).
  * @property {boolean} isValidRoute - Whether the route passed the initial router validation.
  * @property {MessageReplyTo} replyTo - A function to send a reply to the message source.
+ * @property {MessageReplyToAll} replyToAll - A function to send a reply to all clients.
  * @property {MessageReplyTemplate} replyTemplate - A template function to format reply messages.
  * @property {Error} [error] - An error object if the plugin execution failed.
  */
@@ -142,15 +162,15 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   /**
    * A function used to format a reply message into a standard MessagingData object.
    *
-   * @param {string} nType - The type identifier for the reply message.
+   * @param {string} type - The type identifier for the reply message.
    * @param {MessagePayload} payload - The payload to be sent in the reply.
    * @returns {MessagingData} The formatted message object.
-   * @throws {TypeError} If nType is not a string.
+   * @throws {TypeError} If type is not a string.
    */
-  static replyTemplate = (nType, payload) => {
-    if (typeof nType !== 'string') {
+  static replyTemplate = (type, payload) => {
+    if (typeof type !== 'string') {
       throw new TypeError(
-        `[TinyServiceWorkerEngine] replyTemplate: nType must be a string. Received: ${typeof nType}`,
+        `[TinyServiceWorkerEngine] replyTemplate: type must be a string. Received: ${typeof type}`,
       );
     }
     if (
@@ -159,26 +179,41 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     ) {
       throw new TypeError('Fetch router configuration must be a non-null object.');
     }
-    return { type: nType, data: payload };
+    return { type, data: payload };
   };
 
   /**
    * A function that handles the actual postMessage call to a specific Client.
    *
    * @param {Client} targetSource - The target client to receive the message.
-   * @param {string} nType - The type identifier for the reply message.
+   * @param {string} type - The type identifier for the reply message.
    * @param {MessagePayload} payload - The payload to be sent in the reply.
    * @returns {void}
-   * @throws {TypeError} If targetSource is invalid or nType is not a string.
+   * @throws {TypeError} If targetSource is invalid or type is not a string.
    */
-  static replyTo = (targetSource, nType, payload) => {
+  static replyTo = (targetSource, type, payload) => {
     if (!(targetSource instanceof Client)) {
       throw new TypeError(
         `[TinyServiceWorkerEngine] replyTo: targetSource must be a valid Client with a postMessage method.`,
       );
     }
-    targetSource.postMessage(TinyServiceWorkerEngine.replyTemplate(nType, payload));
+    targetSource.postMessage(TinyServiceWorkerEngine.replyTemplate(type, payload));
   };
+
+  /**
+   * A function that handles the actual postMessage call to all Clients.
+   *
+   * @param {MessageReplyToAllOptions} ops
+   * @returns {MessageReplyToAllResponse}
+   */
+  static async replyToAll(ops) {
+    const { type, payload, options = { type: 'window', includeUncontrolled: true } } = ops;
+    return sw.clients.matchAll(options).then((clientList) =>
+      clientList.forEach((client) => {
+        TinyServiceWorkerEngine.replyTo(client, type, payload);
+      }),
+    );
+  }
 
   /**
    * The internal configuration state of the engine.
@@ -538,6 +573,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         params: routeParams,
         replyTemplate: TinyServiceWorkerEngine.replyTemplate,
         replyTo: TinyServiceWorkerEngine.replyTo,
+        replyToAll: TinyServiceWorkerEngine.replyToAll,
         isValidRoute,
       };
       try {
@@ -680,6 +716,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
               .update()
               .then(() => {
                 this.emit('afterUpdated', { event });
+
                 this.log('info', 'Update successful, waiting for activation.');
               })
               .catch((err) => {
@@ -708,6 +745,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
           clientId,
           replyTemplate: TinyServiceWorkerEngine.replyTemplate,
           replyTo: TinyServiceWorkerEngine.replyTo,
+          replyToAll: TinyServiceWorkerEngine.replyToAll,
           reply: (nType, payload) => {
             if (!(event.source instanceof Client)) {
               this.log('warn', 'Attempted to reply to a non-client source.');
