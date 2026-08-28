@@ -160,6 +160,19 @@ const errorMaker = (/** @type {any} */ err, /** @type {ExtendableEvent} */ event
  */
 class TinyServiceWorkerEngine extends TinyDebugger {
   /**
+   * Valida se um tipo de evento é um nome reservado para o ciclo de vida interno.
+   * @param {string} type - O nome do evento para validar.
+   * @throws {TypeError} Se o nome do evento estiver na lista de reservados.
+   */
+  static #validateEventType(type) {
+    if (type.startsWith('sw:')) {
+      throw new TypeError(
+        `The event type "${type}" is reserved for internal PWA lifecycle management and cannot be used for Service Worker messaging.`,
+      );
+    }
+  }
+
+  /**
    * A function used to format a reply message into a standard MessagingData object.
    *
    * @param {string} type - The type identifier for the reply message.
@@ -167,7 +180,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * @returns {MessagingData} The formatted message object.
    * @throws {TypeError} If type is not a string.
    */
-  static replyTemplate = (type, payload) => {
+  static #replyTemplate = (type, payload, strict = false) => {
     if (typeof type !== 'string') {
       throw new TypeError(
         `[TinyServiceWorkerEngine] replyTemplate: type must be a string. Received: ${typeof type}`,
@@ -179,7 +192,38 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     ) {
       throw new TypeError('Fetch router configuration must be a non-null object.');
     }
+    if (strict) TinyServiceWorkerEngine.#validateEventType(type);
     return { type, data: payload };
+  };
+
+  /**
+   * A function used to format a reply message into a standard MessagingData object.
+   *
+   * @param {string} type - The type identifier for the reply message.
+   * @param {MessagePayload} [payload] - The payload to be sent in the reply.
+   * @returns {MessagingData} The formatted message object.
+   * @throws {TypeError} If type is not a string.
+   */
+  static replyTemplate = (type, payload) => {
+    return TinyServiceWorkerEngine.#replyTemplate(type, payload, true);
+  };
+
+  /**
+   * A function that handles the actual postMessage call to a specific Client.
+   *
+   * @param {Client} targetSource - The target client to receive the message.
+   * @param {string} type - The type identifier for the reply message.
+   * @param {MessagePayload} [payload] - The payload to be sent in the reply.
+   * @returns {void}
+   * @throws {TypeError} If targetSource is invalid or type is not a string.
+   */
+  static #replyTo = (targetSource, type, payload, strict = false) => {
+    if (!(targetSource instanceof Client)) {
+      throw new TypeError(
+        `[TinyServiceWorkerEngine] replyTo: targetSource must be a valid Client with a postMessage method.`,
+      );
+    }
+    targetSource.postMessage(TinyServiceWorkerEngine.#replyTemplate(type, payload, strict));
   };
 
   /**
@@ -192,12 +236,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * @throws {TypeError} If targetSource is invalid or type is not a string.
    */
   static replyTo = (targetSource, type, payload) => {
-    if (!(targetSource instanceof Client)) {
-      throw new TypeError(
-        `[TinyServiceWorkerEngine] replyTo: targetSource must be a valid Client with a postMessage method.`,
-      );
-    }
-    targetSource.postMessage(TinyServiceWorkerEngine.replyTemplate(type, payload));
+    return TinyServiceWorkerEngine.#replyTo(targetSource, type, payload, true);
   };
 
   /**
@@ -206,13 +245,23 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * @param {MessageReplyToAllOptions} ops
    * @returns {MessageReplyToAllResponse}
    */
-  static async replyToAll(ops) {
+  static async #replyToAll(ops, strict = false) {
     const { type, data, options = { type: 'window', includeUncontrolled: true } } = ops;
     return sw.clients.matchAll(options).then((clientList) =>
       clientList.forEach((client) => {
-        TinyServiceWorkerEngine.replyTo(client, type, data);
+        TinyServiceWorkerEngine.#replyTo(client, type, data, strict);
       }),
     );
+  }
+
+  /**
+   * A function that handles the actual postMessage call to all Clients.
+   *
+   * @param {MessageReplyToAllOptions} ops
+   * @returns {MessageReplyToAllResponse}
+   */
+  static async replyToAll(ops) {
+    return TinyServiceWorkerEngine.#replyToAll(ops, true);
   }
 
   /**
@@ -716,13 +765,13 @@ class TinyServiceWorkerEngine extends TinyDebugger {
               .update()
               .then(() => {
                 this.emit('afterUpdated', { event });
-                TinyServiceWorkerEngine.replyToAll({ type: 'sw:Updated' });
+                TinyServiceWorkerEngine.#replyToAll({ type: 'sw:Updated' });
                 this.log('info', 'Update successful, waiting for activation.');
               })
               .catch((error) => {
                 const err = error instanceof Error ? error : new Error('Unknown Error.');
                 this.emit('updateError', errorMaker(err, event));
-                TinyServiceWorkerEngine.replyToAll({
+                TinyServiceWorkerEngine.#replyToAll({
                   type: 'sw:UpdateError',
                   data: { message: err.message, name: err.name, stack: err.stack },
                 });
