@@ -668,28 +668,40 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         // Deep validation for 'router.codes' Map
         if (config.fetch.router.codes !== undefined) {
           if (!(config.fetch.router.codes instanceof Map)) {
-            throw new TypeError('[TinyServiceWorkerEngine] validateConfig: fetch.router.codes must be a Map.');
+            throw new TypeError(
+              '[TinyServiceWorkerEngine] validateConfig: fetch.router.codes must be a Map.',
+            );
           }
 
           for (const [code, cfg] of config.fetch.router.codes.entries()) {
             // Validate Map Key
             if (typeof code !== 'number') {
-              throw new TypeError(`[TinyServiceWorkerEngine] validateConfig: Map key must be a number. Received: ${typeof code}`);
+              throw new TypeError(
+                `[TinyServiceWorkerEngine] validateConfig: Map key must be a number. Received: ${typeof code}`,
+              );
             }
 
             // Validate Map Value (RouterCodeConfig)
             if (typeof cfg !== 'object' || cfg === null) {
-              throw new TypeError(`[TinyServiceWorkerEngine] validateConfig: Value for code ${code} must be an object.`);
+              throw new TypeError(
+                `[TinyServiceWorkerEngine] validateConfig: Value for code ${code} must be an object.`,
+              );
             }
 
             if (typeof cfg.fn !== 'function') {
-              throw new TypeError(`[TinyServiceWorkerEngine] validateConfig: cfg.fn for code ${code} must be a function.`);
+              throw new TypeError(
+                `[TinyServiceWorkerEngine] validateConfig: cfg.fn for code ${code} must be a function.`,
+              );
             }
             if (typeof cfg.msg !== 'string') {
-              throw new TypeError(`[TinyServiceWorkerEngine] validateConfig: cfg.msg for code ${code} must be a string.`);
+              throw new TypeError(
+                `[TinyServiceWorkerEngine] validateConfig: cfg.msg for code ${code} must be a string.`,
+              );
             }
             if (typeof cfg.logMsg !== 'string') {
-              throw new TypeError(`[TinyServiceWorkerEngine] validateConfig: cfg.logMsg for code ${code} must be a string.`);
+              throw new TypeError(
+                `[TinyServiceWorkerEngine] validateConfig: cfg.logMsg for code ${code} must be a string.`,
+              );
             }
           }
         } else if (strict) {
@@ -720,24 +732,49 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    */
   #updateConfig(config, forceFullValidation = false) {
     this.#validateConfig(config, forceFullValidation);
+
+    // 1. Prepare Messaging configuration
+    const newMessaging = config.messaging
+      ? { ...this.#config.messaging, ...config.messaging }
+      : this.#config.messaging;
+
+    // 2. Prepare Fetch Router configuration
+    let newRouter = this.#config.fetch.router;
+    if (config.fetch?.router) {
+      // Merge the router properties
+      newRouter = {
+        ...this.#config.fetch.router,
+        ...config.fetch.router,
+      };
+
+      // If the router contains a Map of codes, create a deep clone of the Map and its values
+      if (newRouter.codes instanceof Map) {
+        newRouter.codes = new Map(
+          Array.from(newRouter.codes, ([code, cfg]) => [
+            code,
+            { ...cfg }, // Clone of the RouterCodeConfig object
+          ]),
+        );
+      }
+    }
+
+    // 3. Prepare Fetch configuration
+    const newFetch = config.fetch
+      ? {
+          ...this.#config.fetch,
+          ...config.fetch,
+          router: newRouter,
+        }
+      : this.#config.fetch;
+
+    // 4. Apply to the instance's private state
     this.#config = {
       spaMode: config.spaMode ?? this.#config.spaMode,
-      fetch: config.fetch
-        ? {
-            ...this.#config.fetch,
-            ...config.fetch,
-            router: config.fetch.router
-              ? {
-                  ...this.#config.fetch.router,
-                  ...config.fetch.router,
-                }
-              : this.#config.fetch.router,
-          }
-        : this.#config.fetch,
-      messaging: config.messaging
-        ? { ...this.#config.messaging, ...config.messaging }
-        : this.#config.messaging,
+      fetch: newFetch,
+      messaging: newMessaging,
     };
+
+    // Final validation to ensure the merge did not break type rules
     this.#validateConfig(this.#config, true);
   }
 
