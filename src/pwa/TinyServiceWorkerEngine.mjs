@@ -4,13 +4,15 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
 ///////////////////////////////////////////////////////////////////
 
 /**
+ * A partial configuration object for Service Worker settings.
  * @typedef {Object} PartialServiceWorkerSettings
- * @property {boolean} [spaMode]
+ * @property {boolean} [spaMode] - Whether the service worker is running in Single Page Application mode.
  * @property {PartialFetchOptions} fetch - Partial configuration for fetch event interception.
  * @property {Partial<MessagingOptions>} messaging - Partial configuration for message event handling.
  */
 
 /**
+ * A partial configuration object for fetch interception settings.
  * @typedef {Object} PartialFetchOptions
  * @property {boolean} [enabled] - Indicates if fetch interception is enabled.
  * @property {Partial<RouterOptions>} router - Partial configuration for the routing logic.
@@ -19,26 +21,30 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
 ///////////////////////////////////////////////////////////////////
 
 /**
+ * Configuration settings for intercepting and handling fetch events.
  * @typedef {Object} FetchOptions
  * @property {boolean} enabled - Indicates if fetch interception is enabled.
  * @property {RouterOptions} router - Configuration for the routing logic.
  */
 
 /**
+ * Configuration settings for handling message communication.
  * @typedef {Object} MessagingOptions
  * @property {boolean} enabled - Indicates if message communication is enabled.
  */
 
 /**
+ * Configuration settings for the routing logic used during fetch interception.
  * @typedef {Object} RouterOptions
  * @property {boolean} enabled - Indicates if the router is active.
  * @property {(url: URL) => boolean} validator - A function that receives a URL and returns true if the route is valid.
- * @property {Map<number, RouterCodeConfig>} codes
+ * @property {Map<number, RouterCodeConfig>} codes - A map linking HTTP status codes to their respective configurations.
  */
 
 /**
+ * The complete configuration structure for the Service Worker engine.
  * @typedef {Object} ServiceWorkerSettings
- * @property {boolean} spaMode
+ * @property {boolean} spaMode - Whether the service worker is running in Single Page Application mode.
  * @property {FetchOptions} fetch - Configuration for fetch event interception.
  * @property {MessagingOptions} messaging - Configuration for message event handling.
  */
@@ -46,45 +52,53 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
 ///////////////////////////////////////////////////////////////////
 
 /**
- * @typedef {(path: string) => string} PathGetter
+ * A function that transforms a given path string into another string.
+ * @callback PathGetter
+ * @param {string} path - The original path string to be transformed.
+ * @returns {string} The transformed path string.
  */
 
 /**
+ * Data associated with a default HTTP status code response.
  * @typedef {Object} DefaultCodeData
- * @property {PathGetter} pathGetter
- * @property {RouterCodeConfig} data
+ * @property {PathGetter} pathGetter - A function to retrieve the path for a given input.
+ * @property {RouterCodeConfig} data - The configuration data for the default response.
  */
 
 /**
+ * Options object passed to the fetch handler function.
  * @typedef {Object} FnOptions
- * @property {FetchEvent} event
- * @property {Request} request
- * @property {URL} url
- * @property {HttpResponseType} resType
- * @property {number} code
+ * @property {FetchEvent} event - The fetch event being handled.
+ * @property {Request} request - The request object from the fetch event.
+ * @property {URL} url - The parsed URL of the request.
+ * @property {HttpResponseType} resType - The categorized response type.
+ * @property {number} code - The HTTP status code.
  */
 
 /**
+ * Configuration for a specific HTTP status code response handler.
  * @typedef {Object} RouterCodeConfig
- * @property {(ops: FnOptions) => Promise<Response> | Response} fn
- * @property {string} msg
- * @property {string} logMsg
+ * @property {(ops: FnOptions) => Promise<Response> | Response} fn - The function executed to handle the request.
+ * @property {string} msg - The message string to be sent in the response.
+ * @property {string} logMsg - The log message to be recorded.
  */
 
 /**
+ * Represents the raw values returned by a fetch checker.
  * @typedef {Object} FetchCheckerValues
- * @property {number} code
+ * @property {number} code - The HTTP status code associated with the fetch result.
  */
 
 /**
+ * The enriched result from a fetch checker, combining base values with additional data.
  * @typedef {FetchCheckerValues & { [id:string]:any}} FetchCheckerResult
  */
 
 ///////////////////////////////////////////////////////////////////
 
 /**
- * @typedef {Record<any, any>} MessagePayload
  * The data payload contained within the message.
+ * @typedef {Record<any, any>} MessagePayload
  */
 
 /**
@@ -114,18 +128,19 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
  * @typedef {Object} MessageReplyToAllOptions
  * @property {string} type - The type identifier for the reply message.
  * @property {MessagePayload} [data] - The payload to be sent in the reply.
- * @property {ClientQueryOptions} [options]
+ * @property {ClientQueryOptions} [options] - Additional options for client matching.
  */
 
 /**
+ * The result of a message broadcast operation.
  * @typedef {Promise<void | readonly (Client | WindowClient)[]>} MessageReplyToAllResponse
  */
 
 /**
- * A function that handles the actual postMessage call to a specific Client.
+ * A function that handles the actual postMessage call to all Clients.
  * @callback MessageReplyToAll
- * @param {MessageReplyToAllOptions} options
- * @returns {MessageReplyToAllResponse}
+ * @param {MessageReplyToAllOptions} options - The options for the reply.
+ * @returns {Promise<MessageReplyToAllResponse>} The result of the broadcast.
  */
 
 /**
@@ -174,11 +189,11 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
  */
 
 /**
- * Callback function executed when a fetchUrls or fetchRegExp route matches.
+ * Callback function executed when the fetchUrls or fetchRegExp route matches.
  * If it returns a boolean `false`, the interception is considered handled.
  * @callback FetchCallback
  * @param {FetchObj} fetchObj - The enriched request object.
- * @param {FetchCheckerResult} result
+ * @param {FetchCheckerResult} result - The result of the fetch check.
  * @returns {Promise<void>|void} A promise or value indicating if the request was handled.
  */
 
@@ -189,8 +204,10 @@ import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
 const sw = self;
 
 /**
- * @param {any} err
- * @param {ExtendableEvent} event
+ * Formats an error and its associated event into a standardized error object.
+ * @param {any} err - The error or value to be wrapped.
+ * @param {ExtendableEvent} event - The event associated with the error.
+ * @returns {{event: ExtendableEvent, error: Error}} An object containing the event and the error.
  */
 const errorMaker = (err, event) => ({
   event,
@@ -202,8 +219,9 @@ const errorMaker = (err, event) => ({
  */
 
 /**
- * @param {number} code
- * @returns {HttpResponseType}
+ * Maps an HTTP status code to its corresponding response type category.
+ * @param {number} code - The HTTP status code to categorize.
+ * @returns {HttpResponseType} The categorized response type.
  */
 const getResType = (code) => {
   // Informational responses
@@ -225,9 +243,9 @@ const getResType = (code) => {
  */
 class TinyServiceWorkerEngine extends TinyDebugger {
   /**
-   * Valida se um tipo de evento é um nome reservado para o ciclo de vida interno.
-   * @param {string} type - O nome do evento para validar.
-   * @throws {TypeError} Se o nome do evento estiver na lista de reservados.
+   * Validates if an event type is a reserved name for the internal lifecycle.
+   * @param {string} type - The name of the event to validate.
+   * @throws {TypeError} If the event name is in the reserved list.
    */
   static #validateEventType(type) {
     if (type.startsWith('sw:')) {
@@ -307,8 +325,9 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   /**
    * A function that handles the actual postMessage call to all Clients.
    *
-   * @param {MessageReplyToAllOptions} ops
-   * @returns {MessageReplyToAllResponse}
+   * @param {MessageReplyToAllOptions} ops - The options for the reply.
+   * @param {boolean} [strict=false] - Whether to perform strict event type validation.
+   * @returns {Promise<MessageReplyToAllResponse>} The result of the broadcast.
    */
   static async #replyToAll(ops, strict = false) {
     const { type, data, options = { type: 'window', includeUncontrolled: true } } = ops;
@@ -322,19 +341,21 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   /**
    * A function that handles the actual postMessage call to all Clients.
    *
-   * @param {MessageReplyToAllOptions} ops
-   * @returns {MessageReplyToAllResponse}
+   * @param {MessageReplyToAllOptions} ops - The options for the reply.
+   * @returns {Promise<MessageReplyToAllResponse>} The result of the broadcast.
    */
   static async replyToAll(ops) {
     return TinyServiceWorkerEngine.#replyToAll(ops, true);
   }
 
   /**
-   * @param {number} c
-   * @returns {RouterCodeConfig}
+   * Retrieves the configuration for a specific HTTP status code.
+   * @param {number} c - The HTTP status code.
+   * @returns {RouterCodeConfig} The configuration for the given code.
+   * @throws {TypeError} If c is not a number.
    */
   getCodeCfg(c) {
-    if (typeof c !== 'number') throw new TypeError('');
+    if (typeof c !== 'number') throw new TypeError('Code must be a number.');
     /** @type {RouterCodeConfig} */
     let routerCodeCfg;
 
@@ -358,6 +379,11 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     return { ...routerCodeCfg };
   }
 
+  /**
+   * Sets the SPA mode configuration.
+   * @param {boolean} value - The value to set for spaMode.
+   * @throws {TypeError} If value is not a boolean.
+   */
   set spaMode(value) {
     if (typeof value !== 'boolean') {
       throw new TypeError(`Invalid type for "spaMode": expected boolean, got ${typeof value}`);
@@ -365,11 +391,19 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     this.#config.spaMode = value;
   }
 
+  /**
+   * Gets the current SPA mode configuration.
+   * @returns {boolean} The current spaMode value.
+   */
   get spaMode() {
     return this.#config.spaMode;
   }
 
-  /** @type {PathGetter} */
+  /**
+   * Returns the global path based on the current SPA mode configuration.
+   * @param {string} path - The original path.
+   * @returns {string} The path adjusted for SPA mode or the original path.
+   */
   globalPathGetter(path) {
     return !this.#config.spaMode ? path : this.#globalMsgCode.spaPath;
   }
@@ -445,11 +479,12 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   };
 
   /**
-   * @param {string} msg
-   * @param {string} logMsg
-   * @param {string|PathGetter} pathGetter
-   * @param {FnOptions} options
-   * @returns {Promise<Response>}
+   * Handles a successful fetch request.
+   * @param {string} msg - The message to log.
+   * @param {string} logMsg - The log message to record.
+   * @param {string|PathGetter} pathGetter - The path to fetch.
+   * @param {FnOptions} options - The options for the fetch operation.
+   * @returns {Promise<Response>} A promise that resolves to the Response object.
    */
   async fetchFn(msg, logMsg, pathGetter, options) {
     const { url, code, request } = options;
@@ -464,11 +499,12 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   }
 
   /**
-   * @param {string} msg
-   * @param {string} logMsg
-   * @param {string|PathGetter} pathGetter
-   * @param {FnOptions} options
-   * @returns {Promise<Response>}
+   * Handles a failed fetch request by simulating an error page.
+   * @param {string} msg - The message to log.
+   * @param {string} logMsg - The log message to record.
+   * @param {string|PathGetter} pathGetter - The path to fetch.
+   * @param {FnOptions} options - The options for the fetch operation.
+   * @returns {Promise<Response>} A promise that resolves to the error Response object.
    */
   async fetchErrorFn(msg, logMsg, pathGetter, options) {
     const { url, code, event, request, resType } = options;
@@ -496,12 +532,13 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   }
 
   /**
-   * @param {Object} ops
-   * @param {boolean} ops.isError
-   * @param {string} ops.msg
-   * @param {string} ops.logMsg
-   * @param {string|PathGetter} ops.pathGetter
-   * @returns {RouterCodeConfig}
+   * Creates a configuration for a fetch response.
+   * @param {Object} ops - The creation options.
+   * @param {boolean} ops.isError - Indicates if it is an error response.
+   * @param {string} ops.msg - The message to be sent.
+   * @param {string} ops.logMsg - The log message.
+   * @param {string|PathGetter} ops.pathGetter - The path to use for the response.
+   * @returns {RouterCodeConfig} The newly created configuration.
    */
   createFetchRes({ isError, msg, logMsg, pathGetter }) {
     return {
@@ -524,9 +561,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
       enabled: true,
       router: {
         enabled: false,
-        // Implementation of your routing logic
         validator: () => true,
-        // Implementation of your codes handler
         codes: new Map(),
       },
     },
@@ -535,12 +570,18 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     },
   };
 
-  /** @param {ServiceWorkerSettings} config */
+  /**
+   * Sets the engine configuration.
+   * @param {ServiceWorkerSettings} config - The new configuration.
+   */
   set config(config) {
     this.#updateConfig(config, true);
   }
 
-  /** @returns {ServiceWorkerSettings} */
+  /**
+   * Gets the current engine configuration.
+   * @returns {ServiceWorkerSettings} A clone of the current configuration.
+   */
   get config() {
     return structuredClone(this.#config);
   }
@@ -570,7 +611,8 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   #started = false;
 
   /**
-   * @returns {boolean} True if the engine has been initialized.
+   * Indicates if the engine has been initialized.
+   * @returns {boolean} True if started, false otherwise.
    */
   get started() {
     return this.#started;
@@ -578,7 +620,6 @@ class TinyServiceWorkerEngine extends TinyDebugger {
 
   /**
    * Performs rigorous deep validation of the configuration object.
-   *
    * @param {ServiceWorkerSettings | Partial<PartialServiceWorkerSettings>} config - The configuration object to validate.
    * @param {boolean} [strict=false] - If true, ensures all properties defined in the typedef are present.
    * @throws {TypeError} If any property is of the wrong type or is missing when in strict mode.
@@ -642,8 +683,9 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   }
 
   /**
-   * @param {Partial<PartialServiceWorkerSettings>} config
-   * @param {boolean} [forceFullValidation=false]
+   * Updates the internal configuration.
+   * @param {Partial<PartialServiceWorkerSettings>} config - The partial configuration to apply.
+   * @param {boolean} [forceFullValidation=false] - Whether to force full validation.
    */
   #updateConfig(config, forceFullValidation = false) {
     this.#validateConfig(config, forceFullValidation);
@@ -673,7 +715,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * @param {Object} [lgConfig] - Configuration options for the instance.
    * @param {boolean} [lgConfig.debugMode=false] - Whether to enable internal debug logging.
    * @param {boolean} [lgConfig.useLogColors=false] - Whether to enable log color support.
-   * @param {Partial<Console>} [lgConfig.logger=console] - A custom logger object (must implement console methods).
+   * @param {Partial<Console>} [lgConfig.logger=console] - A custom logger object.
    * @throws {TypeError} If the configuration does not meet the minimum requirements.
    */
   constructor(config = {}, lgConfig = {}) {
@@ -687,39 +729,44 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   }
 
   /**
-   * @returns {number} The number of registered fetch RegExp.
+   * Gets the number of registered fetch RegExp listeners.
+   * @returns {number} The count of registered RegExp listeners.
    */
   get fetchRegExpSize() {
     return this.#fetchRegExp.size;
   }
 
   /**
+   * Adds a fetch RegExp listener.
    * @param {string} type - The identifier for the fetch type.
-   * @param {FetchCallback} callback - The callback function to execute.
+   * @param {FetchCallback} callback - The callback to execute.
    */
   addFetchRegExpListener(type, callback) {
     this.#fetchRegExp.set(type, callback);
   }
 
   /**
+   * Removes a fetch RegExp listener.
    * @param {string} type - The identifier for the fetch type.
-   * @returns {boolean} True if an element in the Map object existed and has been removed, false otherwise.
+   * @returns {boolean} True if an element was removed, false otherwise.
    */
   removeFetchRegExpListener(type) {
     return this.#fetchRegExp.delete(type);
   }
 
   /**
+   * Retrieves a fetch RegExp listener.
    * @param {string} type - The identifier for the fetch type.
-   * @returns {FetchCallback|undefined}
+   * @returns {FetchCallback|undefined} The listener, or undefined if not found.
    */
   getFetchRegExpListener(type) {
     return this.#fetchRegExp.get(type);
   }
 
   /**
+   * Checks if a fetch RegExp listener exists.
    * @param {string} type - The identifier for the fetch type.
-   * @returns {boolean} True if an element with the specified key exists in the Map, false otherwise.
+   * @returns {boolean} True if it exists, false otherwise.
    */
   hasFetchRegExp(type) {
     return this.#fetchRegExp.has(type);
@@ -727,45 +774,51 @@ class TinyServiceWorkerEngine extends TinyDebugger {
 
   /**
    * Clears all registered fetch RegExp listeners.
+   * @returns {void}
    */
   clearFetchRegExps() {
     return this.#fetchRegExp.clear();
   }
 
   /**
-   * @returns {number} The number of registered fetch URLs.
+   * Gets the number of registered fetch URL listeners.
+   * @returns {number} The count of registered URL listeners.
    */
   get fetchUrlSize() {
     return this.#fetchUrls.size;
   }
 
   /**
+   * Adds a fetch URL listener.
    * @param {string} type - The identifier for the fetch type.
-   * @param {FetchCallback} callback - The callback function to execute.
+   * @param {FetchCallback} callback - The callback to execute.
    */
   addFetchUrlListener(type, callback) {
     this.#fetchUrls.set(type, callback);
   }
 
   /**
+   * Removes a fetch URL listener.
    * @param {string} type - The identifier for the fetch type.
-   * @returns {boolean} True if an element in the Map object existed and has been removed, false otherwise.
+   * @returns {boolean} True if an element was removed, false otherwise.
    */
   removeFetchUrlListener(type) {
     return this.#fetchUrls.delete(type);
   }
 
   /**
+   * Retrieves a fetch URL listener.
    * @param {string} type - The identifier for the fetch type.
-   * @returns {FetchCallback|undefined}
+   * @returns {FetchCallback|undefined} The listener, or undefined if not found.
    */
   getFetchUrlListener(type) {
     return this.#fetchUrls.get(type);
   }
 
   /**
+   * Checks if a fetch URL listener exists.
    * @param {string} type - The identifier for the fetch type.
-   * @returns {boolean} True if an element with the specified key exists in the Map, false otherwise.
+   * @returns {boolean} True if it exists, false otherwise.
    */
   hasFetchUrl(type) {
     return this.#fetchUrls.has(type);
@@ -773,45 +826,51 @@ class TinyServiceWorkerEngine extends TinyDebugger {
 
   /**
    * Clears all registered fetch URL listeners.
+   * @returns {void}
    */
   clearFetchUrls() {
     return this.#fetchUrls.clear();
   }
 
   /**
-   * @returns {number} The number of registered messages.
+   * Gets the number of registered message listeners.
+   * @returns {number} The count of registered message listeners.
    */
   get messagesSize() {
     return this.#messages.size;
   }
 
   /**
+   * Adds a message listener.
    * @param {string} type - The identifier for the message type.
-   * @param {MessageCallback} callback - The callback function to execute.
+   * @param {MessageCallback} callback - The callback to execute.
    */
   addMessageListener(type, callback) {
     this.#messages.set(type, callback);
   }
 
   /**
+   * Removes a message listener.
    * @param {string} type - The identifier for the message type.
-   * @returns {boolean} True if an element in the Map object existed and has been removed, false otherwise.
+   * @returns {boolean} True if an element was removed, false otherwise.
    */
   removeMessageListener(type) {
     return this.#messages.delete(type);
   }
 
   /**
+   * Retrieves a message listener.
    * @param {string} type - The identifier for the message type.
-   * @returns {MessageCallback|undefined}
+   * @returns {MessageCallback|undefined} The listener, or undefined if not found.
    */
   getMessageListener(type) {
     return this.#messages.get(type);
   }
 
   /**
+   * Checks if a message listener exists.
    * @param {string} type - The identifier for the message type.
-   * @returns {boolean} True if an element with the specified key exists in the Map, false otherwise.
+   * @returns {boolean} True if it exists, false otherwise.
    */
   hasMessage(type) {
     return this.#messages.has(type);
@@ -819,6 +878,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
 
   /**
    * Clears all registered message listeners.
+   * @returns {void}
    */
   clearMessages() {
     return this.#messages.clear();
@@ -1065,7 +1125,9 @@ class TinyServiceWorkerEngine extends TinyDebugger {
                 this.emit('messageError', afterData());
               }),
           );
-        } else this.emit('afterMessage', afterData());
+        } else {
+          this.emit('afterMessage', afterData());
+        }
       });
     }
 
