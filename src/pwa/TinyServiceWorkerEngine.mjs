@@ -664,6 +664,37 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         }
         validateField(config.fetch.router, 'enabled', 'boolean', 'fetch.router');
         validateField(config.fetch.router, 'validator', 'function', 'fetch.router');
+
+        // Deep validation for 'router.codes' Map
+        if (config.fetch.router.codes !== undefined) {
+          if (!(config.fetch.router.codes instanceof Map)) {
+            throw new TypeError('[TinyServiceWorkerEngine] validateConfig: fetch.router.codes must be a Map.');
+          }
+
+          for (const [code, cfg] of config.fetch.router.codes.entries()) {
+            // Validate Map Key
+            if (typeof code !== 'number') {
+              throw new TypeError(`[TinyServiceWorkerEngine] validateConfig: Map key must be a number. Received: ${typeof code}`);
+            }
+
+            // Validate Map Value (RouterCodeConfig)
+            if (typeof cfg !== 'object' || cfg === null) {
+              throw new TypeError(`[TinyServiceWorkerEngine] validateConfig: Value for code ${code} must be an object.`);
+            }
+
+            if (typeof cfg.fn !== 'function') {
+              throw new TypeError(`[TinyServiceWorkerEngine] validateConfig: cfg.fn for code ${code} must be a function.`);
+            }
+            if (typeof cfg.msg !== 'string') {
+              throw new TypeError(`[TinyServiceWorkerEngine] validateConfig: cfg.msg for code ${code} must be a string.`);
+            }
+            if (typeof cfg.logMsg !== 'string') {
+              throw new TypeError(`[TinyServiceWorkerEngine] validateConfig: cfg.logMsg for code ${code} must be a string.`);
+            }
+          }
+        } else if (strict) {
+          throw new TypeError('Missing required property: "fetch.router.codes"');
+        }
       } else if (strict) {
         throw new TypeError('Missing required property: "fetch.router"');
       }
