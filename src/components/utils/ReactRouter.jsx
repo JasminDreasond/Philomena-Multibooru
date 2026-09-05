@@ -29,7 +29,7 @@ const ServiceWorkerSync = () => {
     /**
      * Handle incoming broadcasts from the Service Worker.
      */
-    const onIconUpdate = (data) => {
+    const onIconUpdate = ({ data }) => {
       // Change the URL depending on the requested state.
       // Note: You need a notification version of your icon here!
       /** @type {string} */

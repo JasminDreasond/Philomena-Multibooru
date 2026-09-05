@@ -1,6 +1,9 @@
 import { segmentExtractorV1 } from 'tiny-essentials/regexp/SegmentExtractor';
 import TinyDebugger from 'tiny-essentials/libs/tools/TinyDebugger';
 import TinyCloner from 'tiny-essentials/libs/utils/TinyCloner';
+import TinyHttpResponseRegistry from 'tiny-essentials/libs/tools/TinyHttpResponseRegistry';
+
+const codeIs = TinyHttpResponseRegistry.codeIs;
 
 ///////////////////////////////////////////////////////////////////
 
@@ -38,7 +41,6 @@ import TinyCloner from 'tiny-essentials/libs/utils/TinyCloner';
  * Configuration settings for the routing logic used during fetch interception.
  * @typedef {Object} RouterOptions
  * @property {boolean} enabled - Indicates if the router is active.
- * @property {(url: URL) => boolean} validator - A function that receives a URL and returns true if the route is valid.
  * @property {Map<number, RouterCodeConfig>} codes - A map linking HTTP status codes to their respective configurations.
  */
 
@@ -226,15 +228,15 @@ const errorMaker = (err, event) => ({
  */
 const getResType = (code) => {
   // Informational responses
-  if (code >= 100 && code <= 199) return 'info';
+  if (codeIs.info(code)) return 'info';
   // Successful responses
-  if (code >= 200 && code <= 299) return 'success';
+  if (codeIs.success(code)) return 'success';
   // Redirection messages
-  if (code >= 300 && code <= 399) return 'redirect';
+  if (codeIs.redirect(code)) return 'redirect';
   // Client error responses
-  if (code >= 400 && code <= 499) return 'client-error';
+  if (codeIs.clientError(code)) return 'client-error';
   // Server error responses
-  if (code >= 500 && code <= 599) return 'server-error';
+  if (codeIs.serverError(code)) return 'server-error';
   // Unknown error
   return 'unknown';
 };
@@ -562,7 +564,6 @@ class TinyServiceWorkerEngine extends TinyDebugger {
       enabled: true,
       router: {
         enabled: false,
-        validator: () => true,
         codes: new Map(),
       },
     },
@@ -665,7 +666,6 @@ class TinyServiceWorkerEngine extends TinyDebugger {
           throw new TypeError('Fetch router configuration must be a non-null object.');
         }
         validateField(config.fetch.router, 'enabled', 'boolean', 'fetch.router');
-        validateField(config.fetch.router, 'validator', 'function', 'fetch.router');
 
         // Deep validation for 'router.codes' Map
         if (config.fetch.router.codes !== undefined) {
@@ -970,7 +970,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     let routeParams = {};
 
     /** @type {FetchCheckerResult} */
-    const result = { code: 200 };
+    const result = { code: 404 };
 
     // 1. Check in fetchUrls (Exact match and Parameterized match)
     for (const [pattern, callback] of this.#fetchUrls.entries()) {
@@ -1083,11 +1083,13 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         event.respondWith(
           (async () => {
             const fetchResult = await this.#fetchChecker(event, url);
-            const code = fetchResult.code;
+            if (routerCfg.enabled) {
+              const code = fetchResult.code;
 
-            const resType = getResType(code);
-            const codeCfg = this.getCodeCfg(code);
-            if (routerCfg.enabled) return codeCfg.fn({ code, resType, url, request, event });
+              const resType = getResType(code);
+              const codeCfg = this.getCodeCfg(code);
+              return codeCfg.fn({ code, resType, url, request, event });
+            }
             return fetch(request);
           })(),
         );
