@@ -362,15 +362,13 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     /** @type {RouterCodeConfig} */
     let routerCodeCfg;
 
+    // 1. Check user-defined codes in the Map
     routerCodeCfg = this.#config.fetch.router.codes.get(c);
-    if (!routerCodeCfg) {
-      for (const code in this.#defaultCode) {
-        if (Number(code) !== c) continue;
-        routerCodeCfg = this.#defaultCode[code].data;
-        if (routerCodeCfg) break;
-      }
-    }
 
+    // 2. If not found, check for dynamic default configurations
+    if (!routerCodeCfg) routerCodeCfg = this.#defaultCode[c].data;
+
+    // 3. If still not found, fallback to the 'unknown' configuration
     if (!routerCodeCfg) {
       routerCodeCfg = this.createFetchRes({
         isError: true,
@@ -1011,6 +1009,91 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    */
   clearMessages() {
     return this.#messages.clear();
+  }
+
+  /**
+   * Gets a deep clone of the current global message configuration.
+   * @returns {Object} A deep cloned copy of the global message configuration.
+   */
+  get globalMsgCode() {
+    return TinyCloner.clone(this.#globalMsgCode);
+  }
+
+  /**
+   * Updates the global message configuration using a deep clone to prevent mutation.
+   * @param {Object} newConfig - The new configuration properties to merge.
+   * @throws {TypeError} If newConfig is not a non-null object.
+   */
+  set globalMsgCode(newConfig) {
+    if (typeof newConfig !== 'object' || newConfig === null) {
+      throw new TypeError('[TinyServiceWorkerEngine] globalMsgCode must be a non-null object.');
+    }
+    // Merge and then deep clone the result to ensure the internal state is isolated
+    this.#globalMsgCode = TinyCloner.clone({ ...this.#globalMsgCode, ...newConfig });
+  }
+
+  /**
+   * Adds or updates a custom router configuration for a specific HTTP status code.
+   * @param {number} code - The HTTP status code.
+   * @param {RouterCodeConfig} config - The configuration object.
+   * @throws {TypeError} If code is not a number or config is invalid.
+   */
+  addRouterCode(code, config) {
+    if (typeof code !== 'number') throw new TypeError('Code must be a number.');
+    if (typeof config !== 'object' || config === null)
+      throw new TypeError('Config must be an object.');
+    if (
+      typeof config.fn !== 'function' ||
+      typeof config.msg !== 'string' ||
+      typeof config.logMsg !== 'string'
+    ) {
+      throw new TypeError(
+        'Invalid RouterCodeConfig: fn must be a function, and msg/logMsg must be strings.',
+      );
+    }
+
+    const newCodes = new Map(this.#config.fetch.router.codes);
+    // Deep clone the incoming config before storing it in the Map
+    newCodes.set(code, TinyCloner.clone(config));
+
+    this.#updateConfig({
+      fetch: {
+        router: {
+          codes: newCodes,
+        },
+      },
+    });
+  }
+
+  /**
+   * Removes a custom router configuration for a specific HTTP status code.
+   * @param {number} code - The HTTP status code to remove.
+   * @returns {boolean} True if a code was removed, false otherwise.
+   */
+  removeRouterCode(code) {
+    const newCodes = new Map(this.#config.fetch.router.codes);
+    if (newCodes.delete(code)) {
+      this.#updateConfig({
+        fetch: {
+          router: {
+            codes: newCodes,
+          },
+        },
+      });
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Retrieves a deep clone of the current configuration for a specific HTTP status code.
+   * @param {number} code - The HTTP status code.
+   * @returns {RouterCodeConfig|undefined} A deep cloned copy of the configuration or undefined.
+   */
+  getRouterCode(code) {
+    const cfg = this.#config.fetch.router.codes.get(code);
+    // Return a deep clone to prevent the consumer from mutating the engine's internal Map
+    return cfg ? TinyCloner.clone(cfg) : undefined;
   }
 
   /**
