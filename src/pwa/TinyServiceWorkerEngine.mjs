@@ -365,6 +365,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     routerCodeCfg = this.#config.fetch.router.codes.get(c);
     if (!routerCodeCfg) {
       for (const code in this.#defaultCode) {
+        if (Number(code) !== c) continue;
         routerCodeCfg = this.#defaultCode[code].data;
         if (routerCodeCfg) break;
       }
