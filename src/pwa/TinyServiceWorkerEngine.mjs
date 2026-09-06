@@ -609,6 +609,12 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   #fetchUrls = new Map();
 
   /**
+   * A map containing the global fetch tracking listeners.
+   * @type {Map<string, FetchCallback>}
+   */
+  #fetchGlobal = new Map();
+
+  /**
    * Flag indicating if the engine has been initialized.
    * @type {boolean}
    */
@@ -904,6 +910,58 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   }
 
   /**
+   * Gets the number of registered global fetch tracking listeners.
+   * @returns {number} The count of registered listeners.
+   */
+  get fetchGlobalSize() {
+    return this.#fetchGlobal.size;
+  }
+
+  /**
+   * Adds a global fetch tracking listener.
+   * @param {string} type - The identifier for the tracking type.
+   * @param {FetchCallback} callback - The callback function to be executed.
+   */
+  addFetchGlobalListener(type, callback) {
+    this.#fetchGlobal.set(type, callback);
+  }
+
+  /**
+   * Removes a global fetch tracking listener.
+   * @param {string} type - The identifier of the listener to be removed.
+   * @returns {boolean} True if an element was removed, false otherwise.
+   */
+  removeFetchGlobalListener(type) {
+    return this.#fetchGlobal.delete(type);
+  }
+
+  /**
+   * Retrieves a global fetch tracking listener.
+   * @param {string} type - The identifier of the listener.
+   * @returns {FetchCallback|undefined} The listener, or undefined if not found.
+   */
+  getFetchGlobalListener(type) {
+    return this.#fetchGlobal.get(type);
+  }
+
+  /**
+   * Checks if a global fetch tracking listener exists.
+   * @param {string} type - The identifier of the listener.
+   * @returns {boolean} True if the listener exists, false otherwise.
+   */
+  hasFetchGlobal(type) {
+    return this.#fetchGlobal.has(type);
+  }
+
+  /**
+   * Clears all global fetch tracking listeners.
+   * @returns {void}
+   */
+  clearFetchGlobals() {
+    return this.#fetchGlobal.clear();
+  }
+
+  /**
    * Gets the number of registered message listeners.
    * @returns {number} The count of registered message listeners.
    */
@@ -973,6 +1031,29 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     /** @type {FetchCheckerResult} */
     const result = { code: 404 };
 
+    /** @type {FetchObj} */
+    const fetchObj = {
+      event,
+      request,
+      url,
+      params: routeParams,
+      replyTemplate: TinyServiceWorkerEngine.replyTemplate,
+      replyTo: TinyServiceWorkerEngine.replyTo,
+      replyToAll: TinyServiceWorkerEngine.replyToAll,
+    };
+
+    // 0. Global Tracking Layer (Always executed, regardless of URL or Router)
+    for (const callback of this.#fetchGlobal.values()) {
+      try {
+        // Execute the callback. If it returns false, the request is considered "handled"
+        // but since this is a tracking layer, the flow continues according to the router logic.
+        await callback(fetchObj, result);
+      } catch (error) {
+        this.log('error', 'Error in global fetch tracking listener:', error);
+        this.emit('fetchGlobalError', { error, fetchObj });
+      }
+    }
+
     // 1. Check in fetchUrls (Exact match and Parameterized match)
     for (const [pattern, callback] of this.#fetchUrls.entries()) {
       // Dynamic parameter matching (e.g., /user/:id)
@@ -1007,16 +1088,6 @@ class TinyServiceWorkerEngine extends TinyDebugger {
 
     // 3. Execute the plugin if a match is found
     if (matchedCallback) {
-      /** @type {FetchObj} */
-      const fetchObj = {
-        event,
-        request,
-        url,
-        params: routeParams,
-        replyTemplate: TinyServiceWorkerEngine.replyTemplate,
-        replyTo: TinyServiceWorkerEngine.replyTo,
-        replyToAll: TinyServiceWorkerEngine.replyToAll,
-      };
       try {
         this.emit('beforeFetchPlugin', fetchObj);
         await matchedCallback(fetchObj, result);
