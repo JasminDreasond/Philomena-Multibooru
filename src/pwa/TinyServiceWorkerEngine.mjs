@@ -1238,9 +1238,15 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         event.respondWith(
           (async () => {
             const fetchResult = await this.#fetchChecker(event, url);
+
+            // 1. Check if a plugin provided a direct response (e.g., from Cache)
+            if (fetchResult.customResponse instanceof Response) {
+              return fetchResult.customResponse;
+            }
+
+            // 2. Otherwise, proceed with the standard router logic
             if (routerCfg.enabled) {
               const code = fetchResult.code;
-
               const resType = getResType(code);
               const codeCfg = this.getCodeCfg(code);
               return codeCfg.fn({ code, resType, url, request, event });
