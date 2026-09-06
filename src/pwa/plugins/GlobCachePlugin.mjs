@@ -1,9 +1,10 @@
-import { isJsonObject } from 'tiny-essentials';
+import { isJsonObject } from 'tiny-essentials/basics/objChecker';
 import TinyServiceWorkerEngine from '../TinyServiceWorkerEngine.mjs';
 
 /**
  * @typedef {Object} GlobCacheOptions
  * @property {string[]} patterns - Array of glob patterns (e.g., ['\*\*\/\*.js', '\*\*\/\*.{css,html}']).
+ * @property {string[]} [exclude] - Array of glob patterns to ignore (e.g., ['\*\*\/sw.js']).
  * @property {string} cacheName - The name of the CacheStorage bucket to use.
  */
 
@@ -15,10 +16,10 @@ import TinyServiceWorkerEngine from '../TinyServiceWorkerEngine.mjs';
 const globToRegex = (glob) => {
   let pattern = glob
     .replace(/\*\*\//g, '.*\\/') // Convert **/ to .*/
-    .replace(/\*/g, '[^/]*')    // Convert * to [^/]*
+    .replace(/\*/g, '[^/]*') // Convert * to [^/]*
     .replace(/\{([^}]+)\}/g, '($1)') // Convert {a,b} to (a|b)
-    .replace(/\./g, '\\.')      // Escape dots
-    .replace(/,/g, '|');        // Convert comma in braces to pipe
+    .replace(/\./g, '\\.') // Escape dots
+    .replace(/,/g, '|'); // Convert comma in braces to pipe
 
   // Handle the case where the brace replacement might need adjustment
   // This is a simplified version for the patterns provided
@@ -39,19 +40,34 @@ const RegisterGlobCachePlugin = async (engine, options) => {
   if (!isJsonObject(options)) {
     throw new TypeError('[GlobCachePlugin] Options must be a non-null object.');
   }
-  if (!Array.isArray(options.patterns)) {
+  if (!Array.isArray(options.patterns) || !options.patterns.every((p) => typeof p === 'string')) {
     throw new TypeError('[GlobCachePlugin] options.patterns must be an array of strings.');
+  }
+  if (
+    typeof options.exclude !== 'undefined' &&
+    (!Array.isArray(options.exclude) || !options.exclude.every((p) => typeof p === 'string'))
+  ) {
+    throw new TypeError('[GlobCachePlugin] options.exclude must be an array of strings.');
   }
   if (typeof options.cacheName !== 'string') {
     throw new TypeError('[GlobCachePlugin] options.cacheName must be a string.');
   }
 
-  const { patterns, cacheName } = options;
+  const { patterns, exclude, cacheName } = options;
+
+  // Pre-compile exclusion patterns into Regex for performance
+  const excludeRegexes = (exclude || []).map((pattern) => new RegExp(globToRegex(pattern)));
 
   // 2. Implementation
   for (const pattern of patterns) {
     engine.addFetchRegExpListener(globToRegex(pattern), async (fetchObj, result) => {
       const { request, url } = fetchObj;
+
+      // Check if the current URL matches any exclusion pattern
+      const isExcluded = excludeRegexes.some((re) => re.test(url.pathname));
+      if (isExcluded) {
+        return; // Skip this request
+      }
 
       try {
         const cache = await caches.open(cacheName);
@@ -66,7 +82,7 @@ const RegisterGlobCachePlugin = async (engine, options) => {
         // If not in cache, fetch from network
         const networkResponse = await fetch(request);
 
-        // We must clone the response to add it to the cache, 
+        // We must clone the response to add it to the cache,
         // as the body can only be consumed once.
         if (networkResponse.status === 200) {
           cache.put(request, networkResponse.clone());
@@ -74,7 +90,7 @@ const RegisterGlobCachePlugin = async (engine, options) => {
 
         result.customResponse = networkResponse;
       } catch (error) {
-        // If caching fails, we don't break the flow, 
+        // If caching fails, we don't break the flow,
         // we just let the engine proceed to the next plugin or router.
         console.error(`[GlobCachePlugin] Error during cache operation for ${url.pathname}:`, error);
       }

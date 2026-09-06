@@ -1,4 +1,5 @@
 import TinyServiceWorkerEngine from './TinyServiceWorkerEngine.mjs';
+import RegisterGlobCachePlugin from './plugins/GlobCachePlugin.mjs';
 
 /** @type {Partial<import('./TinyServiceWorkerEngine.mjs').PartialServiceWorkerSettings>} */
 const MY_CONFIG = {
@@ -13,6 +14,12 @@ export const tinySw = new TinyServiceWorkerEngine(MY_CONFIG, {
   debugMode: import.meta.env.DEV,
   useLogColors: true,
 });
+
+RegisterGlobCachePlugin(tinySw, {
+  patterns: ['**/*.{js,css,html,ico,jpg,png,svg}'],
+  exclude: ['**/sw.js'],
+  cacheName: 'static-assets-v1',
+}).catch((err) => tinySw.log('error', 'Failed to register GlobCachePlugin:', err));
 
 // Static routes matching
 ['/', '/notifications', '/settings', '/search'].forEach((path) =>
