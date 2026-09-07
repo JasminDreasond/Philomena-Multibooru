@@ -3,27 +3,26 @@ import TinyServiceWorkerEngine from '../TinyServiceWorkerEngine.mjs';
 
 /**
  * @typedef {Object} GlobCacheOptions
- * @property {string[]} patterns - Array of glob patterns (e.g., ['\*\*\/\*.js', '\*\*\/\*.{css,html}']).
- * @property {string[]} [exclude] - Array of glob patterns to ignore (e.g., ['\*\*\/sw.js']).
+ * @property {string[]} patterns - Array of glob patterns (e.g., ['**\/*.js', '**\/*.{css,html}']).
+ * @property {string[]} [exclude] - Array of glob patterns to ignore (e.g., ['**\/sw.js']).
  * @property {string} cacheName - The name of the CacheStorage bucket to use.
  */
 
 /**
  * Converts a glob pattern into a valid RegExp string.
  * @param {string} glob - The glob pattern string.
- * @returns {string} The regular expression string.
+ * @returns {RegExp} The converted regular expression.
  */
 const globToRegex = (glob) => {
   let pattern = glob
-    .replace(/\*\*\//g, '.*\\/') // Convert **/ to .*/
-    .replace(/\*/g, '[^/]*') // Convert * to [^/]*
-    .replace(/\{([^}]+)\}/g, '($1)') // Convert {a,b} to (a|b)
-    .replace(/\./g, '\\.') // Escape dots
-    .replace(/,/g, '|'); // Convert comma in braces to pipe
+    .replace(/\./g, '\\.') // 1. Escape literal dots FIRST.
+    .replace(/\*\*\//g, '___GLOB_DIR___') // 2. Use a temporary placeholder for **/.
+    .replace(/\*/g, '[^/]*') // 3. Convert isolated * characters.
+    .replace(/___GLOB_DIR___/g, '.*\\/') // 4. Restore **/ as a valid Regex.
+    // 5. Convert {a,b} to (a|b), ensuring the comma is only replaced inside the braces.
+    .replace(/\{([^}]+)\}/g, (match, p1) => `(${p1.replace(/,/g, '|')})`);
 
-  // Handle the case where the brace replacement might need adjustment
-  // This is a simplified version for the patterns provided
-  return `^${pattern}$`;
+  return new RegExp(`^${pattern}$`);
 };
 
 /**
@@ -56,11 +55,13 @@ const RegisterGlobCachePlugin = async (engine, options) => {
   const { patterns, exclude, cacheName } = options;
 
   // Pre-compile exclusion patterns into Regex for performance
-  const excludeRegexes = (exclude || []).map((pattern) => new RegExp(globToRegex(pattern)));
+  const excludeRegexes = (exclude || []).map((pattern) => globToRegex(pattern));
 
   // 2. Implementation
   for (const pattern of patterns) {
-    engine.addFetchRegExpListener(globToRegex(pattern), async (fetchObj, result) => {
+    const regex = globToRegex(pattern);
+
+    engine.addFetchRegExpListener(regex.source, async (fetchObj, result) => {
       const { request, url } = fetchObj;
 
       // Check if the current URL matches any exclusion pattern
@@ -84,7 +85,8 @@ const RegisterGlobCachePlugin = async (engine, options) => {
 
         // We must clone the response to add it to the cache,
         // as the body can only be consumed once.
-        if (networkResponse.status === 200) {
+        // Cache API only supports storing GET requests.
+        if (networkResponse.status === 200 && request.method === 'GET') {
           cache.put(request, networkResponse.clone());
         }
 
