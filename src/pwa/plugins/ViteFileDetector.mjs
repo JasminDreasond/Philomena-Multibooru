@@ -6,7 +6,6 @@ import TinyServiceWorkerEngine from '../TinyServiceWorkerEngine.mjs';
  * @property {(string|RegExp)[]} [paths] - An array of strings or regular expressions used to identify URLs that should be bypassed.
  * @property {string} [srcPath] - The base path for the source directory to be included in the bypass list.
  * @property {string} [manifestPath] - The path to the manifest file to be included in the bypass list.
- * @property {boolean} [devOnly] - If true, the plugin only executes during development mode (import.meta.env.DEV).
  */
 
 /**
@@ -17,7 +16,6 @@ const DEFAULT_OPTIONS = {
   paths: ['/@vite', '/@react', '/node_modules'],
   srcPath: '/src',
   manifestPath: '/manifest.json',
-  devOnly: true,
 };
 
 /**
@@ -36,10 +34,6 @@ const ViteFileDetectorPlugin = (engine, options = {}) => {
   // 2. Merge and Validate Options
   /** @type {ViteFileDetectorOptions} */
   const config = { ...DEFAULT_OPTIONS, ...options };
-
-  if (typeof config.devOnly !== 'boolean') {
-    throw new TypeError('The "devOnly" property in options must be a boolean.');
-  }
 
   if (!Array.isArray(config.paths)) {
     throw new TypeError('The "paths" property in options must be an array.');
@@ -60,7 +54,7 @@ const ViteFileDetectorPlugin = (engine, options = {}) => {
   });
 
   // 3. Implementation
-  if (config.devOnly && import.meta.env.DEV) {
+  if (import.meta.env.DEV) {
     engine.addFetchGlobalListener('ViteFileDetectorPlugin', ({ url }, response) => {
       const isBypassed = paths.some((pattern) => {
         if (pattern instanceof RegExp) return pattern.test(url.pathname);
