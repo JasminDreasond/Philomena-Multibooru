@@ -44,7 +44,6 @@ const RegisterGlobCachePlugin = async (engine, options) => {
   // 2. Implementation
   for (const pattern of patterns) {
     const regex = compileGlobRegExp(pattern);
-
     engine.addFetchRegExpListener(regex.source, async (fetchObj, result) => {
       const { request, url } = fetchObj;
 

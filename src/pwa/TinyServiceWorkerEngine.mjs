@@ -75,6 +75,8 @@ const codeIs = TinyHttpResponseRegistry.codeIs;
  * @property {Request} request - The request object from the fetch event.
  * @property {URL} url - The parsed URL of the request.
  * @property {HttpResponseType} resType - The categorized response type.
+ * @property {string} [customMsg] - A custom error message.
+ * @property {string} [customPath] - A custom page path.
  * @property {number} code - The HTTP status code.
  */
 
@@ -90,6 +92,8 @@ const codeIs = TinyHttpResponseRegistry.codeIs;
  * Represents the raw values returned by a fetch checker.
  * @typedef {Object} FetchCheckerValues
  * @property {number} code - The HTTP status code associated with the fetch result.
+ * @property {string} [customPath] - The custom http request protocol file path.
+ * @property {string} [customMsg] - The custom http request protocol code message.
  */
 
 /**
@@ -489,8 +493,14 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * @returns {Promise<Response>} A promise that resolves to the Response object.
    */
   async fetchFn(msg, logMsg, pathGetter, options) {
-    const { url, code, request } = options;
-    const path = typeof pathGetter === 'string' ? pathGetter : pathGetter(url.toString());
+    const { url, code, request, customPath } = options;
+    const path =
+      typeof customPath === 'string'
+        ? customPath
+        : typeof pathGetter === 'string'
+          ? pathGetter
+          : pathGetter(url.toString());
+
     this.log('info', `${code} - ${logMsg}: ${url.pathname}`);
     try {
       const res = await fetch(path === url.toString() ? request : path);
@@ -509,13 +519,21 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    * @returns {Promise<Response>} A promise that resolves to the error Response object.
    */
   async fetchErrorFn(msg, logMsg, pathGetter, options) {
-    const { url, code, event, request, resType } = options;
-    const path = typeof pathGetter === 'string' ? pathGetter : pathGetter(url.toString());
+    const { url, code, event, request, resType, customMsg, customPath } = options;
+    const path =
+      typeof customPath === 'string'
+        ? customPath
+        : typeof pathGetter === 'string'
+          ? pathGetter
+          : pathGetter(url.toString());
+
     this.log('warn', `${code} - ${logMsg}: ${url.pathname}`);
+    const errMsg = typeof customMsg === 'string' ? customMsg : msg;
+
     this.emit('fetchError', {
       event,
       request,
-      error: new Error(`${code} ${msg}`),
+      error: new Error(`${code} ${errMsg}`),
       url,
       resType,
     });
@@ -525,7 +543,7 @@ class TinyServiceWorkerEngine extends TinyDebugger {
       const res = await fetch(path);
       return new Response(res.body, {
         status: code,
-        statusText: msg,
+        statusText: errMsg,
         headers: res.headers,
       });
     } catch {
@@ -1227,9 +1245,6 @@ class TinyServiceWorkerEngine extends TinyDebugger {
       sw.addEventListener('fetch', (event) => {
         /** @type {Request} */
         const request = event.request;
-
-        // We only intercept navigation requests (HTML)
-        if (request.mode !== 'navigate') return;
         const url = new URL(request.url);
         this.emit('fetchRequested', { event, request, url });
 
@@ -1238,19 +1253,79 @@ class TinyServiceWorkerEngine extends TinyDebugger {
         event.respondWith(
           (async () => {
             const fetchResult = await this.#fetchChecker(event, url);
+            /**
+             * @param {number} code
+             * @param {string} [customMsg]
+             * @param {string} [customPath]
+             */
+            const buildReply = (code, customMsg, customPath) => {
+              if (routerCfg.enabled) {
+                const resType = getResType(code);
+                const codeCfg = this.getCodeCfg(code);
+                return codeCfg.fn({ code, resType, url, request, event, customMsg, customPath });
+              }
+              return null;
+            };
 
-            // 1. Check if a plugin provided a direct response (e.g., from Cache)
+            // 1.
+            if (
+              typeof fetchResult.customPath !== 'undefined' &&
+              typeof fetchResult.customPath !== 'string'
+            ) {
+              const fetchRes = buildReply(
+                500,
+                'Received fetch result data with invalid customPath format (expected string).',
+              );
+              if (fetchRes !== null) return fetchRes;
+            }
+
+            if (
+              typeof fetchResult.customMsg !== 'undefined' &&
+              typeof fetchResult.customMsg !== 'string'
+            ) {
+              const fetchRes = buildReply(
+                500,
+                'Received fetch result data with invalid customMsg format (expected string).',
+              );
+              if (fetchRes !== null) return fetchRes;
+            }
+
+            if (
+              typeof fetchResult.customResponse !== 'undefined' &&
+              !(fetchResult.customResponse instanceof Response)
+            ) {
+              const fetchRes = buildReply(
+                500,
+                'Received fetch result data with invalid customResponse format (expected Response).',
+              );
+              if (fetchRes !== null) return fetchRes;
+            }
+
+            if (
+              typeof fetchResult.code !== 'number' ||
+              Number.isNaN(fetchResult.code) ||
+              fetchResult.code < 1
+            ) {
+              const fetchRes = buildReply(
+                500,
+                'Received fetch result data with invalid code format (expected number greater than 0).',
+              );
+              if (fetchRes !== null) return fetchRes;
+            }
+
+            // 2. Check if a plugin provided a direct response (e.g., from Cache)
             if (fetchResult.customResponse instanceof Response) {
               return fetchResult.customResponse;
             }
 
-            // 2. Otherwise, proceed with the standard router logic
-            if (routerCfg.enabled) {
-              const code = fetchResult.code;
-              const resType = getResType(code);
-              const codeCfg = this.getCodeCfg(code);
-              return codeCfg.fn({ code, resType, url, request, event });
-            }
+            // 3. Otherwise, proceed with the standard router logic
+            const fetchRes = buildReply(
+              fetchResult.code,
+              fetchResult.customMsg,
+              fetchResult.customPath,
+            );
+
+            if (fetchRes !== null) return fetchRes;
             return fetch(request);
           })(),
         );

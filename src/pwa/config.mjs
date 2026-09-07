@@ -2,14 +2,7 @@ import TinyServiceWorkerEngine from './TinyServiceWorkerEngine.mjs';
 import RegisterGlobCachePlugin from './plugins/GlobCachePlugin.mjs';
 
 /** @type {Partial<import('./TinyServiceWorkerEngine.mjs').PartialServiceWorkerSettings>} */
-const MY_CONFIG = {
-  fetch: {
-    router: {
-      enabled: true,
-    },
-  },
-};
-
+const MY_CONFIG = { fetch: { router: { enabled: true } } };
 export const tinySw = new TinyServiceWorkerEngine(MY_CONFIG, {
   debugMode: import.meta.env.DEV,
   useLogColors: true,
@@ -24,6 +17,8 @@ RegisterGlobCachePlugin(tinySw, {
 // Static routes matching
 ['/', '/notifications', '/settings', '/search'].forEach((path) =>
   tinySw.addFetchUrlListener(path, (f, r) => {
+    // We only intercept navigation requests (HTML)
+    if (f.request.mode !== 'navigate') return;
     r.code = 200;
   }),
 );
@@ -33,6 +28,8 @@ RegisterGlobCachePlugin(tinySw, {
 tinySw.addFetchRegExpListener(
   '^\\/([a-z0-9.-]+\\.[a-z]{2,})\\/(images|profiles)\\/[^/]+$',
   (f, r) => {
+    // We only intercept navigation requests (HTML)
+    if (f.request.mode !== 'navigate') return;
     r.code = 200;
   },
 );
