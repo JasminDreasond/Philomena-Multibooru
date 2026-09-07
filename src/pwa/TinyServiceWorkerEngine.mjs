@@ -359,15 +359,18 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   }
 
   /**
-   * @param {Request} req
+   * Checks if the provided Request object is a navigation request.
+   * @param {Request} req - The request to evaluate.
+   * @returns {boolean} True if the request mode is 'navigate', false otherwise.
    */
   static isNavigate(req) {
     return req.mode === 'navigate';
   }
 
   /**
-   * @param {Request|URL} data
-   * @returns {boolean}
+   * Determines whether the origin of a given Request or URL matches the origin of the current Service Worker context.
+   * @param {Request|URL} data - The request or URL to check.
+   * @returns {boolean} True if the origins match, false otherwise.
    */
   static isSameOrigin(data) {
     // 1. Parse the request URL into a URL object to access its specific components
@@ -827,7 +830,8 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   }
 
   /**
-   * @param {Partial<PartialServiceWorkerSettings>} config - The configuration object to apply.
+   * Initializes a new instance of the TinyServiceWorkerEngine with the provided configuration and logger settings.
+   * @param {Partial<PartialServiceWorkerSettings>} config - The configuration to apply.
    * @param {Object} [lgConfig] - Configuration options for the instance.
    * @param {boolean} [lgConfig.debugMode=false] - Whether to enable internal debug logging.
    * @param {boolean} [lgConfig.useLogColors=false] - Whether to enable log color support.
@@ -1072,6 +1076,13 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     // Merge and then deep clone the result to ensure the internal state is isolated
     this.#globalMsgCode = TinyCloner.clone({ ...this.#globalMsgCode, ...newConfig });
   }
+
+  /**
+   *
+   * @param {any} plugin
+   * @param {any} options
+   */
+  install(plugin, options) {}
 
   /**
    * Adds or updates a custom router configuration for a specific HTTP status code.
