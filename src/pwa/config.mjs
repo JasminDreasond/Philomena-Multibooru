@@ -1,5 +1,6 @@
 import TinyServiceWorkerEngine from './TinyServiceWorkerEngine.mjs';
 import RegisterGlobCachePlugin from './plugins/GlobCachePlugin.mjs';
+import ViteFileDetectorPlugin from './plugins/ViteFileDetector.mjs';
 
 const { isNavigate } = TinyServiceWorkerEngine;
 
@@ -10,11 +11,13 @@ export const tinySw = new TinyServiceWorkerEngine(MY_CONFIG, {
   useLogColors: true,
 });
 
+ViteFileDetectorPlugin(tinySw);
+
 RegisterGlobCachePlugin(tinySw, {
   patterns: ['**/*.{js,css,html,ico,jpg,png,svg}'],
   exclude: ['**/sw.js', '**/node_modules/**'],
   cacheName: 'static-assets-v1',
-}).catch((err) => tinySw.log('error', 'Failed to register GlobCachePlugin:', err));
+});
 
 // Static routes matching
 ['/', '/notifications', '/settings', '/search'].forEach((path) =>

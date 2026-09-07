@@ -6,7 +6,7 @@ import TinyServiceWorkerEngine from '../TinyServiceWorkerEngine.mjs';
  * @typedef {Object} GlobCacheOptions
  * @property {string[]} patterns - Array of glob patterns (e.g., ['**\/*.js', '**\/*.{css,html}']).
  * @property {string[]} [exclude] - Array of glob patterns to ignore (e.g., ['**\/sw.js']).
- * @property {boolean} [sameOriginOnly]
+ * @property {boolean} [sameOriginOnly=true]
  * @property {string} cacheName - The name of the CacheStorage bucket to use.
  */
 
@@ -16,7 +16,7 @@ import TinyServiceWorkerEngine from '../TinyServiceWorkerEngine.mjs';
  * @param {GlobCacheOptions} options - The configuration options.
  * @throws {TypeError} If options or patterns are invalid.
  */
-const RegisterGlobCachePlugin = async (engine, options) => {
+const RegisterGlobCachePlugin = (engine, options) => {
   // 1. Validation
   if (!(engine instanceof TinyServiceWorkerEngine)) {
     throw new TypeError('[GlobCachePlugin] A valid TinyServiceWorkerEngine instance is required.');
@@ -43,7 +43,7 @@ const RegisterGlobCachePlugin = async (engine, options) => {
     throw new TypeError('[GlobCachePlugin] options.cacheName must be a string.');
   }
 
-  const { patterns, exclude, cacheName, sameOriginOnly } = options;
+  const { patterns, exclude, cacheName, sameOriginOnly = true } = options;
 
   // Pre-compile exclusion patterns into Regex for performance
   const excludeRegexes = (exclude || []).map((pattern) => compileGlobRegExp(pattern));
