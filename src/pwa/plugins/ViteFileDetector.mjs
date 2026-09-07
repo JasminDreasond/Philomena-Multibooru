@@ -1,5 +1,3 @@
-import TinyServiceWorkerEngine from '../TinyServiceWorkerEngine.mjs';
-
 /**
  * Configuration options for the ViteFileDetectorPlugin to define which paths should be bypassed.
  * @typedef {Object} ViteFileDetectorOptions
@@ -21,17 +19,15 @@ const DEFAULT_OPTIONS = {
 /**
  * A plugin for TinyServiceWorkerEngine to detect and bypass Vite-specific files.
  *
- * @param {TinyServiceWorkerEngine} engine - The engine instance.
- * @param {ViteFileDetectorOptions} [options] - Configuration options for file detection.
+ * @type {import('../TinyServiceWorkerEngine.mjs').SwPluginInstaller<ViteFileDetectorOptions>}
  * @throws {TypeError} If the engine is invalid or if the provided options do not match the required schema.
  */
-const ViteFileDetectorPlugin = (engine, options = {}) => {
-  // 1. Validate Engine
-  if (!(engine instanceof TinyServiceWorkerEngine)) {
-    throw new TypeError('The "engine" argument must be an TinyServiceWorkerEngine instance.');
-  }
+const ViteFileDetectorPlugin = (instance, options = {}) => {
+  const engine = instance.engine;
+  instance.setName('ViteFileDetector');
+  instance.setVersion('1.0.0');
 
-  // 2. Merge and Validate Options
+  // 1. Merge and Validate Options
   /** @type {ViteFileDetectorOptions} */
   const config = { ...DEFAULT_OPTIONS, ...options };
 

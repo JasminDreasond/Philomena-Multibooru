@@ -1,11 +1,16 @@
 /**
  * Ping/Pong Logic to plugin test.
  *
- * @param {import('../TinyServiceWorkerEngine.mjs').default} sw
+ * @type {import('../TinyServiceWorkerEngine.mjs').SwPluginInstaller<any>}
  */
-const TinyPingPwa = (sw) =>
-  sw.addMessageListener('ping', ({ reply }) => {
+const TinyPingPwa = (instance) => {
+  const engine = instance.engine;
+  instance.setName('SimplePing');
+  instance.setVersion('1.0.0');
+
+  engine.addMessageListener('ping', ({ reply }) => {
     reply('pong', { msg: 'mio! :3' });
   });
+};
 
 export default TinyPingPwa;

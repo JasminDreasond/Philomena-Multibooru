@@ -1,26 +1,25 @@
 import { isJsonObject } from 'tiny-essentials/basics/objChecker';
 import { compileGlobRegExp } from 'tiny-essentials/regexp/Glob';
-import TinyServiceWorkerEngine from '../TinyServiceWorkerEngine.mjs';
 
 /**
  * @typedef {Object} GlobCacheOptions
- * @property {string[]} patterns - Array of glob patterns (e.g., ['**\/*.js', '**\/*.{css,html}']).
- * @property {string[]} [exclude] - Array of glob patterns to ignore (e.g., ['**\/sw.js']).
+ * @property {string[]} patterns - Array of glob patterns (e.g., ['\*\*\/\*.js', '\*\*\/\*.{css,html}']).
+ * @property {string[]} [exclude] - Array of glob patterns to ignore (e.g., ['\*\*\/sw.js']).
  * @property {boolean} [sameOriginOnly=true]
  * @property {string} cacheName - The name of the CacheStorage bucket to use.
  */
 
 /**
  * A plugin for TinyServiceWorkerEngine that implements runtime caching based on glob patterns.
- * @param {TinyServiceWorkerEngine} engine - The engine instance.
- * @param {GlobCacheOptions} options - The configuration options.
+ * @type {import('../TinyServiceWorkerEngine.mjs').SwPluginInstaller<GlobCacheOptions>}
  * @throws {TypeError} If options or patterns are invalid.
  */
-const RegisterGlobCachePlugin = (engine, options) => {
+const GlobCachePlugin = (instance, options) => {
+  const engine = instance.engine;
+  instance.setName('GlobCache');
+  instance.setVersion('1.0.0');
+
   // 1. Validation
-  if (!(engine instanceof TinyServiceWorkerEngine)) {
-    throw new TypeError('[GlobCachePlugin] A valid TinyServiceWorkerEngine instance is required.');
-  }
   if (!isJsonObject(options)) {
     throw new TypeError('[GlobCachePlugin] Options must be a non-null object.');
   }
@@ -93,4 +92,4 @@ const RegisterGlobCachePlugin = (engine, options) => {
   }
 };
 
-export default RegisterGlobCachePlugin;
+export default GlobCachePlugin;

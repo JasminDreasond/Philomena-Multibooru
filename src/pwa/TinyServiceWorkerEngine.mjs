@@ -248,10 +248,93 @@ const getResType = (code) => {
   return 'unknown';
 };
 
+///////////////////////////////////////////////////////////////////
+
+/**
+ * @template {any} Options
+ * @callback SwPluginInstaller
+ * @param {TinyServiceWorkerPlugin} plugin
+ * @param {...Options} [options]
+ * @returns {void}
+ */
+
+/**
+ * @template {any} Options
+ */
+class TinyServiceWorkerPlugin {
+  /** @type {string} */
+  #name = '';
+  /** @type {string} */
+  #version = '';
+  /** @type {TinyServiceWorkerEngine} */
+  #engine;
+  /** @type {SwPluginInstaller<Options>} */
+  #installer;
+  /** @type {Options[]} */
+  #options;
+
+  get name() {
+    return this.#name;
+  }
+
+  get version() {
+    return this.#version;
+  }
+
+  get engine() {
+    return this.#engine;
+  }
+
+  get options() {
+    return Object.freeze(this.#options);
+  }
+
+  /**
+   * @param {string} value
+   */
+  setName(value) {
+    if (this.#name.length !== 0) throw new Error('');
+    if (typeof value !== 'string') throw new TypeError('');
+    if (value.length === 0) throw new TypeError('');
+    this.#name = value;
+  }
+
+  /**
+   * @param {string} value
+   */
+  setVersion(value) {
+    if (this.#version.length !== 0) throw new Error('');
+    if (typeof value !== 'string') throw new TypeError('');
+    if (value.length === 0) throw new TypeError('');
+    this.#version = value;
+  }
+
+  /**
+   * @param {Object} options
+   * @param {TinyServiceWorkerEngine} options.engine
+   * @param {SwPluginInstaller<Options>} options.installer
+   * @param {...Options} ops
+   */
+  constructor({ engine, installer }, ...ops) {
+    this.#engine = engine;
+    this.#installer = installer;
+    this.#options = ops;
+  }
+
+  start() {
+    this.#installer(this, ...this.#options);
+    if (this.#name.length === 0) throw new Error('');
+    if (this.#version.length === 0) throw new Error('');
+  }
+}
+
 /**
  * Manages the lifecycle and execution of modules based on the provided configuration.
  */
 class TinyServiceWorkerEngine extends TinyDebugger {
+  /** @type {Map<string, TinyServiceWorkerPlugin>} */
+  #plugins = new Map();
+
   /**
    * Validates if an event type is a reserved name for the internal lifecycle.
    * @param {string} type - The name of the event to validate.
@@ -1078,11 +1161,25 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   }
 
   /**
-   *
-   * @param {any} plugin
-   * @param {any} options
+   * @template {any} Options
+   * @param {SwPluginInstaller<Options>} plugin
+   * @param {...Options} options
    */
-  install(plugin, options) {}
+  install(plugin, ...options) {
+    const instance = new TinyServiceWorkerPlugin({ engine: this, installer: plugin }, ...options);
+    try {
+      instance.start();
+      this.#plugins.set(instance.name, instance);
+    } catch (err) {
+      const name = instance.name ?? 'Unknown Plugin';
+      const version = instance.version ?? '';
+      this.log(
+        'warn',
+        `Failed to register an plugin: ${name}: Version ${version ? ` ${version}` : ''}`,
+      );
+      throw err;
+    }
+  }
 
   /**
    * Adds or updates a custom router configuration for a specific HTTP status code.

@@ -11,9 +11,9 @@ export const tinySw = new TinyServiceWorkerEngine(MY_CONFIG, {
   useLogColors: true,
 });
 
-ViteFileDetectorPlugin(tinySw);
-
-RegisterGlobCachePlugin(tinySw, {
+// Install plugins
+tinySw.install(ViteFileDetectorPlugin);
+tinySw.install(RegisterGlobCachePlugin, {
   patterns: ['**/*.{js,css,html,ico,jpg,png,svg}'],
   exclude: ['**/sw.js', '**/node_modules/**'],
   cacheName: 'static-assets-v1',
