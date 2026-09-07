@@ -17,7 +17,7 @@ export const tinySw = new TinyServiceWorkerEngine(MY_CONFIG, {
 
 RegisterGlobCachePlugin(tinySw, {
   patterns: ['**/*.{js,css,html,ico,jpg,png,svg}'],
-  exclude: ['**/sw.js'],
+  exclude: ['**/sw.js', '**/node_modules/**'],
   cacheName: 'static-assets-v1',
 }).catch((err) => tinySw.log('error', 'Failed to register GlobCachePlugin:', err));
 

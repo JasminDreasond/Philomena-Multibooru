@@ -1,4 +1,5 @@
 import { isJsonObject } from 'tiny-essentials/basics/objChecker';
+import { compileGlobRegExp } from 'tiny-essentials/regexp/Glob';
 import TinyServiceWorkerEngine from '../TinyServiceWorkerEngine.mjs';
 
 /**
@@ -7,23 +8,6 @@ import TinyServiceWorkerEngine from '../TinyServiceWorkerEngine.mjs';
  * @property {string[]} [exclude] - Array of glob patterns to ignore (e.g., ['**\/sw.js']).
  * @property {string} cacheName - The name of the CacheStorage bucket to use.
  */
-
-/**
- * Converts a glob pattern into a valid RegExp string.
- * @param {string} glob - The glob pattern string.
- * @returns {RegExp} The converted regular expression.
- */
-const globToRegex = (glob) => {
-  let pattern = glob
-    .replace(/\./g, '\\.') // 1. Escape literal dots FIRST.
-    .replace(/\*\*\//g, '___GLOB_DIR___') // 2. Use a temporary placeholder for **/.
-    .replace(/\*/g, '[^/]*') // 3. Convert isolated * characters.
-    .replace(/___GLOB_DIR___/g, '.*\\/') // 4. Restore **/ as a valid Regex.
-    // 5. Convert {a,b} to (a|b), ensuring the comma is only replaced inside the braces.
-    .replace(/\{([^}]+)\}/g, (match, p1) => `(${p1.replace(/,/g, '|')})`);
-
-  return new RegExp(`^${pattern}$`);
-};
 
 /**
  * A plugin for TinyServiceWorkerEngine that implements runtime caching based on glob patterns.
@@ -55,11 +39,11 @@ const RegisterGlobCachePlugin = async (engine, options) => {
   const { patterns, exclude, cacheName } = options;
 
   // Pre-compile exclusion patterns into Regex for performance
-  const excludeRegexes = (exclude || []).map((pattern) => globToRegex(pattern));
+  const excludeRegexes = (exclude || []).map((pattern) => compileGlobRegExp(pattern));
 
   // 2. Implementation
   for (const pattern of patterns) {
-    const regex = globToRegex(pattern);
+    const regex = compileGlobRegExp(pattern);
 
     engine.addFetchRegExpListener(regex.source, async (fetchObj, result) => {
       const { request, url } = fetchObj;
