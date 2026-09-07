@@ -92,8 +92,9 @@ const codeIs = TinyHttpResponseRegistry.codeIs;
  * Represents the raw values returned by a fetch checker.
  * @typedef {Object} FetchCheckerValues
  * @property {number} code - The HTTP status code associated with the fetch result.
- * @property {string} [customPath] - The custom http request protocol file path.
- * @property {string} [customMsg] - The custom http request protocol code message.
+ * @property {boolean} needValidation
+ * @property {string} [customPath]
+ * @property {string} [customMsg]
  */
 
 /**
@@ -192,6 +193,7 @@ const codeIs = TinyHttpResponseRegistry.codeIs;
  * @property {MessageReplyTo} replyTo - A function to send a reply to the message source.
  * @property {MessageReplyToAll} replyToAll - A function to send a reply to all clients.
  * @property {MessageReplyTemplate} replyTemplate - A template function to format reply messages.
+ * @property {boolean} isSameOrigin
  * @property {Error} [error] - An error object if the plugin execution failed.
  */
 
@@ -353,6 +355,26 @@ class TinyServiceWorkerEngine extends TinyDebugger {
    */
   static async replyToAll(ops) {
     return TinyServiceWorkerEngine.#replyToAll(ops, true);
+  }
+
+  /**
+   * @param {Request} req
+   */
+  static isNavigate(req) {
+    return req.mode === 'navigate';
+  }
+
+  /**
+   * @param {Request|URL} data
+   * @returns {boolean}
+   */
+  static isSameOrigin(data) {
+    // 1. Parse the request URL into a URL object to access its specific components
+    const reqUrl = data instanceof Request ? new URL(data.url) : data;
+
+    // 2. Compare the origin of the request with the origin of the Service Worker itself
+    // self.location.origin provides the protocol, domain, and port of the Service Worker
+    return reqUrl.origin === self.location.origin;
   }
 
   /**
@@ -1128,12 +1150,14 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     let matchedCallback = null;
     /** @type {FetchObjParams} */
     let routeParams = {};
+    const isSameOrigin = TinyServiceWorkerEngine.isSameOrigin(request);
 
     /** @type {FetchCheckerResult} */
-    const result = { code: 404 };
+    const result = { code: 404, needValidation: isSameOrigin };
 
     /** @type {FetchObj} */
     const fetchObj = {
+      isSameOrigin,
       event,
       request,
       url,
@@ -1301,6 +1325,14 @@ class TinyServiceWorkerEngine extends TinyDebugger {
               if (fetchRes !== null) return fetchRes;
             }
 
+            if (typeof fetchResult.needValidation !== 'boolean') {
+              const fetchRes = buildReply(
+                500,
+                'Received fetch result data with invalid needValidation format (expected boolean).',
+              );
+              if (fetchRes !== null) return fetchRes;
+            }
+
             if (
               typeof fetchResult.code !== 'number' ||
               Number.isNaN(fetchResult.code) ||
@@ -1319,13 +1351,15 @@ class TinyServiceWorkerEngine extends TinyDebugger {
             }
 
             // 3. Otherwise, proceed with the standard router logic
-            const fetchRes = buildReply(
-              fetchResult.code,
-              fetchResult.customMsg,
-              fetchResult.customPath,
-            );
+            if (fetchResult.needValidation) {
+              const fetchRes = buildReply(
+                fetchResult.code,
+                fetchResult.customMsg,
+                fetchResult.customPath,
+              );
 
-            if (fetchRes !== null) return fetchRes;
+              if (fetchRes !== null) return fetchRes;
+            }
             return fetch(request);
           })(),
         );
