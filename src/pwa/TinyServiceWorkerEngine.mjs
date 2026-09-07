@@ -252,11 +252,8 @@ const getResType = (code) => {
 
 /**
  * A function used to install a plugin into the engine.
- * @template {any} Options
- * @callback SwPluginInstaller
- * @param {TinyServiceWorkerPlugin} plugin - The plugin instance to be installed.
- * @param {...Options} [options] - Additional configuration options for the plugin.
- * @returns {void}
+ * @template {any[]} Options
+ * @typedef { (plugin: TinyServiceWorkerPlugin, ...options: Options) => void } SwPluginInstaller
  */
 
 /**
@@ -264,7 +261,7 @@ const getResType = (code) => {
  * It encapsulates the plugin's identity (name and version), its connection to the engine,
  * the installation logic, and any associated configuration options.
  *
- * @template {any} Options
+ * @template {any[]} Options
  */
 class TinyServiceWorkerPlugin {
   /** @type {string} The unique name of the plugin. */
@@ -275,7 +272,7 @@ class TinyServiceWorkerPlugin {
   #engine;
   /** @type {SwPluginInstaller<Options>} The installer function used to initialize the plugin. */
   #installer;
-  /** @type {Options[]} An array of configuration options provided to the plugin. */
+  /** @type {Options} An array of configuration options provided to the plugin. */
   #options;
   /** @type {boolean} Indicates whether the plugin has already been started and is ready. */
   #isReady = false;
@@ -351,7 +348,7 @@ class TinyServiceWorkerPlugin {
    * @param {Object} config - The configuration object.
    * @param {TinyServiceWorkerEngine} config.engine - The engine instance.
    * @param {SwPluginInstaller<Options>} config.installer - The installer function.
-   * @param {...Options} ops - Additional configuration options.
+   * @param {Options} ops - Additional configuration options.
    */
   constructor({ engine, installer }, ...ops) {
     this.#engine = engine;
@@ -1215,9 +1212,9 @@ class TinyServiceWorkerEngine extends TinyDebugger {
 
   /**
    * Installs a new plugin into the engine and starts its lifecycle.
-   * @template {any} Options
+   * @template {any[]} Options
    * @param {SwPluginInstaller<Options>} plugin - The plugin instance to be registered.
-   * @param {...Options} options - Configuration options for the plugin.
+   * @param {Options} options - Configuration options for the plugin.
    */
   install(plugin, ...options) {
     const instance = new TinyServiceWorkerPlugin({ engine: this, installer: plugin }, ...options);
