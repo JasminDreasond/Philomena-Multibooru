@@ -1,10 +1,11 @@
 import TinyServiceWorkerEngine from '../TinyServiceWorkerEngine.mjs';
 
 /**
+ * Configuration options for the ViteFileDetectorPlugin to define which paths should be bypassed.
  * @typedef {Object} ViteFileDetectorOptions
- * @property {(string|RegExp)[]} [paths]
- * @property {string} [srcPath]
- * @property {string} [manifestPath]
+ * @property {(string|RegExp)[]} [paths] - An array of strings or regular expressions used to identify URLs that should be bypassed.
+ * @property {string} [srcPath] - The base path for the source directory to be included in the bypass list.
+ * @property {string} [manifestPath] - The path to the manifest file to be included in the bypass list.
  * @property {boolean} [devOnly] - If true, the plugin only executes during development mode (import.meta.env.DEV).
  */
 
