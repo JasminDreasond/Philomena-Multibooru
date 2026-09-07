@@ -277,6 +277,16 @@ class TinyServiceWorkerPlugin {
   #installer;
   /** @type {Options[]} An array of configuration options provided to the plugin. */
   #options;
+  /** @type {boolean} Indicates whether the plugin has already been started and is ready. */
+  #isReady = false;
+
+  /**
+   * Gets the readiness status of the plugin.
+   * @returns {boolean} True if the plugin is ready, false otherwise.
+   */
+  get isReady() {
+    return this.#isReady;
+  }
 
   /**
    * Gets the name of the plugin.
@@ -354,6 +364,7 @@ class TinyServiceWorkerPlugin {
    * @throws {Error} If name or version are not set.
    */
   start() {
+    if (this.#isReady) throw new Error('Plugin is already ready.');
     this.#installer(this, ...this.#options);
     if (this.#name.length === 0) throw new Error('Plugin name is not set.');
     if (this.#version.length === 0) throw new Error('Plugin version is not set.');
@@ -364,9 +375,6 @@ class TinyServiceWorkerPlugin {
  * Manages the lifecycle and execution of modules based on the provided configuration.
  */
 class TinyServiceWorkerEngine extends TinyDebugger {
-  /** @type {Map<string, TinyServiceWorkerPlugin>} A map of registered plugins. */
-  #plugins = new Map();
-
   /**
    * Validates if an event type is a reserved name for the internal lifecycle.
    * @param {string} type - The name of the event to validate.
@@ -494,6 +502,19 @@ class TinyServiceWorkerEngine extends TinyDebugger {
     // 2. Compare the origin of the request with the origin of the Service Worker itself
     // self.location.origin provides the protocol, domain, and port of the Service Worker
     return reqUrl.origin === self.location.origin;
+  }
+
+  /** @type {Map<string, TinyServiceWorkerPlugin>} A map of registered plugins. */
+  #plugins = new Map();
+
+  /**
+   * Returns a plain object representation of the registered plugins.
+   * This converts the internal Map into a standard object, providing a snapshot
+   * of the plugins for easier external access.
+   * @returns {Record<string, TinyServiceWorkerPlugin>} An object where keys are plugin names and values are the plugin instances.
+   */
+  get plugins() {
+    return Object.fromEntries(this.#plugins);
   }
 
   /**
