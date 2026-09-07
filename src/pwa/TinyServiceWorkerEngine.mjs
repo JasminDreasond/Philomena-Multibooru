@@ -251,69 +251,97 @@ const getResType = (code) => {
 ///////////////////////////////////////////////////////////////////
 
 /**
+ * A function used to install a plugin into the engine.
  * @template {any} Options
  * @callback SwPluginInstaller
- * @param {TinyServiceWorkerPlugin} plugin
- * @param {...Options} [options]
+ * @param {TinyServiceWorkerPlugin} plugin - The plugin instance to be installed.
+ * @param {...Options} [options] - Additional configuration options for the plugin.
  * @returns {void}
  */
 
 /**
+ * Represents a plugin instance designed to be integrated into a TinyServiceWorkerEngine.
+ * It encapsulates the plugin's identity (name and version), its connection to the engine,
+ * the installation logic, and any associated configuration options.
+ *
  * @template {any} Options
  */
 class TinyServiceWorkerPlugin {
-  /** @type {string} */
+  /** @type {string} The unique name of the plugin. */
   #name = '';
-  /** @type {string} */
+  /** @type {string} The version string of the plugin. */
   #version = '';
-  /** @type {TinyServiceWorkerEngine} */
+  /** @type {TinyServiceWorkerEngine} The engine instance this plugin is attached to. */
   #engine;
-  /** @type {SwPluginInstaller<Options>} */
+  /** @type {SwPluginInstaller<Options>} The installer function used to initialize the plugin. */
   #installer;
-  /** @type {Options[]} */
+  /** @type {Options[]} An array of configuration options provided to the plugin. */
   #options;
 
+  /**
+   * Gets the name of the plugin.
+   * @returns {string} The plugin name.
+   */
   get name() {
     return this.#name;
   }
 
+  /**
+   * Gets the version of the plugin.
+   * @returns {string} The plugin version.
+   */
   get version() {
     return this.#version;
   }
 
+  /**
+   * Gets the engine instance associated with this plugin.
+   * @returns {TinyServiceWorkerEngine} The engine instance.
+   */
   get engine() {
     return this.#engine;
   }
 
+  /**
+   * Gets the configuration options of the plugin.
+   * @returns {Readonly<Options[]>} A read-only array of options.
+   */
   get options() {
     return Object.freeze(this.#options);
   }
 
   /**
-   * @param {string} value
+   * Sets the name of the plugin.
+   * @param {string} value - The new name for the plugin.
+   * @throws {Error} If the name is already set.
+   * @throws {TypeError} If the value is not a string or is empty.
    */
   setName(value) {
-    if (this.#name.length !== 0) throw new Error('');
-    if (typeof value !== 'string') throw new TypeError('');
-    if (value.length === 0) throw new TypeError('');
+    if (this.#name.length !== 0) throw new Error('Name is already set.');
+    if (typeof value !== 'string') throw new TypeError('Name must be a string.');
+    if (value.length === 0) throw new TypeError('Name cannot be empty.');
     this.#name = value;
   }
 
   /**
-   * @param {string} value
+   * Sets the version of the plugin.
+   * @param {string} value - The new version string.
+   * @throws {Error} If the version is already set.
+   * @throws {TypeError} If the value is not a string or is empty.
    */
   setVersion(value) {
-    if (this.#version.length !== 0) throw new Error('');
-    if (typeof value !== 'string') throw new TypeError('');
-    if (value.length === 0) throw new TypeError('');
+    if (this.#version.length !== 0) throw new Error('Version is already set.');
+    if (typeof value !== 'string') throw new TypeError('Version must be a string.');
+    if (value.length === 0) throw new TypeError('Version cannot be empty.');
     this.#version = value;
   }
 
   /**
-   * @param {Object} options
-   * @param {TinyServiceWorkerEngine} options.engine
-   * @param {SwPluginInstaller<Options>} options.installer
-   * @param {...Options} ops
+   * Initializes a new instance of TinyServiceWorkerPlugin.
+   * @param {Object} config - The configuration object.
+   * @param {TinyServiceWorkerEngine} config.engine - The engine instance.
+   * @param {SwPluginInstaller<Options>} config.installer - The installer function.
+   * @param {...Options} ops - Additional configuration options.
    */
   constructor({ engine, installer }, ...ops) {
     this.#engine = engine;
@@ -321,10 +349,14 @@ class TinyServiceWorkerPlugin {
     this.#options = ops;
   }
 
+  /**
+   * Starts the plugin lifecycle by calling the installer.
+   * @throws {Error} If name or version are not set.
+   */
   start() {
     this.#installer(this, ...this.#options);
-    if (this.#name.length === 0) throw new Error('');
-    if (this.#version.length === 0) throw new Error('');
+    if (this.#name.length === 0) throw new Error('Plugin name is not set.');
+    if (this.#version.length === 0) throw new Error('Plugin version is not set.');
   }
 }
 
@@ -332,7 +364,7 @@ class TinyServiceWorkerPlugin {
  * Manages the lifecycle and execution of modules based on the provided configuration.
  */
 class TinyServiceWorkerEngine extends TinyDebugger {
-  /** @type {Map<string, TinyServiceWorkerPlugin>} */
+  /** @type {Map<string, TinyServiceWorkerPlugin>} A map of registered plugins. */
   #plugins = new Map();
 
   /**
@@ -1161,9 +1193,10 @@ class TinyServiceWorkerEngine extends TinyDebugger {
   }
 
   /**
+   * Installs a new plugin into the engine and starts its lifecycle.
    * @template {any} Options
-   * @param {SwPluginInstaller<Options>} plugin
-   * @param {...Options} options
+   * @param {SwPluginInstaller<Options>} plugin - The plugin instance to be registered.
+   * @param {...Options} options - Configuration options for the plugin.
    */
   install(plugin, ...options) {
     const instance = new TinyServiceWorkerPlugin({ engine: this, installer: plugin }, ...options);
