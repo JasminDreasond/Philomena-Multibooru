@@ -1,9 +1,9 @@
 /**
  * Configuration options for the ViteFileDetectorPlugin to define which paths should be bypassed.
  * @typedef {Object} ViteFileDetectorOptions
- * @property {(string|RegExp)[]} [paths] - An array of strings or regular expressions used to identify URLs that should be bypassed.
- * @property {string} [srcPath] - The base path for the source directory to be included in the bypass list.
- * @property {string} [manifestPath] - The path to the manifest file to be included in the bypass list.
+ * @property {(string|RegExp)[]} paths - An array of strings or regular expressions used to identify URLs that should be bypassed.
+ * @property {string} srcPath - The base path for the source directory to be included in the bypass list.
+ * @property {string} manifestPath - The path to the manifest file to be included in the bypass list.
  */
 
 /**
@@ -19,7 +19,7 @@ const DEFAULT_OPTIONS = {
 /**
  * A plugin for TinyServiceWorkerEngine to detect and bypass Vite-specific files.
  *
- * @type {import('../TinyServiceWorkerEngine.mjs').SwPluginInstaller<ViteFileDetectorOptions>}
+ * @type {import('../TinyServiceWorkerEngine.mjs').SwPluginInstaller<Partial<ViteFileDetectorOptions>>}
  * @throws {TypeError} If the engine is invalid or if the provided options do not match the required schema.
  */
 const ViteFileDetectorPlugin = (instance, options = {}) => {
