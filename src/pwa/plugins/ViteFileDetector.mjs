@@ -7,15 +7,17 @@ import TinyServiceWorkerEngine from '../TinyServiceWorkerEngine.mjs';
 const ViteFileDetectorPlugin = (engine) => {
   if (import.meta.env.DEV)
     engine.addFetchGlobalListener('ViteEngine', (f, r) => {
-      if (f.isSameOrigin) {
-        if (
-          f.url.pathname.startsWith('/@vite') ||
+      if (
+        f.isSameOrigin &&
+        (f.url.pathname.startsWith('/@vite') ||
           f.url.pathname.startsWith('/@react') ||
           f.url.pathname.startsWith('/src') ||
           f.url.pathname.startsWith('/manifest.json') ||
-          f.url.pathname.startsWith('/node_modules')
-        )
-          r.needValidation = false;
+          f.url.pathname.startsWith('/node_modules'))
+      ) {
+        r.continueCheck = false;
+        r.needValidation = false;
+        r.code = 200;
       }
     });
 };
