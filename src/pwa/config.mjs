@@ -1,7 +1,7 @@
 import TinyServiceWorkerEngine from './TinyServiceWorkerEngine.mjs';
 import RegisterGlobCachePlugin from './plugins/GlobCachePlugin.mjs';
 
-const { isNavigate, isSameOrigin } = TinyServiceWorkerEngine;
+const { isNavigate } = TinyServiceWorkerEngine;
 
 /** @type {Partial<import('./TinyServiceWorkerEngine.mjs').PartialServiceWorkerSettings>} */
 const MY_CONFIG = { fetch: { router: { enabled: true } } };

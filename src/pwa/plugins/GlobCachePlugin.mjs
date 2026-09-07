@@ -6,6 +6,7 @@ import TinyServiceWorkerEngine from '../TinyServiceWorkerEngine.mjs';
  * @typedef {Object} GlobCacheOptions
  * @property {string[]} patterns - Array of glob patterns (e.g., ['**\/*.js', '**\/*.{css,html}']).
  * @property {string[]} [exclude] - Array of glob patterns to ignore (e.g., ['**\/sw.js']).
+ * @property {boolean} [sameOriginOnly]
  * @property {string} cacheName - The name of the CacheStorage bucket to use.
  */
 
@@ -23,6 +24,12 @@ const RegisterGlobCachePlugin = async (engine, options) => {
   if (!isJsonObject(options)) {
     throw new TypeError('[GlobCachePlugin] Options must be a non-null object.');
   }
+  if (
+    typeof options.sameOriginOnly !== 'undefined' &&
+    typeof options.sameOriginOnly !== 'boolean'
+  ) {
+    throw new TypeError('[GlobCachePlugin] options.sameOriginOnly must be an boolean.');
+  }
   if (!Array.isArray(options.patterns) || !options.patterns.every((p) => typeof p === 'string')) {
     throw new TypeError('[GlobCachePlugin] options.patterns must be an array of strings.');
   }
@@ -36,7 +43,7 @@ const RegisterGlobCachePlugin = async (engine, options) => {
     throw new TypeError('[GlobCachePlugin] options.cacheName must be a string.');
   }
 
-  const { patterns, exclude, cacheName } = options;
+  const { patterns, exclude, cacheName, sameOriginOnly } = options;
 
   // Pre-compile exclusion patterns into Regex for performance
   const excludeRegexes = (exclude || []).map((pattern) => compileGlobRegExp(pattern));
@@ -46,6 +53,9 @@ const RegisterGlobCachePlugin = async (engine, options) => {
     const regex = compileGlobRegExp(pattern);
     engine.addFetchRegExpListener(regex.source, async (fetchObj, result) => {
       const { request, url } = fetchObj;
+      if (sameOriginOnly && !fetchObj.isSameOrigin) {
+        return; // Skip this request
+      }
 
       // Check if the current URL matches any exclusion pattern
       const isExcluded = excludeRegexes.some((re) => re.test(url.pathname));
